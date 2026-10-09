@@ -306,6 +306,416 @@ footer {
   gap: 22px;
 }
 
+/* About page: build on the shared sections, typography, and components. */
+.foundation-home {
+  color: inherit;
+  text-decoration: none;
+}
+
+.foundation-home:focus-visible {
+  outline: 2px solid #496d60;
+  outline-offset: 4px;
+  border-radius: 3px;
+}
+
+.about-intro {
+  background: #edf1ee;
+}
+
+.about-intro h1 {
+  max-width: 800px;
+  margin: 0 0 20px;
+  color: #233f36;
+  font-size: clamp(2.3rem, 5vw, 4.5rem);
+  letter-spacing: -0.025em;
+  line-height: 1.08;
+}
+
+.about-section-layout {
+  grid-template-columns: 1fr 1.4fr;
+  align-items: start;
+}
+
+.about-section-layout h2 {
+  margin-bottom: 0;
+}
+
+.about-story {
+  background: #f6f6f3;
+}
+
+/* GraManna: shared section rhythm with access and future availability previews. */
+.gramanna-page {
+  --program-ink: #233f36;
+  --program-muted: #555;
+  --program-surface: #f3f6f4;
+  --program-border: #dce5df;
+}
+
+.gramanna-page h1 {
+  margin: 0 0 16px;
+  color: var(--program-ink);
+  font-size: clamp(3rem, 6vw, 5rem);
+  letter-spacing: -0.025em;
+  line-height: 1.08;
+}
+
+.gramanna-page h2 {
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+.gramanna-page h3 {
+  margin: 0 0 14px;
+  font-size: 1.35rem;
+  line-height: 1.3;
+}
+
+.gramanna-page .eyebrow {
+  margin-top: 0;
+  line-height: 1.6;
+}
+
+.gramanna-page .placeholder-text {
+  margin-bottom: 0;
+}
+
+.gramanna-intro,
+.gramanna-notifications {
+  background: var(--program-surface);
+}
+
+.gramanna-intro-layout {
+  grid-template-columns: 1.15fr 1fr;
+  gap: 50px;
+}
+
+.gramanna-lead {
+  margin: 0;
+  color: var(--program-ink);
+  font-size: clamp(1.3rem, 2.4vw, 1.65rem);
+  line-height: 1.4;
+}
+
+.gramanna-brand-panel {
+  padding: 45px 30px 30px;
+  border: 1px solid var(--program-border);
+  border-radius: 10px;
+  background: white;
+  text-align: center;
+  box-shadow: 0 18px 40px rgba(35, 63, 54, 0.06);
+}
+
+.gramanna-brand-panel .gramanna-logo {
+  min-height: 110px;
+}
+
+.gramanna-continuum {
+  width: fit-content;
+  min-width: 0;
+  max-width: 100%;
+  margin: 12px auto 0;
+  padding: 6px 16px 10px;
+  border: 1px solid #c4d2c9;
+}
+
+.gramanna-brand-panel .eyebrow {
+  margin: 0 auto;
+  padding: 0 8px;
+  letter-spacing: 0.03em;
+  font-weight: 400;
+}
+
+.gramanna-brand-panel p:not(.eyebrow) {
+  margin: 0;
+  color: #496d60;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.gramanna-brand-panel p span {
+  padding: 0 7px;
+}
+
+.gramanna-detail-layout {
+  grid-template-columns: 1fr 1.1fr;
+  align-items: start;
+  gap: 60px;
+}
+
+.interface-card {
+  min-width: 0;
+  padding: 32px;
+  border: 1px solid var(--program-border, #dce5df);
+  border-radius: 8px;
+  background: white;
+}
+
+.interface-card p,
+.pilot-state-card p {
+  color: var(--program-muted, #555);
+  line-height: 1.65;
+}
+
+.interface-card > p:last-child {
+  margin-bottom: 0;
+}
+
+.availability-badge {
+  display: inline-block;
+  padding: 7px 12px;
+  border-radius: 30px;
+  background: #edf1ee;
+  color: #315e50;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.development-update {
+  border-left: 4px solid #496d60;
+  background: #f6f6f3;
+}
+
+.development-update h3 {
+  margin-top: 22px;
+}
+
+.interface-note,
+.interface-card .interface-note {
+  color: var(--program-muted, #555);
+  font-size: 0.85rem;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+.gramanna-access {
+  background: #edf1ee;
+  scroll-margin-top: 150px;
+}
+
+.gramanna-access-grid {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr 1fr;
+  gap: 22px;
+  margin-top: 38px;
+}
+
+.gramanna-access-grid .interface-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.access-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 24px;
+  color: #496d60;
+}
+
+.gramanna-access-grid h3 {
+  margin-top: 24px;
+  margin-bottom: 0;
+}
+
+.gramanna-access-grid .button {
+  width: 100%;
+  margin-top: auto;
+}
+
+.gramanna-access-grid .interface-note {
+  margin-top: 16px;
+}
+
+.gramanna-page .web-access-card {
+  border-color: var(--program-ink);
+  background: var(--program-ink);
+  color: white;
+}
+
+.web-access-card .access-icon,
+.web-access-card p,
+.web-access-card .interface-note {
+  color: #dce7e2;
+}
+
+.web-access-card .availability-badge {
+  background: #36564a;
+  color: #e8f0eb;
+}
+
+/* Native disabled buttons keep the same shape without hover or press effects. */
+button.button {
+  border: 0;
+  font: inherit;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.button:disabled {
+  background: #edf1ee;
+  color: #59645e;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.web-access-card .button:disabled {
+  background: #dce7e2;
+  color: #233f36;
+}
+
+.pilot-state-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 16px;
+  margin: 30px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pilot-state-card {
+  padding: 26px;
+  border: 1px dashed #8aa397;
+  border-radius: 8px;
+  background: var(--program-surface);
+}
+
+.pilot-state-card h3 {
+  color: var(--program-ink);
+}
+
+.pilot-state-card p {
+  margin: 0;
+}
+
+.state-request {
+  background: #f6f6f3;
+}
+
+.field-label {
+  display: block;
+  margin: 22px 0 9px;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.form-control {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 12px;
+  border: 1px solid #8aa397;
+  border-radius: 4px;
+  background: white;
+  color: #202020;
+  font: inherit;
+}
+
+.form-control:disabled {
+  border-color: #cbd4ce;
+  background: #f3f6f4;
+  color: #59645e;
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+.form-control::placeholder {
+  color: #666;
+  opacity: 1;
+}
+
+.form-control:focus-visible,
+.preference-option input:focus-visible {
+  outline: 2px solid #496d60;
+  outline-offset: 3px;
+}
+
+.notification-preferences {
+  min-width: 0;
+  margin: 26px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.notification-preferences legend {
+  margin-bottom: 12px;
+  padding: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+.preference-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 44px;
+  padding: 10px 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.preference-option input {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+  accent-color: #315e50;
+}
+
+.gramanna-expansion .section-inner {
+  max-width: 800px;
+}
+
+@media (max-width: 1000px) {
+  .gramanna-access-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .web-access-card {
+    grid-column: 1 / -1;
+  }
+
+  .gramanna-intro-layout,
+  .gramanna-detail-layout {
+    gap: 32px;
+  }
+}
+
+@media (max-width: 750px) {
+  .gramanna-page .content-section {
+    padding-top: 60px;
+    padding-bottom: 60px;
+  }
+
+  .gramanna-page h2 {
+    font-size: clamp(1.8rem, 5vw, 2.2rem);
+  }
+
+  .gramanna-intro-layout,
+  .gramanna-detail-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .gramanna-brand-panel {
+    padding: 32px 24px;
+  }
+
+  .interface-card {
+    padding: 26px;
+  }
+}
+
+@media (max-width: 550px) {
+  .gramanna-access-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 @media (max-width: 900px) {
   .site-header {
     height: auto;
@@ -342,6 +752,19 @@ footer {
 }
 
 @media (max-width: 750px) {
+  .about-page .content-section {
+    padding-top: 60px;
+    padding-bottom: 60px;
+  }
+
+  .about-page .two-column {
+    gap: 24px;
+  }
+
+  .about-page h2 {
+    font-size: clamp(1.8rem, 5vw, 2.2rem);
+  }
+
   .two-column,
   .steps {
     grid-template-columns: 1fr;
