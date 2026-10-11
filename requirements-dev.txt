@@ -1,0 +1,5 @@
+# Install production dependencies in the dedicated website .venv as well.
+-r requirements.txt
+
+# Do not install Playwright here; use the shared environment in docs/WORKFLOW.md.
+pytest==9.0.2

@@ -1,0 +1,15 @@
+# Nonsecret template only. Future owner setup may copy to config/local/database.toml.
+# Do not add passwords or URLs. Select the profile explicitly with OAF_ENV.
+[development]
+host = "127.0.0.1"
+port = 5432
+database = "oaf_website_dev"
+username = "oaf_website_app"
+credential_service = "OAF Website/development/PostgreSQL"
+
+[testing]
+host = "127.0.0.1"
+port = 5432
+database = "oaf_website_test"
+username = "oaf_website_test_app"
+credential_service = "OAF Website/testing/PostgreSQL"

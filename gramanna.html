@@ -119,12 +119,12 @@
           </ul>
         </div>
 
-        <div class="interface-card state-request" role="group" aria-labelledby="request-title" aria-describedby="request-note">
-          <p class="eyebrow">Future State Requests</p>
+        <form id="state-request-form" class="interface-card state-request" aria-labelledby="request-title" aria-describedby="request-note">
+          <p class="eyebrow">State Requests</p>
           <h3 id="request-title">Request your state</h3>
-          <p>When requests open, you can tell us where you'd like GraManna to expand next.</p>
+          <p>Tell us where you'd like GraManna to expand next. Requests help us understand interest and do not guarantee availability.</p>
           <label class="field-label" for="request-state">Your state</label>
-          <select class="form-control" id="request-state" autocomplete="off">
+          <select class="form-control" id="request-state" name="state" autocomplete="off" required aria-describedby="request-note">
             <option value="">Select a state</option>
             <option value="AL">Alabama</option>
             <option value="AK">Alaska</option>
@@ -177,9 +177,11 @@
             <option value="WI">Wisconsin</option>
             <option value="WY">Wyoming</option>
           </select>
-          <button class="button" type="button" disabled>Request consideration</button>
-          <p id="request-note" class="interface-note">Not yet accepting submissions. You can preview the state list; no request is saved or sent.</p>
-        </div>
+          <button class="button" type="submit" disabled>Request consideration</button>
+          <p id="request-note" class="interface-note" role="status" aria-live="polite" aria-atomic="true">Enable JavaScript and cookies to request a state.</p>
+          <p class="interface-note">We use a browser cookie to count each state once for this browser. Clearing cookies or changing browsers may let you submit again.</p>
+          <p id="request-total" class="interface-note" role="status" aria-live="polite" aria-atomic="true"></p>
+        </form>
       </div>
     </section>
 
@@ -289,6 +291,7 @@
     </div>
   </footer>
 
+  <script src="assets/state-requests.js" defer></script>
   <script>
     // Only toggle the local preview. No data is collected, stored, or transmitted.
     const statePreference = document.getElementById('notify-state');

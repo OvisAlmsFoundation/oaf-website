@@ -1,0 +1,4 @@
+# Standalone tooling; compatibility is NOT operationally validated.
+# Install/resolve only at a separately authorized dependency/testing checkpoint.
+-r requirements.txt
+Alembic==1.20.0

@@ -1,0 +1,299 @@
+{
+  "format": 1,
+  "hash_mode": "sha256-utf8-lf",
+  "approval_status": "pending_independent_review",
+  "framework": {
+    "alembic.ini": "c72a8cc54828755974765ab8df60c03744cd448b7d16bed81b1157569548f736",
+    "migrations/env.py": "09fcd94121f9ba0287d33d9b779f2b7845be56f23fea23aaafb5ae891fe661d4",
+    "migrations/script.py.mako": "ed31327e01d48ec1ba1e91f5dc5b347fed7e9a8c9733b50d49c8085e86815bdc",
+    "oaf_website/__init__.py": "ad4cfd8e9137a2e69abe6fdad18114a9918fccf918cbe59e181a9edd78436eb5",
+    "oaf_website/database_config.py": "bffc9d41024c7d562944d67c55cff254e63c0f5c83f54ec4b2384c64ab51ed60",
+    "oaf_website/migrate.py": "706a6fefaca086f43bd2729c1cafefdb5bfe3bbd2f71e7a404e2e922454ae1e0",
+    "oaf_website/migration_authority.py": "120270246bafd7b86daf5e8f8b696153725b949b901b6a14b4bcc3e39ee37af9",
+    "oaf_website/migration_config.py": "9c537cceaed6c84b3050f4db0a2510e6588e4259e927b35322e86cab91ab3587",
+    "oaf_website/migration_validation.py": "4f284e509574a27a3b56194cbad60b6fa929f1f77e2c2c7a650ac3c8a8e5d542",
+    "oaf_website/state_request_schema.py": "440924c43651c6b7d1e5c8745de705dd0ceeb589eb10422e805131ede51f9647",
+    "oaf_website/state_request_validation.py": "a04e8a50bf353dd1de03a3f310445adb9392a33d0ae8c441ebd877d03d32db5d",
+    "requirements-migrations.txt": "3154eef6a20748636332276d9a39e13b1d03585df55ab681b706362d294de33e",
+    "requirements.txt": "3f8e4f324231e88e0c7a9e1be05c9a26be0a1d5628a5b9947b2ee7794b96fb9d"
+  },
+  "revisions": [
+    {
+      "id": "0001_migration_baseline",
+      "parent": null,
+      "file": "migrations/versions/0001_migration_baseline.py",
+      "sha256": "bb51b33f3e064a02b8463593440820d65d01537f48a46b487b7cc327f0ea89a3",
+      "starting_state": "base",
+      "target_state": "0001_migration_baseline",
+      "grants": []
+    },
+    {
+      "id": "0002_state_requests",
+      "parent": "0001_migration_baseline",
+      "file": "migrations/versions/0002_state_requests.py",
+      "sha256": "c450ca44b71b8fa830e9fc231412f786952133d02ac8eb9db065fdb521fe01ad",
+      "starting_state": "0001_migration_baseline",
+      "target_state": "0002_state_requests",
+      "grants": [
+        {
+          "object": "oaf_website.state_requests",
+          "role": "matching_runtime",
+          "privileges": [
+            "SELECT",
+            "INSERT"
+          ],
+          "grant_option": false
+        }
+      ]
+    }
+  ],
+  "states": {
+    "base": {
+      "revision": null,
+      "managed_objects": []
+    },
+    "0001_migration_baseline": {
+      "revision": "0001_migration_baseline",
+      "managed_objects": [
+        {
+          "kind": "table",
+          "name": "alembic_version"
+        },
+        {
+          "kind": "index",
+          "name": "alembic_version_pkc"
+        },
+        {
+          "kind": "row_type",
+          "name": "alembic_version"
+        },
+        {
+          "kind": "array_type",
+          "name": "_alembic_version"
+        },
+        {
+          "kind": "primary_key",
+          "name": "alembic_version_pkc"
+        }
+      ]
+    },
+    "0002_state_requests": {
+      "revision": "0002_state_requests",
+      "managed_objects": [
+        {
+          "kind": "table",
+          "name": "alembic_version"
+        },
+        {
+          "kind": "index",
+          "name": "alembic_version_pkc"
+        },
+        {
+          "kind": "row_type",
+          "name": "alembic_version"
+        },
+        {
+          "kind": "array_type",
+          "name": "_alembic_version"
+        },
+        {
+          "kind": "primary_key",
+          "name": "alembic_version_pkc"
+        },
+        {
+          "kind": "table",
+          "name": "state_requests"
+        },
+        {
+          "kind": "index",
+          "name": "state_requests_pk"
+        },
+        {
+          "kind": "row_type",
+          "name": "state_requests"
+        },
+        {
+          "kind": "array_type",
+          "name": "_state_requests"
+        },
+        {
+          "kind": "primary_key",
+          "name": "state_requests_pk"
+        },
+        {
+          "kind": "check",
+          "name": "state_requests_state_check"
+        },
+        {
+          "kind": "default",
+          "name": "state_requests.created_at"
+        }
+      ]
+    }
+  },
+  "security": {
+    "schema": "oaf_website",
+    "owners": {
+      "development": "oaf_website_dev_schema_owner",
+      "testing": "oaf_website_test_schema_owner"
+    },
+    "schema_runtime_privileges": [
+      "USAGE"
+    ],
+    "runtime_object_grants": [
+      {
+        "object": "oaf_website.state_requests",
+        "role": "matching_runtime",
+        "privileges": [
+          "SELECT",
+          "INSERT"
+        ],
+        "grant_option": false
+      }
+    ],
+    "public_privileges": {
+      "schema": [],
+      "tables_and_columns": [],
+      "ordinary_types": [],
+      "generated_types": "exact_generated_type_exception"
+    },
+    "default_privileges": "owner_only_tables_sequences_routines_types",
+    "generated_type_exception": {
+      "objects": [
+        "oaf_website.alembic_version",
+        "oaf_website._alembic_version"
+      ],
+      "relationships": [
+        "row_type_internal_to_version_table",
+        "array_type_internal_to_row_type"
+      ],
+      "acl": "null_with_owner_and_public_usage_no_nonowner_grant_options",
+      "data_access": "no_public_or_runtime_metadata_privileges",
+      "ordinary_types": "no_public_usage_and_restrictive_owner_defaults"
+    },
+    "dependencies": {
+      "baseline_edges": [
+        [
+          "table",
+          0,
+          "schema",
+          0,
+          "n"
+        ],
+        [
+          "row_type",
+          0,
+          "table",
+          0,
+          "i"
+        ],
+        [
+          "array_type",
+          0,
+          "row_type",
+          0,
+          "i"
+        ],
+        [
+          "primary_key",
+          0,
+          "table",
+          1,
+          "a"
+        ],
+        [
+          "index",
+          0,
+          "primary_key",
+          0,
+          "i"
+        ]
+      ],
+      "schema_defaults": "matching_owner_r_S_f_T_auto_dependency_on_application_schema",
+      "global_defaults": "matching_owner_r_S_f_T_n_without_local_dependencies",
+      "builtin_dependencies": "pinned_objects_omitted_by_postgresql_17",
+      "other_inbound_outbound_edges": "prohibited_including_extension_membership",
+      "state_request_edges": [
+        [
+          "request_table",
+          0,
+          "schema",
+          0,
+          "n"
+        ],
+        [
+          "request_row_type",
+          0,
+          "request_table",
+          0,
+          "i"
+        ],
+        [
+          "request_array_type",
+          0,
+          "request_row_type",
+          0,
+          "i"
+        ],
+        [
+          "request_primary_key",
+          0,
+          "request_table",
+          1,
+          "a"
+        ],
+        [
+          "request_primary_key",
+          0,
+          "request_table",
+          2,
+          "a"
+        ],
+        [
+          "request_index",
+          0,
+          "request_primary_key",
+          0,
+          "i"
+        ],
+        [
+          "request_check",
+          0,
+          "request_table",
+          1,
+          "a"
+        ],
+        [
+          "request_check",
+          0,
+          "request_table",
+          1,
+          "n"
+        ],
+        [
+          "request_default",
+          0,
+          "request_table",
+          3,
+          "a"
+        ]
+      ]
+    },
+    "version_table": "oaf_website.alembic_version",
+    "postconditions": [
+      "exact_catalog_inventory",
+      "matching_object_owners",
+      "exact_version_table_definition",
+      "one_exact_revision_row",
+      "no_runtime_metadata_privileges",
+      "no_public_data_or_schema_exposure",
+      "exact_generated_type_usage_exception",
+      "exact_dependency_relationships",
+      "no_nonowner_grant_options",
+      "restrictive_global_and_schema_defaults",
+      "exact_state_request_definition",
+      "exact_state_request_runtime_grants"
+    ],
+    "state_request_types": "private_row_type_array_uses_element_acl_no_public_or_runtime_usage"
+  }
+}
