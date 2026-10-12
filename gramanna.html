@@ -190,19 +190,17 @@
         <div>
           <p class="eyebrow">Launch &amp; Availability Notifications</p>
           <h2 id="notifications-title">Stay close to what's next.</h2>
-          <p class="placeholder-text">When subscriptions open, choose which GraManna announcements you'd like to receive, from application launches to availability in your state.</p>
-          <span class="availability-badge">Subscriptions forthcoming</span>
+          <p class="placeholder-text">Choose which future GraManna announcements you'd like to receive, from application launches to availability in your state. No account is needed.</p>
         </div>
 
-        <!-- Visual preview only: no form, submission handler, or data storage. -->
-        <div class="interface-card notification-preview" role="group" aria-labelledby="notification-preview-title" aria-describedby="subscription-note">
-          <h3 id="notification-preview-title">Choose your future updates</h3>
-          <p id="subscription-note" class="interface-note">Subscriptions are not yet open. Preview your choices below; nothing is saved or sent, and email entry is disabled.</p>
+        <form id="notification-form" class="interface-card notification-preview" aria-labelledby="notification-preview-title" aria-describedby="subscription-note">
+          <h3 id="notification-preview-title">Choose your updates</h3>
+          <p id="subscription-note" class="interface-note">We save your email and selected preferences for future announcements. Email delivery is not connected yet; no confirmation email will be sent.</p>
           <label class="field-label" for="notification-email">Email address</label>
-          <input class="form-control" id="notification-email" type="email" placeholder="you@example.com" disabled aria-describedby="subscription-note">
+          <input class="form-control" id="notification-email" name="email" type="email" maxlength="254" autocomplete="email" placeholder="you@example.com" required aria-describedby="subscription-note">
 
           <fieldset class="notification-preferences">
-            <legend>I'd like to hear about <span class="interface-note">(select any)</span></legend>
+            <legend>I'd like to hear about <span class="interface-note">(select at least one)</span></legend>
             <label class="preference-option"><input type="checkbox" id="notify-web" autocomplete="off"> <span>Web application launch</span></label>
             <label class="preference-option"><input type="checkbox" id="notify-android" autocomplete="off"> <span>Android application release</span></label>
             <label class="preference-option"><input type="checkbox" id="notify-ios" autocomplete="off"> <span>Apple iOS application release</span></label>
@@ -265,10 +263,20 @@
               <option value="WY">Wyoming</option>
             </select>
           </div>
-          <noscript><p class="interface-note">Enable JavaScript to preview the state notification selector.</p></noscript>
+          <label class="preference-option"><input type="checkbox" id="notification-consent" required autocomplete="off"> <span>I consent to Ovis Alms Foundation storing my email and preferences and emailing me the announcements I select. I can unsubscribe at any time.</span></label>
+          <p class="interface-note">An existing active subscription keeps its original choices. To change them, use its private link to unsubscribe, then subscribe again.</p>
+          <noscript><p class="interface-note">Enable JavaScript to subscribe or unsubscribe.</p></noscript>
 
-          <button class="button" type="button" disabled>Subscribe &mdash; coming later</button>
-        </div>
+          <button class="button" type="submit" disabled>Subscribe</button>
+          <p id="notification-message" class="interface-note" role="status" aria-live="polite" aria-atomic="true"></p>
+          <p id="notification-receipt" class="interface-note" hidden><a id="notification-unsubscribe-link">Save this private unsubscribe link</a>. It controls a subscription created by this submission; a duplicate signup cannot replace an existing subscription's link. Keep it private.</p>
+          <div id="notification-unsubscribe" hidden>
+            <h3 id="unsubscribe-title" tabindex="-1">Unsubscribe from announcements</h3>
+            <p class="interface-note">This private link withdraws all preferences for the subscription it controls. Opening the link makes no change until you select Unsubscribe.</p>
+            <button id="notification-unsubscribe-button" class="button" type="button" disabled>Unsubscribe</button>
+            <p id="notification-unsubscribe-message" class="interface-note" role="status" aria-live="polite" aria-atomic="true"></p>
+          </div>
+        </form>
       </div>
     </section>
 
@@ -292,20 +300,6 @@
   </footer>
 
   <script src="assets/state-requests.js" defer></script>
-  <script>
-    // Only toggle the local preview. No data is collected, stored, or transmitted.
-    const statePreference = document.getElementById('notify-state');
-    const stateField = document.getElementById('notification-state-field');
-    const stateSelect = document.getElementById('notification-state');
-
-    function updateStatePreview() {
-      stateField.hidden = !statePreference.checked;
-      stateSelect.disabled = !statePreference.checked;
-    }
-
-    statePreference.addEventListener('change', updateStatePreview);
-    window.addEventListener('pageshow', updateStatePreview);
-    updateStatePreview();
-  </script>
+  <script src="assets/notifications.js" defer></script>
 </body>
 </html>

@@ -9,9 +9,11 @@
     "oaf_website/__init__.py": "ad4cfd8e9137a2e69abe6fdad18114a9918fccf918cbe59e181a9edd78436eb5",
     "oaf_website/database_config.py": "bffc9d41024c7d562944d67c55cff254e63c0f5c83f54ec4b2384c64ab51ed60",
     "oaf_website/migrate.py": "706a6fefaca086f43bd2729c1cafefdb5bfe3bbd2f71e7a404e2e922454ae1e0",
-    "oaf_website/migration_authority.py": "120270246bafd7b86daf5e8f8b696153725b949b901b6a14b4bcc3e39ee37af9",
+    "oaf_website/migration_authority.py": "7654a552106b7ef3ec5827decf0ea9f61b317b2265c4364a0d5d7278549da6ce",
     "oaf_website/migration_config.py": "9c537cceaed6c84b3050f4db0a2510e6588e4259e927b35322e86cab91ab3587",
-    "oaf_website/migration_validation.py": "4f284e509574a27a3b56194cbad60b6fa929f1f77e2c2c7a650ac3c8a8e5d542",
+    "oaf_website/migration_validation.py": "a5ef986aae4515d0f39c416dad812a0479c094b9d5b81a37c04d298f88b05b23",
+    "oaf_website/notification_schema.py": "8609e44436663db7d7a99ec7964ebaec4658b0491412d366b17f4d7850bd77e4",
+    "oaf_website/notification_validation.py": "939200c718fa5131427315ce6b7f10ebe4177653c7744d54c3e593d263a26267",
     "oaf_website/state_request_schema.py": "440924c43651c6b7d1e5c8745de705dd0ceeb589eb10422e805131ede51f9647",
     "oaf_website/state_request_validation.py": "a04e8a50bf353dd1de03a3f310445adb9392a33d0ae8c441ebd877d03d32db5d",
     "requirements-migrations.txt": "3154eef6a20748636332276d9a39e13b1d03585df55ab681b706362d294de33e",
@@ -41,6 +43,33 @@
           "privileges": [
             "SELECT",
             "INSERT"
+          ],
+          "grant_option": false
+        }
+      ]
+    },
+    {
+      "id": "0003_notifications",
+      "parent": "0002_state_requests",
+      "file": "migrations/versions/0003_notifications.py",
+      "sha256": "1c575d679981556a782c0f279097fd6f0fd47d6c2b7613d3a323424f0e61f452",
+      "starting_state": "0002_state_requests",
+      "target_state": "0003_notifications",
+      "grants": [
+        {
+          "object": "oaf_website.notifications",
+          "role": "matching_runtime",
+          "privileges": [
+            "SELECT",
+            "INSERT"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notifications.unsubscribed_at",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
           ],
           "grant_option": false
         }
@@ -129,6 +158,111 @@
           "name": "state_requests.created_at"
         }
       ]
+    },
+    "0003_notifications": {
+      "revision": "0003_notifications",
+      "managed_objects": [
+        {
+          "kind": "table",
+          "name": "alembic_version"
+        },
+        {
+          "kind": "index",
+          "name": "alembic_version_pkc"
+        },
+        {
+          "kind": "row_type",
+          "name": "alembic_version"
+        },
+        {
+          "kind": "array_type",
+          "name": "_alembic_version"
+        },
+        {
+          "kind": "primary_key",
+          "name": "alembic_version_pkc"
+        },
+        {
+          "kind": "table",
+          "name": "state_requests"
+        },
+        {
+          "kind": "index",
+          "name": "state_requests_pk"
+        },
+        {
+          "kind": "row_type",
+          "name": "state_requests"
+        },
+        {
+          "kind": "array_type",
+          "name": "_state_requests"
+        },
+        {
+          "kind": "primary_key",
+          "name": "state_requests_pk"
+        },
+        {
+          "kind": "check",
+          "name": "state_requests_state_check"
+        },
+        {
+          "kind": "default",
+          "name": "state_requests.created_at"
+        },
+        {
+          "kind": "table",
+          "name": "notifications"
+        },
+        {
+          "kind": "index",
+          "name": "notifications_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notifications_active_email"
+        },
+        {
+          "kind": "row_type",
+          "name": "notifications"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notifications"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notifications_pk"
+        },
+        {
+          "kind": "check",
+          "name": "notifications_token_check"
+        },
+        {
+          "kind": "check",
+          "name": "notifications_email_check"
+        },
+        {
+          "kind": "check",
+          "name": "notifications_preferences_check"
+        },
+        {
+          "kind": "check",
+          "name": "notifications_state_check"
+        },
+        {
+          "kind": "check",
+          "name": "notifications_consent_check"
+        },
+        {
+          "kind": "check",
+          "name": "notifications_lifecycle_check"
+        },
+        {
+          "kind": "default",
+          "name": "notifications.created_at"
+        }
+      ]
     }
   },
   "security": {
@@ -147,6 +281,23 @@
         "privileges": [
           "SELECT",
           "INSERT"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notifications",
+        "role": "matching_runtime",
+        "privileges": [
+          "SELECT",
+          "INSERT"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notifications.unsubscribed_at",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
         ],
         "grant_option": false
       }
@@ -277,6 +428,204 @@
           3,
           "a"
         ]
+      ],
+      "notification_edges": [
+        [
+          "notification_table",
+          0,
+          "schema",
+          0,
+          "n"
+        ],
+        [
+          "notification_row_type",
+          0,
+          "notification_table",
+          0,
+          "i"
+        ],
+        [
+          "notification_array_type",
+          0,
+          "notification_row_type",
+          0,
+          "i"
+        ],
+        [
+          "notification_primary_key",
+          0,
+          "notification_table",
+          1,
+          "a"
+        ],
+        [
+          "notification_index",
+          0,
+          "notification_primary_key",
+          0,
+          "i"
+        ],
+        [
+          "notification_active_index",
+          0,
+          "notification_table",
+          2,
+          "a"
+        ],
+        [
+          "notification_active_index",
+          0,
+          "notification_table",
+          9,
+          "a"
+        ],
+        [
+          "notification_default",
+          0,
+          "notification_table",
+          8,
+          "a"
+        ],
+        [
+          "notification_notifications_token_check",
+          0,
+          "notification_table",
+          1,
+          "a"
+        ],
+        [
+          "notification_notifications_token_check",
+          0,
+          "notification_table",
+          1,
+          "n"
+        ],
+        [
+          "notification_notifications_email_check",
+          0,
+          "notification_table",
+          2,
+          "a"
+        ],
+        [
+          "notification_notifications_email_check",
+          0,
+          "notification_table",
+          2,
+          "n"
+        ],
+        [
+          "notification_notifications_preferences_check",
+          0,
+          "notification_table",
+          3,
+          "a"
+        ],
+        [
+          "notification_notifications_preferences_check",
+          0,
+          "notification_table",
+          3,
+          "n"
+        ],
+        [
+          "notification_notifications_preferences_check",
+          0,
+          "notification_table",
+          4,
+          "a"
+        ],
+        [
+          "notification_notifications_preferences_check",
+          0,
+          "notification_table",
+          4,
+          "n"
+        ],
+        [
+          "notification_notifications_preferences_check",
+          0,
+          "notification_table",
+          5,
+          "a"
+        ],
+        [
+          "notification_notifications_preferences_check",
+          0,
+          "notification_table",
+          5,
+          "n"
+        ],
+        [
+          "notification_notifications_preferences_check",
+          0,
+          "notification_table",
+          6,
+          "a"
+        ],
+        [
+          "notification_notifications_preferences_check",
+          0,
+          "notification_table",
+          6,
+          "n"
+        ],
+        [
+          "notification_notifications_state_check",
+          0,
+          "notification_table",
+          6,
+          "a"
+        ],
+        [
+          "notification_notifications_state_check",
+          0,
+          "notification_table",
+          6,
+          "n"
+        ],
+        [
+          "notification_notifications_consent_check",
+          0,
+          "notification_table",
+          7,
+          "a"
+        ],
+        [
+          "notification_notifications_consent_check",
+          0,
+          "notification_table",
+          7,
+          "n"
+        ],
+        [
+          "notification_notifications_lifecycle_check",
+          0,
+          "notification_table",
+          9,
+          "a"
+        ],
+        [
+          "notification_notifications_lifecycle_check",
+          0,
+          "notification_table",
+          9,
+          "n"
+        ],
+        [
+          "notification_notifications_lifecycle_check",
+          0,
+          "notification_table",
+          8,
+          "a"
+        ],
+        [
+          "notification_notifications_lifecycle_check",
+          0,
+          "notification_table",
+          8,
+          "n"
+        ]
       ]
     },
     "version_table": "oaf_website.alembic_version",
@@ -292,8 +641,11 @@
       "no_nonowner_grant_options",
       "restrictive_global_and_schema_defaults",
       "exact_state_request_definition",
-      "exact_state_request_runtime_grants"
+      "exact_state_request_runtime_grants",
+      "exact_notification_definition",
+      "exact_notification_runtime_grants"
     ],
-    "state_request_types": "private_row_type_array_uses_element_acl_no_public_or_runtime_usage"
+    "state_request_types": "private_row_type_array_uses_element_acl_no_public_or_runtime_usage",
+    "notification_types": "private_row_type_array_uses_element_acl_no_public_or_runtime_usage"
   }
 }

@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SECRET_PATH = ROOT / "config/local/state-request-recognition.dpapi"
 PUBLIC_FILES = (
     "index.html", "about.html", "gramanna.html", "styles.css",
-    "assets/state-requests.js", "assets/images/gramanna-logo.png",
+    "assets/state-requests.js", "assets/notifications.js", "assets/images/gramanna-logo.png",
     "assets/images/hero-gifts.webp",
 )
 

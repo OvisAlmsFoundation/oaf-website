@@ -57,6 +57,7 @@ APPROVED_TESTS = frozenset({
     "tests/test_migration_provenance.py",
     "tests/test_migration_operational.py",
     "tests/test_state_requests.py", "tests/test_state_request_migration.py",
+    "tests/test_notifications.py", "tests/test_notification_migration.py",
 })
 _guard = pytest.MonkeyPatch()
 _REAL_AUDIT = str(Path(os.environ.get('LOCALAPPDATA', 'C:/unavailable')) /

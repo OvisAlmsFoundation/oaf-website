@@ -20,6 +20,7 @@ def main():
         '/gramanna.html': ('text/html', (ROOT/'gramanna.html').read_bytes()),
         '/styles.css': ('text/css', (ROOT/'styles.css').read_bytes()),
         '/assets/state-requests.js': ('application/javascript', (ROOT/'assets/state-requests.js').read_bytes()),
+        '/assets/notifications.js': ('application/javascript', (ROOT/'assets/notifications.js').read_bytes()),
         '/assets/images/gramanna-logo.png': ('image/png', (ROOT/'assets/images/gramanna-logo.png').read_bytes()),
     }
     errors, unexpected = [], []
@@ -136,7 +137,7 @@ def main():
                 expect(state).to_be_enabled()
                 expect(button).to_be_enabled()
                 assert page.locator('html').evaluate('(node) => node.scrollWidth <= window.innerWidth')
-                assert page.get_by_role('button', name='Subscribe — coming later').is_disabled()
+                expect(page.get_by_role('button', name='Subscribe', exact=True)).to_be_enabled()
                 context.close()
                 print(f'PASS: {width}px card, 50 states, keyboard, acceptance, duplicate, multiple states, errors and totals failure')
         finally:

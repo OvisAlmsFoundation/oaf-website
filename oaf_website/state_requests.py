@@ -101,7 +101,8 @@ def _origin(value):
         return None
 
 
-def _build_app(store, recognition, public_origin, *, allow_insecure_localhost=False):
+def _build_app(store, recognition, public_origin, *, allow_insecure_localhost=False,
+               subscription_store=None):
     trusted = _origin(public_origin)
     parts = urlsplit(public_origin)
     if (trusted is None or parts.path not in {"", "/"} or parts.query
@@ -134,6 +135,12 @@ def _build_app(store, recognition, public_origin, *, allow_insecure_localhost=Fa
             return _origin(referer) == trusted
         return not mutation
 
+    def valid_csrf():
+        token = recognition.read(request.cookies.get(cookie_name))
+        csrf = request.headers.get("X-CSRF-Token", "")
+        return (token is not None and re.fullmatch(r"[0-9a-f]{64}", csrf) is not None
+                and hmac.compare_digest(recognition.csrf(token), csrf))
+
     @app.after_request
     def private_response(response):
         response.headers["Cache-Control"] = "no-store"
@@ -143,8 +150,11 @@ def _build_app(store, recognition, public_origin, *, allow_insecure_localhost=Fa
 
     @app.errorhandler(RequestEntityTooLarge)
     def too_large(_error):
+        if request.path.startswith("/api/notifications"):
+            return error("Submit only the email, preferences and consent fields.", 413)
         return error("Choose one state and try again.", 413)
 
+    @app.get("/api/notifications/session")
     @app.get("/api/state-requests/session")
     def browser_session():
         if not same_origin():
@@ -199,6 +209,10 @@ def _build_app(store, recognition, public_origin, *, allow_insecure_localhost=Fa
             return error("State totals are temporarily unavailable.", 503)
         return jsonify(totals=counts)
 
+    if subscription_store is not None:
+        from .notifications import UnsubscribeCapabilities, register_notifications
+        register_notifications(app, subscription_store, UnsubscribeCapabilities(recognition.secret),
+                               same_origin, valid_csrf, error)
     return app
 
 
@@ -224,7 +238,9 @@ def create_app(*, expected_profile, recognition_secret, public_origin,
     event.listen(engine, "checkout", lambda dbapi, record, proxy:
                  _verify_checkout(config, dbapi, record, proxy))
     # Build again with the configured store. No engine connection occurs here.
+    from .notifications import SubscriptionStore
     app = _build_app(RequestStore(engine), recognition, public_origin,
-                     allow_insecure_localhost=allow_insecure_localhost)
+                     allow_insecure_localhost=allow_insecure_localhost,
+                     subscription_store=SubscriptionStore(engine))
     app.extensions["state_requests_engine"] = engine
     return app

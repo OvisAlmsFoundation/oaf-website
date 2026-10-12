@@ -16,6 +16,7 @@ from sqlalchemy import text
 
 from .migration_config import IDENTITIES, Failure, MigrationError
 from .state_request_schema import STATE_REQUESTS, REQUEST_OBJECTS, REQUEST_GRANTS, REQUEST_EDGES
+from .notification_schema import NOTIFICATIONS, NOTIFICATION_OBJECTS, NOTIFICATION_GRANTS, NOTIFICATION_EDGES
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,10 +30,12 @@ FRAMEWORK_FILES = frozenset({
     "oaf_website/migration_authority.py",
     "requirements.txt",
     "oaf_website/state_request_schema.py", "oaf_website/state_request_validation.py",
+    "oaf_website/notification_schema.py", "oaf_website/notification_validation.py",
 })
 REVISION_FILE = f"migrations/versions/{BASELINE}.py"
 REQUEST_REVISION_FILE = f"migrations/versions/{STATE_REQUESTS}.py"
-REVISION_FILES = frozenset({REVISION_FILE, REQUEST_REVISION_FILE})
+NOTIFICATION_REVISION_FILE = f"migrations/versions/{NOTIFICATIONS}.py"
+REVISION_FILES = frozenset({REVISION_FILE, REQUEST_REVISION_FILE, NOTIFICATION_REVISION_FILE})
 HASH_MODE = "sha256-utf8-lf"
 STATE_CONTRACT = {
     "base": {"revision": None, "managed_objects": []},
@@ -50,6 +53,10 @@ STATE_CONTRACT = {
 STATE_CONTRACT[STATE_REQUESTS] = {
     "revision": STATE_REQUESTS,
     "managed_objects": STATE_CONTRACT[BASELINE]["managed_objects"] + REQUEST_OBJECTS,
+}
+STATE_CONTRACT[NOTIFICATIONS] = {
+    "revision": NOTIFICATIONS,
+    "managed_objects": STATE_CONTRACT[STATE_REQUESTS]["managed_objects"] + NOTIFICATION_OBJECTS,
 }
 SECURITY_CONTRACT = {
     "schema": "oaf_website",
@@ -90,10 +97,13 @@ SECURITY_CONTRACT = {
         "no_nonowner_grant_options", "restrictive_global_and_schema_defaults",
     ],
 }
-SECURITY_CONTRACT["runtime_object_grants"] = REQUEST_GRANTS
+SECURITY_CONTRACT["runtime_object_grants"] = REQUEST_GRANTS + NOTIFICATION_GRANTS
 SECURITY_CONTRACT["state_request_types"] = "private_row_type_array_uses_element_acl_no_public_or_runtime_usage"
 SECURITY_CONTRACT["dependencies"]["state_request_edges"] = REQUEST_EDGES
 SECURITY_CONTRACT["postconditions"] += ["exact_state_request_definition", "exact_state_request_runtime_grants"]
+SECURITY_CONTRACT["notification_types"] = "private_row_type_array_uses_element_acl_no_public_or_runtime_usage"
+SECURITY_CONTRACT["dependencies"]["notification_edges"] = NOTIFICATION_EDGES
+SECURITY_CONTRACT["postconditions"] += ["exact_notification_definition", "exact_notification_runtime_grants"]
 
 
 def digest(data: bytes) -> str:
@@ -221,7 +231,8 @@ def validate_artifacts(
 
 def _validate_artifacts(start, target, manifest_hash, revision_hash):
     if (start, target) not in {(BASE, BASELINE), (BASELINE, BASELINE),
-                               (BASELINE, STATE_REQUESTS), (STATE_REQUESTS, STATE_REQUESTS)}:
+                               (BASELINE, STATE_REQUESTS), (STATE_REQUESTS, STATE_REQUESTS),
+                               (STATE_REQUESTS, NOTIFICATIONS), (NOTIFICATIONS, NOTIFICATIONS)}:
         raise MigrationError(Failure.STARTING_REVISION)
     if any(not isinstance(h, str) or not re.fullmatch(r"[0-9a-f]{64}", h)
            for h in (manifest_hash, revision_hash)):
@@ -243,7 +254,7 @@ def _validate_artifacts(start, target, manifest_hash, revision_hash):
     if set(framework) != FRAMEWORK_FILES:
         raise MigrationError(Failure.ARTIFACT_HASH)
     revisions = document["revisions"]
-    if not isinstance(revisions, list) or len(revisions) != 2:
+    if not isinstance(revisions, list) or len(revisions) != 3:
         raise MigrationError(Failure.ARTIFACT_HASH)
     if revisions[0] != {
         "id": BASELINE, "parent": None, "file": REVISION_FILE,
@@ -253,7 +264,11 @@ def _validate_artifacts(start, target, manifest_hash, revision_hash):
         "id": STATE_REQUESTS, "parent": BASELINE, "file": REQUEST_REVISION_FILE,
         "sha256": revisions[1].get("sha256"), "starting_state": BASELINE,
         "target_state": STATE_REQUESTS, "grants": REQUEST_GRANTS,
-    } or revision_hash != revisions[0 if target == BASELINE else 1]["sha256"]:
+    } or revisions[2] != {
+        "id": NOTIFICATIONS, "parent": STATE_REQUESTS, "file": NOTIFICATION_REVISION_FILE,
+        "sha256": revisions[2].get("sha256"), "starting_state": STATE_REQUESTS,
+        "target_state": NOTIFICATIONS, "grants": NOTIFICATION_GRANTS,
+    } or revision_hash != next(r["sha256"] for r in revisions if r["id"] == target):
         raise MigrationError(Failure.ARTIFACT_HASH)
     # Explicit single linear root, no missing ancestors/branches/second heads.
     migration_files = {
@@ -326,6 +341,18 @@ def downgrade():
             and isinstance(request_tree.body[0].value.value, str)):
         request_tree.body.pop(0)
     if ast.dump(request_tree) != ast.dump(ast.parse(expected_request_revision)):
+        raise MigrationError(Failure.ARTIFACT_HASH)
+    expected_notification_revision = expected_request_revision.replace(
+        "state_request_schema", "notification_schema").replace(
+        "upgrade_state_requests", "upgrade_notifications").replace(
+        'revision = "0002_state_requests"', 'revision = "0003_notifications"').replace(
+        'down_revision = "0001_migration_baseline"', 'down_revision = "0002_state_requests"')
+    notification_tree = ast.parse((ROOT / NOTIFICATION_REVISION_FILE).read_text(encoding="utf-8"))
+    if (notification_tree.body and isinstance(notification_tree.body[0], ast.Expr)
+            and isinstance(notification_tree.body[0].value, ast.Constant)
+            and isinstance(notification_tree.body[0].value.value, str)):
+        notification_tree.body.pop(0)
+    if ast.dump(notification_tree) != ast.dump(ast.parse(expected_notification_revision)):
         raise MigrationError(Failure.ARTIFACT_HASH)
     return VerifiedArtifacts(manifest_hash, revision_hash, start, target)
 
@@ -577,13 +604,16 @@ def catalog_state(connection, identity) -> str:
         FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
         WHERE n.nspname='oaf_website' ORDER BY c.relname
     """)
-    state = (BASE if not relations else STATE_REQUESTS
+    state = (BASE if not relations else NOTIFICATIONS
+             if any(r["name"] == "notifications" for r in relations) else STATE_REQUESTS
              if any(r["name"] == "state_requests" for r in relations) else BASELINE)
     names = [(r["name"], r["kind"]) for r in relations]
     expected_relations = [] if state == BASE else [("alembic_version", "r"), ("alembic_version_pkc", "i")]
-    if state == STATE_REQUESTS:
+    if state in {STATE_REQUESTS, NOTIFICATIONS}:
         expected_relations += [("state_requests", "r"), ("state_requests_pk", "i")]
-    if names != expected_relations:
+    if state == NOTIFICATIONS:
+        expected_relations += [("notifications", "r"), ("notifications_pk", "i"), ("notifications_active_email", "i")]
+    if names != sorted(expected_relations):
         raise MigrationError(Failure.DRIFT)
     if any(r["owner"] != identity.owner or r["persistence"] != "p"
            or r["rls"] or r["force_rls"] or r["rules"] or r["triggers"] or r["options"]
@@ -600,8 +630,10 @@ def catalog_state(connection, identity) -> str:
         raise MigrationError(Failure.DRIFT)
     if state != BASE:
         expected_types = [("_alembic_version", "b", identity.owner), ("alembic_version", "c", identity.owner)]
-        if state == STATE_REQUESTS:
+        if state in {STATE_REQUESTS, NOTIFICATIONS}:
             expected_types += [("_state_requests", "b", identity.owner), ("state_requests", "c", identity.owner)]
+        if state == NOTIFICATIONS:
+            expected_types += [("_notifications", "b", identity.owner), ("notifications", "c", identity.owner)]
         if ([(t["name"], t["kind"], t["owner"]) for t in types] != sorted(expected_types)
                 or any(not t["element"] if t["kind"] == "b" else not t["relation"] for t in types)):
             raise MigrationError(Failure.DRIFT)
@@ -619,9 +651,12 @@ def catalog_state(connection, identity) -> str:
         """):
             raise MigrationError(Failure.DRIFT)
         verify_generated_type_privileges(connection, identity)
-        if state == STATE_REQUESTS:
+        if state in {STATE_REQUESTS, NOTIFICATIONS}:
             from .state_request_validation import verify_state_requests
             verify_state_requests(connection, identity)
+        if state == NOTIFICATIONS:
+            from .notification_validation import verify_notifications
+            verify_notifications(connection, identity)
     verify_dependencies(connection, identity, state)
     if state == BASE:
         if scalar(connection, """
@@ -691,6 +726,9 @@ def verify_dependencies(connection, identity, state):
         UNION ALL
         SELECT CASE WHEN c.relname='state_requests' THEN 'request_table'
                     WHEN c.relname='state_requests_pk' THEN 'request_index'
+                    WHEN c.relname='notifications' THEN 'notification_table'
+                    WHEN c.relname='notifications_pk' THEN 'notification_index'
+                    WHEN c.relname='notifications_active_email' THEN 'notification_active_index'
                     ELSE CASE c.relkind WHEN 'r' THEN 'table' WHEN 'i' THEN 'index' ELSE 'unexpected' END END,
                'pg_catalog.pg_class'::pg_catalog.regclass::bigint, c.oid::bigint
           FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
@@ -698,18 +736,24 @@ def verify_dependencies(connection, identity, state):
         UNION ALL
         SELECT CASE WHEN t.typname='state_requests' THEN 'request_row_type'
                     WHEN t.typname='_state_requests' THEN 'request_array_type'
+                    WHEN t.typname='notifications' THEN 'notification_row_type'
+                    WHEN t.typname='_notifications' THEN 'notification_array_type'
                     ELSE CASE t.typtype WHEN 'c' THEN 'row_type' ELSE 'array_type' END END,
                'pg_catalog.pg_type'::pg_catalog.regclass::bigint, t.oid::bigint
           FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace
          WHERE n.nspname='oaf_website'
         UNION ALL
         SELECT CASE WHEN c.conname='state_requests_pk' THEN 'request_primary_key'
-                    WHEN c.conname='state_requests_state_check' THEN 'request_check' ELSE 'primary_key' END,
+                    WHEN c.conname='state_requests_state_check' THEN 'request_check'
+                    WHEN c.conname='notifications_pk' THEN 'notification_primary_key'
+                    WHEN c.conname LIKE 'notifications_%' THEN 'notification_' || c.conname
+                    ELSE 'primary_key' END,
                'pg_catalog.pg_constraint'::pg_catalog.regclass::bigint, c.oid::bigint
           FROM pg_catalog.pg_constraint c JOIN pg_catalog.pg_namespace n ON n.oid=c.connamespace
          WHERE n.nspname='oaf_website'
         UNION ALL
-        SELECT 'request_default', 'pg_catalog.pg_attrdef'::pg_catalog.regclass::bigint, d.oid::bigint
+        SELECT CASE WHEN c.relname='notifications' THEN 'notification_default' ELSE 'request_default' END,
+               'pg_catalog.pg_attrdef'::pg_catalog.regclass::bigint, d.oid::bigint
           FROM pg_catalog.pg_attrdef d JOIN pg_catalog.pg_class c ON c.oid=d.adrelid
           JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
          WHERE n.nspname='oaf_website'
@@ -723,9 +767,11 @@ def verify_dependencies(connection, identity, state):
     labels = [o['label'] for o in objects]
     expected_labels = {'schema'} if state == BASE else {
         'schema', 'table', 'index', 'row_type', 'array_type', 'primary_key'}
-    if state == STATE_REQUESTS:
+    if state in {STATE_REQUESTS, NOTIFICATIONS}:
         expected_labels |= {'request_table', 'request_index', 'request_row_type',
                             'request_array_type', 'request_primary_key', 'request_check', 'request_default'}
+    if state == NOTIFICATIONS:
+        expected_labels |= {edge[0] for edge in NOTIFICATION_EDGES}
     if (len(set(labels)) != len(labels) or
             {v for v in labels if not v.startswith('default_')} != expected_labels):
         raise MigrationError(Failure.DRIFT)
@@ -750,8 +796,10 @@ def verify_dependencies(connection, identity, state):
         actual.append((source, d['objsubid'], target, d['refobjsubid'], d['deptype']))
     expected = set() if state == BASE else {
         tuple(edge) for edge in SECURITY_CONTRACT['dependencies']['baseline_edges']}
-    if state == STATE_REQUESTS:
+    if state in {STATE_REQUESTS, NOTIFICATIONS}:
         expected |= {tuple(edge) for edge in REQUEST_EDGES}
+    if state == NOTIFICATIONS:
+        expected |= {tuple(edge) for edge in NOTIFICATION_EDGES}
     for label in labels:
         if label.startswith('default_'):
             _, namespace, kind = label.split('_')

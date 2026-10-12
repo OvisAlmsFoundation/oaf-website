@@ -1,0 +1,31 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "OAF Website: Start DEVELOPMENT",
+      "type": "process",
+      "command": "${env:windir}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-STA",
+        "-ExecutionPolicy",
+        "RemoteSigned",
+        "-Command",
+        "$ErrorActionPreference = 'Stop'; $taskMutex = New-Object System.Threading.Mutex($false, 'Local\\OAF.Website.Development.5055'); $taskOwnsMutex = $false; try { try { $taskOwnsMutex = $taskMutex.WaitOne(0) } catch [System.Threading.AbandonedMutexException] { $taskOwnsMutex = $true }; if (-not $taskOwnsMutex) { Write-Host 'DEVELOPMENT launch is already active; existing server left running.'; exit 0 }; $taskListeners = [System.Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties().GetActiveTcpListeners(); if (@($taskListeners | Where-Object { $_.Port -eq 5055 }).Count -gt 0) { Write-Host 'Port 5055 is already in use; existing server left running.'; exit 0 }; & '.\\ops\\Start-DevelopmentWebsite.ps1'; exit $LASTEXITCODE } finally { if ($taskOwnsMutex) { $taskMutex.ReleaseMutex() }; $taskMutex.Dispose() }"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "runOptions": {
+        "instanceLimit": 1,
+        "instancePolicy": "silent"
+      },
+      "presentation": {
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    }
+  ]
+}
