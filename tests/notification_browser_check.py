@@ -14,6 +14,7 @@ def main():
     files = { '/'+name: (mime,(ROOT/name).read_bytes()) for name,mime in [
         ('gramanna.html','text/html'),('styles.css','text/css'),
         ('assets/state-requests.js','application/javascript'),('assets/notifications.js','application/javascript'),
+        ('assets/email-confirmation.js','application/javascript'),
         ('assets/images/gramanna-logo.png','image/png')] }
     errors,unexpected = [],[]
     with sync_playwright() as playwright:

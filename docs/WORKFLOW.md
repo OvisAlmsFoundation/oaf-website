@@ -1514,3 +1514,864 @@ with no missing branches on changed decisions. Unrelated historical policy
 logic is outside this focused coverage claim; no coverage exclusions or
 weakened assertions are used. Synthetic transaction/catalog tests do not
 certify real PostgreSQL locking, rendering, dependency or privilege semantics.
+
+
+## R38: public notification email confirmation integration (2026-10-17)
+
+**SOURCE IMPLEMENTED / OFFLINE VALIDATED. LIVE EMAIL DELIVERY / OPERATIONAL
+ACTIVATION: OFF, not performed or authorized.** This entry supersedes earlier
+public confirmation integration deferrals only for this source checkpoint.
+The owner reports migrations 0001--0005 applied and verified in TESTING and
+DEVELOPMENT; R38 does not reopen or revalidate those campaigns.
+
+Repository: OAF Website, branch `main`; starting/final HEAD
+`b2f0069be87741b21a054f9ced5411bdb90afd03`. The initial index and working tree
+were clean. All work remains unstaged. No commit or push is performed. No
+GraManna source is accessed or modified; only the already approved shared
+Playwright interpreter/installation is executed, from the OAF Website directory.
+
+### Implemented public contract and activation control
+
+- `create_app(..., confirmation_enabled=False)` is the server activation seam.
+  Only an explicit Boolean `True` injects `NotificationDeliveryStore` using the
+  existing verified engine, matching environment and persistent protected key.
+  Invalid flag types fail before configuration/credential access. No environment
+  default, local launcher, protected configuration or deployment setting changes.
+  This flag enables persistence/public confirmation only; it never constructs a
+  provider adapter, reads a Brevo key or invokes a dispatcher.
+- `/api/notifications/session` retains the browser cookie and CSRF contract and
+  adds the nonprivate `confirmation_enabled` Boolean. Other session responses
+  retain their prior shape. The browser hides request/resend controls while off.
+  Both new POST routes return sanitized 503 unavailability while off, including
+  for previously valid tokens, without touching verification, quotas or intents.
+  Existing subscription/unsubscribe behavior and truthful no-email-sent copy
+  remain intact.
+- `POST /api/notifications/confirmation` accepts exactly `{"email":"..."}`.
+  It reuses same-origin/fetch-metadata enforcement, browser-bound CSRF, the 1 KiB
+  body bound, strict UTF-8 JSON parsing and existing email normalization. Reused
+  strict JSON hooks reject duplicate keys and nonstandard constants; the shared
+  notification parser also hardens signup/unsubscribe consistently. Valid known,
+  unknown, verified, withdrawn, suppressed and quota-limited addresses receive
+  identical HTTP 200/status/message: "If confirmation is needed and permitted,
+  we'll email a link." The sensitive internal token return is discarded. There
+  is no existence, eligibility, quota or email lookup response.
+- `POST /api/notifications/confirm` accepts exactly `{"token":"..."}` and
+  delegates to the unchanged lifecycle-bound `confirm` operation. Successful
+  ownership confirmation returns "Your email is confirmed." Malformed,
+  unknown, expired, future-issued, superseded, withdrawn or suppressed links
+  receive a sanitized unavailable response: "This link is unavailable. Request
+  a new confirmation link." Persistence/commit uncertainty returns sanitized
+  503 and permits a deliberate safe repeat. No provider result sets verification.
+- The existing notification card provides a separately labeled request/resend
+  form and an explicit Confirm email button. `#confirm-email=` and preserved
+  `#unsubscribe=` capabilities are removed at notification-script entry before
+  DOM work or application requests; the notification script precedes the State
+  Request script. Opening a link performs no mutation. Capabilities remain in
+  memory and POST bodies, never query/path/local storage. Keyboard focus, live
+  status/alert messages, shared busy controls, CSRF refresh and session/network/
+  invalid-JSON errors are handled. Existing CSS and public file inventory stay
+  unchanged. A failed initial session can be deliberately retried from the link.
+
+### Atomic signup and existing persistence
+
+With confirmation enabled, `SubscriptionStore` uses the existing delivery
+transaction/advisory lock, the same engine/connection and `INSERT ... ON CONFLICT
+DO NOTHING RETURNING` to recognize a genuinely new consent lifecycle. Only that
+new row enters the existing reservation rules within the same transaction.
+Subscription creation, applicable global/mailbox quota updates, verification
+version and protected recoverable intent commit together. A failure in either
+reservation insert rolls back the subscription and quotas as well. A second
+engine is rejected at construction.
+
+Quota exhaustion, cooldown or suppression still prevents reservation; it does
+not reject otherwise valid subscription consent. Such a saved subscription
+remains unverified and can later request confirmation under the same public
+rules. No deferred parallel queue or quota bypass is created. The existing
+60-second/five-per-mailbox/day and 1,000-global/day policy is unchanged, including
+unknown-address budget use and cross-lifecycle limits.
+
+Repeated active-email signup or receipt reuse never changes preferences, consent,
+verification, quota counters or pending intent. A repeat after an actually
+committed but unacknowledged signup converges on the same lifecycle/intent, even
+after cooldown. The public response remains generic and its private unsubscribe
+capability still derives only from the submitted receipt. Existing shared-service
+subscription callers reuse this same store and retain their response contract.
+The existing outbox, token recovery, dispatcher, Brevo templates and suppression
+systems are reused; no schema, migration, second recipient list or queue is added.
+
+### Focused validation evidence
+
+The six-file backend run passed **656 tests in 10.50 seconds**. After adding four
+final lifecycle/OFF assertions, the complete public integration file passed
+**80 tests in 1.83 seconds**. There are **660 distinct passing tests** across this
+selection; overlapping reruns are not additive. Both runs report zero unexpected
+external-access attempts. Selected files: `test_public_confirmation.py`,
+`test_notifications.py`, `test_notification_delivery.py`,
+`test_confirmation_outbox.py`, `test_integrations.py`, `test_state_requests.py`.
+No migration campaign, provider call or unrelated broad suite is run.
+
+Coverage includes strict shape/JSON/media/body checks, origin/CSRF, generic
+response equivalence, atomic new signup, concurrent/duplicate/receipt recognition,
+rollback, lost commit acknowledgement, quota/suppression-denied reservations,
+resend supersession, original expiry, stable verification timestamps, safe repeats,
+withdrawal/resubscription, default-off and factory activation without processing.
+Existing outbox tests retain fake-provider acceptance-without-verification and
+bounded claim/restart/uncertainty behavior.
+
+`tests/confirmation_browser_check.py` and the preserved
+`tests/notification_browser_check.py` both PASS at **1280px and 390px**, with zero
+page errors or external requests. They cover fragment removal before the first
+application fetch, no automatic confirmation, explicit keyboard action, accessible
+messages, busy controls, session/CSRF/network/HTML-response errors and retries,
+invalid/expired links, OFF behavior, signup and unsubscribe. Intercepted Chromium
+and serialized transaction models do not certify live PostgreSQL concurrency or
+deployed provider/browser behavior.
+
+The dedicated website interpreter, `-B`, disabled pytest autoload, empty plugin/
+options settings, explicit file selection and early `-p migration_offline` guards
+remain unchanged. Only the new public test file is added to the existing guard
+allowlist. Browser checks use the established shared interpreter without installs.
+PowerShell startup/progress/errors/results are simultaneously transcribed under
+ignored `.pytest_cache/r38/`, with the existing OAF completion/failure alert helper.
+`Invoke-OAFCodex` and its automatic final-report clipboard behavior are unchanged.
+Initial failed harness runs and logs are retained: four synthetic signing-key
+fixture failures, one browser fresh-document navigation issue, and one rejected
+single-file PowerShell argument expansion. Their corrections did not weaken the
+isolation guards or application assertions. Final checks pass.
+
+### Deterministic autonomy and preservation review
+
+Source/offline review PASS: eligibility/normalization and consent remain fixed
+server rules; uniqueness and locked transactions govern new-versus-repeat signup;
+durable budgets govern requests; existing lifecycle/digest binding governs expiry,
+supersession, withdrawal and suppression; only valid explicit confirmation creates
+the original stable verification timestamp. Atomic persistence, protected token
+recovery, durable attempt history and sanitized failures preserve deterministic
+rollback/restart handling. Ordinary operations require no AI or per-subscriber
+administrator decision. Official release approvals, policy/key changes and
+exceptional corrections remain existing human governance boundaries.
+
+All earlier migration/revision/schema/catalog/manifest artifacts, deployment and
+launcher configuration, shared CSS, State Request JavaScript, Contact source,
+owner-authored historical documentation and the Git index are preserved. The
+original governing-document bytes remain prefixes of these appended versions.
+No operational credentials, live PostgreSQL, live Brevo, actual email, recurring
+processor or production activation is accessed or performed. `git diff --check`
+passes. Scope/hashes and final inventory are retained in `.pytest_cache/r38/`.
+
+### Remaining operational dependencies and next smallest checkpoint
+
+Recommend **R39: bounded dispatcher invocation and restart recovery integration,
+source/offline only**, reusing `ConfirmationDispatcher` and its existing bounded
+batches. Define the recurring invocation owner/host/cadence, consistent activation
+configuration across workers, protected persistent key/environment and existing
+Brevo configuration injection, shutdown/restart handling, and sanitized health/
+backlog/expired-claim/uncertain-outcome monitoring. Prove pending-intent recovery,
+expired claimed-work backoff and submitting-to-uncertain recovery with fake
+dependencies. Never retry uncertain submissions on restart; no second Send action
+or new worker framework is required by this recommendation.
+
+Any actual processor invocation, provider credential access, delivery validation
+or public activation requires a separate explicit operational authorization.
+Provider link rewriting/tracking confidentiality and sender configuration still
+need approved live validation. Authenticated feedback/correlation/reconciliation
+for uncertain provider outcomes remains a separate implementation dependency;
+lack of evidence never permits another send. New API/signup transaction behavior
+still needs later bounded authorized live validation without reopening migrations.
+Production deployment/activation remains separately gated. R38 establishes no
+live email delivery or production readiness.
+
+Exact changed files: `assets/notifications.js`, `gramanna.html`,
+`oaf_website/notification_delivery.py`, `oaf_website/notifications.py`,
+`oaf_website/state_requests.py`, `tests/migration_offline.py`,
+`tests/test_notification_delivery.py`, `docs/WORKFLOW.md`, `docs/WEBSITE_PLAN.md`.
+Added: `tests/test_public_confirmation.py`, `tests/confirmation_browser_check.py`.
+Ignored local evidence/helpers/logs/screenshots are confined to `.pytest_cache/r38/`.
+
+
+## R39: bounded confirmation processor invocation (2026-10-17)
+
+**SOURCE/OFFLINE VALIDATED. LIVE PROVIDER DELIVERY / OPERATIONAL ACTIVATION:
+OFF, not performed or authorized.** This source entry connects the existing R38
+public reservations to an independently invokable, default-off processor. The
+owner reports migrations 0001--0005 applied and verified in TESTING and DEVELOPMENT;
+no migration, schema or completed migration validation is repeated. Historical
+contracts and owner notes above remain intact.
+
+### Invocation and configuration contract
+
+`python -u -B -m oaf_website.confirmation_processor --environment <profile>`
+is the one-shot entry point. `process_confirmations(...)` is its explicit callable
+seam. Importing either module, creating a Flask application, and handling a public
+HTTP request never start processing. The module creates no application or server.
+Without the exact `--enable-processing` switch (or callable `enabled=True`), the
+result is disabled and no local configuration, protected key, credential, engine,
+outbox query or provider is accessed. Non-Boolean callable activation is rejected.
+The independent R38 `confirmation_enabled` factory flag still defaults off and
+only controls public persistence/confirmation; it does not activate this processor.
+
+Every invocation requires explicit `--environment` and matching `OAF_ENV` under
+the existing `_validate_environment` rules. Conflicting database settings are
+rejected. No new environment-variable authority or local settings file is added.
+Enabled operation also requires `--brevo-account` with the existing credential's
+approved nonsecret account metadata, and `--confirmation-page` with the approved
+HTTPS `/gramanna.html` page. Invalid environment, production or page is rejected
+before any secret loader. No account or origin is discovered or guessed.
+
+Enabled runtime construction reuses `load_testing_database_config` for TESTING,
+the existing runtime loader for DEVELOPMENT, and `load_brevo_config` with its
+pinned exact-target Windows credential convention. Production is rejected before
+local configuration/credentials, even with the enable switch. The engine uses
+the established SCRAM requirement, 5-second connect timeout, 10-second statement
+timeout, 5-second lock timeout, hidden SQL parameters and verification on every
+checkout of database, effective/authenticated user, host, port and PostgreSQL 17.
+It imports the existing `_verify_checkout` authority rather than replacing it.
+
+`recognition_secret(require_existing=True)` reuses the existing current-user
+DPAPI key without creating a missing/replacement file. Missing, invalid or
+redirected key locations fail closed. Other existing hosts retain their original
+default create-once behavior. Every public worker and scheduled invocation must
+use the same protected key, consent database and environment; wrong-key recovery
+preserves the pending intent as unavailable. Changing key policy is an exceptional
+administrative action. No real local configuration, protected key or credential
+was read during R39; enabled tests inject synthetic loaders and transports only.
+
+The processor constructs the existing `ConfirmationOutboxStore` and
+`ConfirmationDispatcher`, calls `process(limit=20)` exactly once, and disposes its
+engine. There is no loop, daemon, new queue, subscriber authority, schema,
+framework, credential provider or dependency. A later scheduler repeats this same
+invocation without changing the processing algorithm.
+
+### Bounds, restart semantics and reporting
+
+Each invocation selects at most **20 due intents** in the existing stable order
+and recovers at most **20 expired claims**, independently. The existing database
+transaction-scoped advisory lock and lifecycle row locks govern ownership across
+processes. Candidate selection is not submission permission: every candidate must
+win a fresh durable claim and pass the committed final preparation boundary.
+Five-minute leases, three total attempts, 60/300-second safe retry delays and the
+original 24-hour token expiry remain unchanged. There is no attempt reset,
+automatic replacement token, quota bypass or in-memory ownership authority.
+
+| Persisted condition / failure | Next invocation behavior |
+| --- | --- |
+| Pending intent after restart | Recover the same protected bearer and process when eligible. |
+| Live claimed/submitting lease | Leave ownership intact until expiry; no competing submission. |
+| Expired claim before submission | Finish `claim_expired`; safe retry after the existing delay if attempts remain. |
+| Conclusive non-submission or structured retryable rejection | Honor persisted due time; recheck eligibility; exhaust after attempt three. |
+| Failed submitting commit | No provider call; rolled-back claim can recover safely after lease expiry. |
+| Unacknowledged submitting commit that actually committed | No provider call from the failed invocation; expiry conservatively holds it uncertain. |
+| Crash during submission or failed outcome persistence | Expired submitting becomes `submission_unknown` / uncertain; never blindly resend. |
+| Acknowledged or unacknowledged committed acceptance outcome | Existing accepted history prevents another submission. |
+| Expired, superseded, withdrawn, suppressed or verified lifecycle | Existing claim/final preparation checks prevent dispatch; retain audit history. |
+| Uncertain submission | Preserve the hold; ordinary invocations never retry or ask an administrator to resend. |
+
+Provider acceptance is acceptance of a submission, not mailbox delivery or
+verification. Only the public capability consumption contract verifies ownership.
+No authenticated provider feedback/reconciliation transport is implemented here.
+Conclusive evidence and a separately approved transition remain prerequisites for
+exceptional uncertainty reconciliation; absence of evidence never permits resend.
+Withdrawal/resend/suppression before the committed preparation boundary prevents
+dispatch; a later lifecycle change cannot recall an already authorized operation.
+
+The CLI flushes one JSON result containing only existing `BatchResult` fields:
+`status` and `processed`. Exit **0** is `processed` (invocation completed), **2**
+is `disabled` or sanitized argument rejection, **1** is `unavailable` (including
+configuration, persistence or cleanup failure), and **130** is interruption.
+Argument errors never echo supplied values. `processed` counts submissions whose
+outcome persistence was acknowledged, across all provider outcome classes; it is
+not an accepted/delivered/verified count. Zero is a successful no-dispatch result,
+which may include recovery, ineligibility or competing claims; it does not prove
+an empty outbox. An unavailable result can retain prior acknowledged progress.
+Interruption reports zero acknowledged results returned to the invocation, not
+proof that no side effect occurred; the durable ledger remains authoritative.
+
+Only these fixed fields reach invocation output. Email addresses, confirmation
+bearers, claim secrets, API keys, message bodies, database credentials, provider
+responses and raw exceptions are excluded. Detailed state/outcome/attempt evidence
+remains in the existing intent/attempt ledger. Completion alone does not imply
+absence of uncertain/rejected work. Future approved operational observation may
+use sanitized aggregates of that ledger; no dashboard/platform or live query is
+added or run in this checkpoint.
+
+### Future recurring scheduling boundary — documentation only
+
+Use the approved host's existing operating-system/deployment scheduler. For the
+current local Windows runtime, Task Scheduler can invoke the website's absolute
+`.venv\Scripts\python.exe` from the OAF Website working directory under the same
+approved Windows account that can decrypt the existing DPAPI key and read the
+selected runtime/Brevo credentials. Configure the explicit matching `OAF_ENV` in
+the task's PowerShell invocation; inherit no alternate database settings. Proposed
+cadence: once per minute, one batch per invocation, with overlapping starts
+disabled in scheduler policy. Correctness still relies on database claims when
+invocations overlap. The host, account, cadence, task limits, output destination
+and failure notification require separate operational authorization.
+
+This is an invocation specification for later approval, **not a command to run
+during source validation**. Nonsecret placeholders require approved actual values:
+
+```powershell
+# FUTURE AUTHORIZED OPERATION ONLY; start in the OAF Website repository.
+$env:OAF_ENV = 'testing'
+& '.venv\Scripts\python.exe' -u -B -m oaf_website.confirmation_processor `
+    --environment testing --enable-processing `
+    --brevo-account '<approved-existing-account>' `
+    --confirmation-page 'https://<approved-origin>/gramanna.html'
+exit $LASTEXITCODE
+```
+
+No administrator should manually process ordinary messages. Each scheduled start
+discovers durable pending/retry work; delayed retries become selectable only at
+their stored database due time. Recovery is bounded and resumes automatically on
+later starts, including remaining expired claims beyond the first 20. Disabled or
+unavailable operation exits nonzero without fallback, automatic activation or a
+second Send action. Stop scheduling by removing the enable switch/approved task
+activation; live leases and durable history remain for safe restart. Do not reset
+claims/attempts or issue replacement tokens as a shutdown procedure.
+
+Capture stdout/stderr and process exit status using existing scheduler/host logs;
+observe missed starts and nonzero exits with the host's normal alert facilities.
+Retain privacy-safe ledger aggregates for uncertain outcomes and backlog as a
+future authorized observation task. This checkpoint adds no automatic monitor.
+Work is finite in count; the existing provider's socket inactivity timeouts are
+not a guaranteed total DNS/HTTP wall-clock deadline. An approved scheduler time
+limit or forced termination must retain the same conservative lease/uncertainty
+recovery; termination never grants a resend. No task is registered and no worker,
+startup launcher, production setting or background service is activated here.
+
+### Focused validation and deterministic autonomy
+
+**621 passed in 15.62 seconds**, zero unexpected external-access attempts, with
+no skips/errors/xfails. This includes **95 new processor cases**; their initial
+standalone run also passed (6.59 seconds), and overlapping reruns are not additive.
+Explicit files: `test_confirmation_processor.py`, `test_confirmation_outbox.py`,
+`test_public_confirmation.py`, `test_notification_delivery.py`,
+`test_notifications.py`, `test_brevo.py`. The website interpreter, `-B`, disabled
+pytest autoload, empty plugin/options settings, explicit file selection and early
+`-p migration_offline` guards remain intact. Only the new test file is added to
+the existing allowlist; no guard is relaxed. No packages or shared GraManna
+interpreter/files are accessed. Browser behavior is unchanged; no Playwright run
+or repeated migration certification is needed.
+
+Behavioral coverage includes default OFF, synthetic enablement, environment/
+production/metadata rejection, empty processing, exact identity verification,
+separate candidate/recovery bounds, fake acceptance without verification, retry
+timing/exhaustion/original expiry, pending/claimed/submitting restart recovery,
+failed and unacknowledged commits at each transition, outcome persistence failure,
+eight competing fresh invocations, withdrawal/suppression/expiry/supersession/
+verification checks, no repeat after uncertainty, sanitized CLI failures and
+interrupts, cleanup failure with acknowledged progress, existing-key-only DPAPI
+loading with fake native functions, and R38 signup -> dispatch -> explicit confirm.
+These are behavioral coverage findings, not a whole-repository coverage percentage
+or certification of real PostgreSQL/process/provider behavior.
+
+| Operational decision | Deterministic authority / finding |
+| --- | --- |
+| Candidates and claim acquisition | Existing ordered, bounded SQL and transaction/row locks; concurrent losers skip. |
+| Lease expiry and restart | Database timestamps and durable five-minute claims; fixed recovery classification. |
+| Submission authorization | One-use claimed -> submitting commit plus final original-lifecycle eligibility. |
+| Retry eligibility, timing and exhaustion | Conclusive non-submission/retryable rejection only; persisted 60/300-second due times; maximum three attempts. |
+| Token expiry and version | Same original 24-hour verification reservation and current digest; no automatic renewal. |
+| Verification, withdrawal, suppression | Existing authoritative records checked at claim/preparation; acceptance never verifies. |
+| Provider classification and uncertainty | Existing conservative adapter mapping; uncertain is a permanent automatic resend hold. |
+| Recovery and failure reporting | Fresh invocation over durable state; sanitized result/exit code; failed commits never authorize POST. |
+
+**Deterministic autonomy source/offline review PASS.** Ordinary selection,
+claims, eligibility, retries, recovery and reporting require no AI, per-subscriber
+administrator decision or repeated Send approval. Host/configuration activation,
+key/policy changes, official release governance and exceptional conclusive-evidence
+corrections remain authorized administrative controls. The missing feedback
+transport is a deferred capability, not permission to weaken uncertainty holds.
+
+### Preservation, evidence and remaining gates
+
+Repository `oaf-website`, branch `main`, starting/final HEAD
+`b2f0069be87741b21a054f9ced5411bdb90afd03`; the index stays empty and unchanged.
+The eleven initial R38 changed/added files are inventoried and snapshotted under
+ignored `.pytest_cache/r39/before/` with initial hashes. All R38 source/browser
+files remain byte-for-byte unchanged except the explicitly additive test allowlist
+entry; the initial governing-document bytes remain exact prefixes. No R38 or
+owner change is removed. Unrelated tracked/untracked initial files, all migration/
+schema/manifest artifacts and startup/deployment configuration retain their hashes.
+`git diff --check` passes. No staging, commit, push, PostgreSQL connection/write,
+operational credential access, real provider call, email, scheduler activation,
+GraManna access or production configuration change occurs.
+
+Exact R39 file inventory: added `oaf_website/confirmation_processor.py` and
+`tests/test_confirmation_processor.py`; modified `oaf_website/local_testing.py`,
+`tests/migration_offline.py`, `docs/WORKFLOW.md`, `docs/WEBSITE_PLAN.md`.
+Complete visible PowerShell test transcripts, run helper, preservation snapshots,
+initial/final inventory and final report remain ignored under `.pytest_cache/r39/`.
+The existing OAF visual completion/failure alert helper is reused. `Invoke-OAFCodex`
+and automatic clipboard reporting remain unchanged; no execution-workflow setting
+is altered.
+
+Remaining activation prerequisites: separate explicit owner approval for the
+selected environment/host/account and live processor operation; approved actual
+secure page/origin and compatible public confirmation activation; existing stable
+protected key and matched runtime identities; approved protected Brevo account/
+sender configuration and live link tracking/confidentiality validation; bounded
+authorized live API/transaction/claim/restart validation; approved scheduling and
+log/alert settings. Production secret/deployment design remains separately gated.
+No migration work is reopened. Authenticated provider feedback/correlation and
+uncertainty reconciliation remain a separate source/operational contract.
+
+Smallest next checkpoint: **R40: separately owner-authorized, bounded TESTING
+end-to-end invocation and restart validation**, with an approved controlled
+mailbox, actual host/account/origin and protected configuration, after verifying
+the prerequisites above. Keep recurring scheduling and production inactive.
+R39 itself establishes neither live provider delivery nor operational
+activation/readiness; no additional independent source review loop is required.
+
+
+## R40-B: controlled recipient enforcement and TESTING HTTPS preparation (2026-10-17)
+
+**SOURCE / OFFLINE VALIDATED. LIVE TESTING HTTPS, PUBLIC CONFIRMATION AND
+PROVIDER PROCESSING ACTIVATION: OFF.** Owner authorization covers bounded source,
+necessary documentation and focused synthetic validation only. R36 HEAD remains
+`b2f0069be87741b21a054f9ced5411bdb90afd03` on `main`. R38/R39 and owner changes
+are preserved. The owner reports 0001--0005 applied/verified in both databases;
+this checkpoint does not reopen migrations or inspect their live state.
+
+### Recipient-enforcement contract
+
+- Every enabled TESTING processor invocation now requires exactly one deliberate
+  `--testing-recipient` (callable `testing_recipient`). This supplements the R39
+  invocation contract and supersedes its unscoped TESTING command example.
+  Existing normalization trims ordinary outer spaces and lowercases the complete
+  ASCII mailbox, without DNS requests or provider-specific address rewriting.
+  Missing/malformed scope fails before protected loaders, engine construction or
+  processing. Repeated CLI scope options are rejected, even if identical. Scope
+  on an enabled non-TESTING invocation is rejected before runtime access.
+- Immutable `TestingRecipientScope` carries the normalized mailbox with its value
+  excluded from diagnostic representation. A supplied scope must be that exact
+  validated type and match TESTING at both store and adapter construction. The
+  owner supplies the actually approved mailbox at a later operational checkpoint;
+  no real recipient or configuration is created here. Configuration is supplied
+  through existing explicit invocation arguments, not another settings authority.
+- The existing intent queries filter subscription references through the existing
+  authoritative `notifications.email` before stable ordering and SQL LIMIT. Both
+  due selection and expired-claim recovery use the exact same mailbox predicate.
+  There is no redirected recipient, duplicate email list, queue, schema, database,
+  delivery ledger or worker framework. A batch bound or an empty queue is never
+  used as recipient authorization.
+- Recovery rechecks the authoritative subscriber before mutating intent/attempt
+  history. Claim, preparation and outcome persistence also enforce the scope.
+  Preparation repeats the locked authoritative mailbox check immediately before
+  the committed claimed-to-submitting authorization boundary. A mismatch raises
+  a fixed safe error, rolls back that transaction and prevents submission.
+  The dispatcher checks the prepared recipient; the Brevo adapter independently
+  checks it before payload construction/transport. It never replaces an address
+  with the approved mailbox. A failed earlier selection/preparation check therefore
+  cannot cause another subscriber's message to be sent to the test recipient.
+- Unrelated subscribers, verification, quotas, intents, claims and attempts remain
+  untouched by controlled processing, including unrelated expired claims. Existing
+  consent, current verification/version, suppression, withdrawal and expiry checks
+  remain mandatory. Withdrawal/verification that linearizes before authorization
+  prevents sending; already authorized/in-flight submissions cannot be recalled.
+- Internal ordinary store/adapter contracts remain usable without a scope for
+  existing separately authorized non-test processing. Enabled TESTING through the
+  operational processor has no unscoped path. DEVELOPMENT gets no TESTING scope or
+  fallback, and production stays blocked before protected access. Default OFF
+  remains inert: no configuration/key/database/provider loading or processing.
+
+### Bounds, uncertainty and deterministic autonomy
+
+The unchanged limits remain 20 due intents and 20 expired-claim recoveries per
+invocation, five-minute claim/submission leases, three attempts, 60/300-second
+conclusive-safe retry delays, the original 24-hour verification expiry, and durable
+claim/attempt history. Database advisory/subscriber locks and one-use claims govern
+concurrency. Safe retries recover the same token and original state; no reset,
+renewal, replacement-token workaround or fabricated delivery evidence is added.
+
+Possible provider submission, unacknowledged submitting commits and interrupted
+outcome persistence retain conservative uncertainty with no automatic resend.
+A prepared-recipient mismatch returns unavailable without transport; if submitting
+was already committed, its eventual recovery conservatively holds it uncertain.
+Provider acceptance still establishes neither delivery nor verification.
+The processor exposes only fixed `status`/`processed` JSON and existing exit codes;
+no mailbox, capability, credential, TLS key path, raw exception or provider body
+is emitted. Processed counts are acknowledged outcome persistence, not deliveries.
+
+**Deterministic autonomy source/offline review PASS:** exact SQL predicate/order,
+claims, final lifecycle/scope authorization, retry timing/limits, restart recovery,
+uncertainty holds and sanitized outcomes are fixed server rules. Ordinary approved
+processing requires no AI, per-message administrator action or second Send action.
+Host/account/mailbox activation approval, policy/key changes, official governance
+and exceptional evidence-backed corrections retain authorized human control.
+Authenticated provider feedback/correlation/reconciliation remains separately
+contracted; absent evidence never authorizes another send.
+
+### Minimal HTTPS TESTING startup and operational prerequisites
+
+The existing HTTP `testing_app(port)` remains compatible. The added
+`testing_https_app(public_origin=..., confirmation_page=...,
+confirmation_enabled=False)` reuses the same Flask factory and exact public-file
+allowlist. The host entry point is `oaf_website.local_testing_https`, following the
+existing foreground Werkzeug/quiet-handler convention. It has no reload, scheduler,
+processor startup or automatic activation. DEVELOPMENT/F2 and PowerShell helpers
+are unchanged.
+
+- Explicit `--environment testing` and matching `OAF_ENV=testing` are required.
+  Existing TESTING-only database loading and SCRAM/exact identity checks are reused;
+  startup performs a verified connection checkout before binding. There are no
+  migrations, schema setup, DEVELOPMENT fallback or Brevo credential reads.
+- Require the existing persistent current-user DPAPI key through
+  `recognition_secret(require_existing=True)`; never create a replacement.
+  Public confirmation defaults OFF. Only `--enable-confirmation` explicitly enables
+  the existing public persistence/consume flow, and never starts processing.
+- The owner selects the HTTPS origin without a trailing slash; its exact matching
+  page is that origin plus `/gramanna.html`. Both must satisfy the existing strict
+  template contract: HTTPS, no userinfo/query/fragment and only port 443 (implicit
+  or explicit). Host labels are validated. HTTP and a nonstandard local HTTPS port
+  such as 5443 are rejected. Processor and browser must use this same chosen page.
+- Bind only `127.0.0.1:443`. The chosen hostname must resolve to that loopback
+  listener on the owner browser's machine. The owner must supply an already
+  trusted, currently valid certificate with a matching hostname/IP SAN and its
+  matching existing PEM private key, using absolute, distinct existing paths.
+  Certificate chain loading must succeed. Browser trust/validity/hostname matching
+  is an operational prerequisite, not certified by mocked tests. Store private
+  material outside Git with appropriate owner-controlled file access.
+- TLS uses an explicit server context, minimum TLS 1.2, with no adhoc certificate,
+  CA creation, trust-store change or ambient TLS key logging. Encrypted PEM keys
+  requiring an interactive password are rejected without prompting; an approved
+  noninteractive usable key arrangement is required. The owner must establish
+  availability and any required privilege for port 443. Startup never chooses a
+  different port or kills another listener. No public hostname is selected here.
+- HTTPS uses the existing `__Host-` Secure, HttpOnly, SameSite=Lax browser cookie,
+  same-origin/fetch-metadata checks, browser-bound CSRF, bounded strict JSON and
+  privacy response headers. Existing link generation remains HTTPS-only. Private
+  configuration/source/audit paths are absent from the public-file allowlist.
+  Startup/configuration/cleanup failures emit only fixed sanitized messages.
+
+Future procedure, **only after separate operational authorization**: verify the
+approved browser hostname/loopback resolution, trusted certificate/key paths and
+port-443 availability/privilege, actual TESTING runtime identity, persistent key,
+and approved isolated Brevo account/sender/mailbox metadata. Populate the following
+variables from owner-approved operational choices; these examples provide no
+actual values and are not commands executed by R40-B:
+
+```powershell
+# FUTURE AUTHORIZED OPERATION ONLY, from the OAF Website repository.
+$env:OAF_ENV = 'testing'
+$taskConfirmationPage = $taskApprovedOrigin + '/gramanna.html'
+& '.venv\Scripts\python.exe' -u -B -m oaf_website.local_testing_https `
+    --environment testing --public-origin $taskApprovedOrigin `
+    --confirmation-page $taskConfirmationPage `
+    --tls-certificate $taskApprovedCertificatePath `
+    --tls-private-key $taskApprovedPrivateKeyPath
+# The command above leaves public confirmation OFF. Enabling it requires the
+# separately approved --enable-confirmation switch; no processor starts with it.
+```
+
+After compatible public activation is separately authorized, the single bounded
+processor command must use the same page and its own deliberate scope/enablement:
+
+```powershell
+# FUTURE SEPARATELY AUTHORIZED SINGLE BATCH ONLY. Never log supplied mailbox values.
+& '.venv\Scripts\python.exe' -u -B -m oaf_website.confirmation_processor `
+    --environment testing --enable-processing `
+    --testing-recipient $taskApprovedMailbox --brevo-account $taskApprovedBrevoAccount `
+    --confirmation-page $taskConfirmationPage
+```
+
+Keep the existing visible PowerShell/log/clipboard/alert workflow. No actual host,
+certificate/private-key access, credentials, mailbox, provider request, email or
+recurring task is activated by this source checkpoint. Sender configuration and
+confirmation-link tracking/confidentiality need later bounded live validation.
+Production remains separately gated.
+
+### Focused offline evidence and preservation
+
+Final focused gate: **737 passed in 20.67 seconds**, zero unexpected external-access
+attempts, no failures/skips/xfails. This includes **72 new recipient/HTTPS cases**,
+the existing 95 processor cases and directly relevant R38/R39/store/Brevo/release
+regressions. The earlier narrow 164-case gate also passed; overlapping runs are
+not additive. Behavioral coverage includes all 20 requested validation areas:
+default OFF, missing/invalid/non-TESTING scope, exact selection, unrelated pending
+and expired work, selection/preparation bypasses and independent adapter guard,
+concurrent claims, withdrawal/verification/suppression/expiry, retries/attempt bounds,
+interruption/uncertainty/no resend, sanitized results, strict matching HTTPS/TLS,
+Secure cookie/origin/CSRF, and R38/R39 compatibility. No statement/branch percentage
+is claimed. Serialized SQL models do not certify real PostgreSQL concurrency.
+
+Explicit file selection: `test_controlled_confirmation.py`, `test_testing_https.py`,
+`test_confirmation_processor.py`, `test_confirmation_outbox.py`,
+`test_public_confirmation.py`, `test_notification_delivery.py`,
+`test_notifications.py`, `test_brevo.py`, `test_notification_dispatch.py`.
+The dedicated website interpreter, `-B`, disabled pytest plugin autoload, empty
+pytest options/plugins, repository/tests PYTHONPATH and early `-p migration_offline`
+guards remain intact. Only the two new test paths are added to the allowlist.
+The existing transactional model gains generic SELECT-subquery evaluation; guards
+are not weakened. No browser-facing HTML/JavaScript changes require Playwright.
+No completed migration certification or unrelated broad test suite is repeated.
+
+Exact R40-B modified inventory relative to its starting tree:
+`oaf_website/brevo.py`, `oaf_website/confirmation_outbox.py`,
+`oaf_website/confirmation_processor.py`, `oaf_website/local_testing.py`,
+`tests/migration_offline.py`, `tests/test_notification_delivery.py`,
+`tests/test_confirmation_processor.py`, `docs/WORKFLOW.md`, `docs/WEBSITE_PLAN.md`.
+Added: `oaf_website/local_testing_https.py`, `tests/test_controlled_confirmation.py`,
+`tests/test_testing_https.py`. All prior document bytes remain exact prefixes.
+All initial paths are retained; unrelated initial hashes, migration/schema/manifest
+artifacts, deployment/launcher configuration, HEAD and empty index are unchanged.
+`git diff --check` passes. No staging, commit, push, GraManna access, operational
+credential/database/provider access, TLS installation or live activation occurs.
+
+Ignored snapshots, inventories, full visible PowerShell transcripts, run helper,
+verification metadata and report are under `.pytest_cache/r40b/`. Existing visual
+success/failure alerts and clipboard reporting are reused; `Invoke-OAFCodex` and
+PowerShell execution settings are unchanged.
+
+Smallest next checkpoint: **R40-C owner selection and prerequisite review for one
+bounded TESTING end-to-end operation**, with actual mailbox/account/origin,
+loopback hostname, certificate/key/port arrangements and separate explicit live
+authorization. Keep recurring scheduling and production inactive. This result
+establishes SOURCE / OFFLINE VALIDATED only, not live delivery or deployed readiness.
+
+
+## R41: dedicated email confirmation experience (2026-10-17)
+
+Owner authorization covers the dedicated scanner-resistant page, narrow trusted
+page/runtime-interface changes and focused offline validation. Repository:
+`C:/Users/ovisa/Documents/OAF_App/Development/OAF Website`, branch `main`, HEAD
+`b2f0069be87741b21a054f9ced5411bdb90afd03`. R38, R39, R40-B and owner notes
+remain preserved. The owner reports **R40-F END-TO-END TESTING CONFIRMATION PASS**:
+Brevo processed the email, Gmail received it, the private link opened, explicit
+confirmation completed and the PostgreSQL timestamp was validated; the temporary
+HTTPS server was shut down and port 443 released. This is owner-supplied baseline
+evidence, not a new live test by R41. Migrations 0001--0005 in TESTING and
+DEVELOPMENT remain closed; R41 performs no migration or operational certification.
+
+### Implemented page and link contract
+
+- `confirm-email.html` is a standalone public page using the existing navigation,
+  Arial typography, foundation palette, shared interface card/button components
+  and responsive styles. Its centered content identifies OVIS ALMS FOUNDATION,
+  explains the selected GraManna announcements and presents one Confirm email
+  button. There is no signup form, marketing section or application framework.
+- `assets/email-confirmation.js` runs synchronously in the head. It reads only
+  `#confirm-email=`, validates the existing lowercase 64-hex capability shape and
+  removes the fragment with `history.replaceState(null, ...)` before application
+  requests. The capability stays inside a closure and the explicit confirmation
+  POST body, never HTML, queries, paths, analytics, logs, history state or browser
+  storage. There are no third-party resources or requests. The dedicated page
+  uses no-referrer policy, including on its API fetches, and noindex/nofollow.
+- The existing session endpoint supplies the browser-bound CSRF token and exact
+  Boolean `confirmation_enabled`. Session discovery does not verify ownership.
+  Only the explicit button handler can POST `{token}` to the existing
+  `/api/notifications/confirm`, using same-origin credentials, JSON, no-store,
+  CSRF header and a bounded request timeout. No GET, page load, preview or ordinary
+  scanner visit can confirm. An in-memory busy guard plus disabled controls
+  prevents simultaneous frontend submissions. The backend remains authoritative.
+- A successful HTTP response must also carry `status=confirmed`. Success clears
+  the in-memory token, removes the action, displays a green check, focuses
+  "Your email is confirmed!", thanks the visitor for confirming their selected
+  GraManna announcements and announces "Email verification complete". It stays
+  on this page; there is no further navigation or confirmation action.
+- Malformed/missing capabilities and backend HTTP 400 show generic unavailable
+  copy and a link to the existing notification request/resend experience.
+  Expired, revoked, suppressed and unknown links disclose no subscriber status.
+  Network, server, malformed-response and session failures use fixed safe copy;
+  they never echo server diagnostics or capabilities. A deliberate retry uses the
+  same transient capability; a 403 clears CSRF so the next explicit attempt
+  discovers a fresh session. Busy/status/alert semantics, keyboard focus,
+  responsive card sizing and shared reduced-motion styling are retained.
+- The template's separate `secure_confirmation_page` accepts exactly the approved
+  `/confirm-email.html` and legacy `/gramanna.html` paths and always renders the
+  dedicated destination on the same configured HTTPS authority. Existing explicit
+  legacy processor/factory arguments therefore remain usable without touching
+  protected configuration or regenerating tokens. Host labels, standard port 443,
+  no userinfo/query/fragment and exact path restrictions fail closed. The existing
+  `secure_page` withdrawal contract still accepts only `/gramanna.html`.
+- The existing processor, dispatcher and TESTING HTTPS validation/help interfaces
+  use that narrow confirmation-page validator. TESTING factory validation still
+  requires the exact explicitly configured origin before protected runtime access.
+  The shared public-file allowlist adds only the page and its JavaScript; both
+  local hosts inherit it. No private files or directory serving are exposed.
+- Already issued `/gramanna.html#confirm-email=` links are captured by the shared
+  head script, cleared from that address and forwarded with the unchanged fragment
+  to the dedicated page, where it is cleared again before API work. Navigation is
+  before confirmation, never after success. The notification script retains the
+  same fixed forwarding behavior for a later hashchange. No server redirect,
+  query-string handoff, storage handoff, token renewal or new authority is added.
+  The obsolete confirmation block is removed from the signup form. Request/resend,
+  subscription and `#unsubscribe=` handling keep their existing purpose.
+
+### Focused evidence and deterministic autonomy
+
+The guarded eight-file backend gate passed **734 tests in 20.32 seconds**, with
+zero unexpected external-access attempts and no failures/skips/xfails. Selected:
+`test_public_confirmation.py`, `test_notification_delivery.py`,
+`test_confirmation_outbox.py`, `test_confirmation_processor.py`,
+`test_testing_https.py`, `test_brevo.py`, `test_notification_dispatch.py`,
+`test_notifications.py`. Coverage includes existing endpoint/origin/CSRF/strict
+request compatibility, original expiry/supersession, withdrawal/suppression,
+stable verification timestamps, generic failures, default OFF, trusted paths and
+origins, legacy configuration, new rendered links, restart recovery and preserved
+release/unsubscribe behavior. Static GETs for both pages and the new script cause
+no transactional model operation, with confirmation enabled or disabled.
+
+The established website interpreter, `-B`, disabled pytest plugin autoload, empty
+options/plugins, explicit file selection, repository/tests PYTHONPATH and early
+`-p migration_offline` guards remain unchanged. No guard allowlist change or package
+installation is needed. Full live PowerShell progress/errors/results are retained
+simultaneously in `.pytest_cache/r41/backend-20261017-155445.log`; existing native
+visual alerts and Invoke-OAFCodex/clipboard reporting are preserved.
+
+Browser validation status is recorded in the final R41 evidence below.
+
+Deterministic autonomy source review: fragment parsing/clearing, explicit-action
+submission, activation discovery, busy control and safe messages use fixed rules.
+Success follows the existing backend's confirmed result. The endpoint, token
+cryptography, original 24-hour expiry, idempotence/timestamp stability, consent,
+eligibility, budgets, suppression, outbox/attempt history, retries, leases and
+uncertainty holds are unchanged. No ordinary AI or administrator intervention is
+required. Deployment/activation and exceptional policy/evidence corrections retain
+their existing human authority. A script-capable scanner that deliberately invokes
+the confirmation POST is outside the ordinary GET/preview resistance claim; no
+claim is made to distinguish such a client from an explicit browser action.
+
+Privacy limitation: capabilities intentionally do not survive a fresh reload after
+fragment removal. Reopening the original email link restores the explicit action
+under the same original server expiry. JavaScript and browser cookies are required;
+the noscript state explains this. No persistence workaround is introduced.
+
+### Preservation, activation boundaries and exact inventory
+
+The validated verification endpoint/store, subscriber rules, token construction,
+provider adapter, State Requests, Contact, shared-service contracts, all migration/
+schema/manifest artifacts, real configuration and launchers retain their initial
+bytes. Existing document bytes remain exact prefixes. The Git index and HEAD are
+unchanged; no stage/commit/push occurs. No GraManna source, operational credential,
+TLS key, live PostgreSQL, Brevo, outgoing email, HTTPS host, scheduler or production
+activation is accessed or changed. Existing R40-F evidence is not repeated.
+
+Both independent activation flags still default OFF. Serving the page and creating
+an app never starts processing. Future activation still needs separately approved
+environment/host/account/origin and protected configuration, compatible public
+confirmation and processor enablement, approved scheduling/monitoring if desired,
+and separate production secret/deployment design. Authenticated provider feedback/
+correlation/reconciliation remains separately contracted; uncertainty never permits
+a blind resend. These gates do not reopen completed migrations or R40-F.
+
+Exact R41 added files: `confirm-email.html`, `assets/email-confirmation.js`.
+Exact R41 modified files relative to the initial working tree:
+`gramanna.html`, `styles.css`, `assets/notifications.js`,
+`oaf_website/notification_messages.py`, `oaf_website/confirmation_outbox.py`,
+`oaf_website/confirmation_processor.py`, `oaf_website/local_testing.py`,
+`oaf_website/local_testing_https.py`, `tests/test_brevo.py`,
+`tests/test_confirmation_outbox.py`, `tests/test_confirmation_processor.py`,
+`tests/test_testing_https.py`, `tests/confirmation_browser_check.py`,
+`tests/notification_browser_check.py`, `docs/WORKFLOW.md`, `docs/WEBSITE_PLAN.md`.
+Previously untracked R38/R39/R40-B files retain that Git status. The exact inventory
+is scoped to R41, not all accumulated work since HEAD. Ignored helper/evidence,
+initial hashes/snapshots, complete transcripts, source delta and final report are
+under `.pytest_cache/r41/`.
+
+
+### R41 final validation status and smallest next checkpoint
+
+**R41 — BLOCKED: required Playwright validation is not executed.** Source
+implementation, the guarded 734-test backend gate, Python syntax review,
+`git diff --check` and preservation checks pass. Desktop/mobile browser behavior
+and visual presentation remain unvalidated; no R41 browser screenshots or browser
+PASS are claimed.
+
+The established browser method uses only the existing shared
+`..\GraManna\.venv\Scripts\python.exe` and installed Playwright packages, from
+the OAF Website working directory. The current R41 instruction prohibits access
+to GraManna repository paths. A website-interpreter inspection returned
+`importlib.util.find_spec('playwright') == None`. No sibling path has been accessed,
+no package is installed and no alternative execution method is substituted.
+A narrow clarification permitting only the established shared test interpreter
+and its installed packages, without any GraManna source access/modification, was
+requested and remains unanswered at this checkpoint.
+
+`tests/confirmation_browser_check.py` is updated for the dedicated page and legacy
+forwarding, and `tests/notification_browser_check.py` retains subscription/
+unsubscribe coverage with the new same-origin script in its intercepted inventory.
+Both pass Python syntax checks but are not executed. Planned checks use only
+intercepted/fake APIs and synthetic capabilities at 1280px and 390px: responsive
+layout, keyboard/focus/reduced motion, immediate fragment clearing, no automatic
+POST, explicit action, busy/duplicate protection, same-page success, invalid/
+expired/unavailable links, network/server/session/CSRF failures and deliberate
+retry, no capability storage/DOM leakage, browser/external-request errors and
+preserved request/resend/signup/unsubscribe behavior. This prepared coverage is
+not browser evidence until those two scripts run successfully.
+
+Smallest next checkpoint: resolve the shared-test-interpreter boundary, then run
+only these two already prepared intercepted browser checks through the existing
+visible/transcribed PowerShell helper. Fix any demonstrated failure and update
+this status. Do not repeat the backend campaign without a new relevant change,
+R40-F live email testing, completed migrations or operational activation. Owner
+Eyes & Clicks review of the resulting page/screenshots can follow; no new design
+approval, live email or production-readiness claim is implied.
+
+Final source inventory: 16 modified initial paths and two added files, as listed
+above; the other 98 initial source paths retain their initial hashes. Every
+initial path remains, both original governing-document byte prefixes and the
+original Git index are preserved, and HEAD/branch are unchanged. Ignored evidence
+is under `.pytest_cache/r41/`, including complete backend transcript, initial and
+final hashes/inventory, source delta, helper and final clipboard report. The
+existing native alert reports this browser-validation block separately from the
+successful backend checks. Invoke-OAFCodex and all execution settings are unchanged.
+
+
+### R41 browser validation continuation completed (2026-10-17)
+
+**R41 - SOURCE / OFFLINE VALIDATED.** This continuation supersedes only the
+earlier R41 browser-gate block above. The owner expressly permits read-only
+execution of the established sibling interpreter, its installed dependencies and
+shared Chromium cache. No GraManna application source, configuration, database,
+Cargo files or Git state was inspected or changed.
+
+Repository and branch remain `C:/Users/ovisa/Documents/OAF_App/Development/OAF Website`,
+`main`, HEAD `b2f0069be87741b21a054f9ced5411bdb90afd03`. Before execution, all
+116 current source paths matched the saved R41 final hashes. The prepared
+`tests/confirmation_browser_check.py` and `tests/notification_browser_check.py`
+were inspected and executed unchanged with
+`..\GraManna\.venv\Scripts\python.exe -u -B` through the existing
+`.pytest_cache/r41/run-tests.ps1 -Browser` / `-PreservedBrowser` helper.
+Interpreter import PASS, Playwright **1.61.0**, shared Chromium launch PASS;
+there was no sandbox restriction, alternate interpreter, install or shared-env
+modification.
+
+Both intercepted Chromium scripts PASS at **1280px and 390px**, with exit 0.
+Dedicated-page loading, fragment removal before application requests, no automatic
+confirmation, explicit keyboard/button confirmation, busy/duplicate protection,
+focus and reduced motion, same-page accessible success, invalid/expired links,
+network/API/session/CSRF failures, deliberate retries, default OFF, unchanged
+legacy-link forwarding, request/resend, signup and unsubscribe are validated.
+Synthetic capabilities and intercepted APIs only; no live application server,
+database, credential, provider or email operation. Zero page errors and unexpected
+page requests in both scripts; the confirmation script also reports zero unexpected
+console errors. Injected failing HTTP/network responses produce expected Chromium
+resource diagnostics. Landing/success/unavailable screenshots were captured at
+both widths; visual inspection of all six confirms responsive presentation, the
+green success check, approved copy and completion message without a second action.
+
+No browser failure or source/test correction was required. The prior guarded
+backend result remains **734 passed in 20.32 seconds**, zero unexpected external
+access; its log and all backend source/tests are preserved. No backend rerun or
+broad regression campaign was necessary. Ordinary frontend decisions continue to
+use fixed parsing, explicit action, busy guards, authoritative backend outcomes
+and deliberate safe retry. Deterministic autonomy source/offline review PASS;
+no AI or routine administrator decision is introduced.
+
+Complete live-output transcripts remain under `.pytest_cache/r41/`:
+`confirmation-browser-20261017-162322.log` and
+`subscription-unsubscribe-browser-20261017-162346.log`. Screenshots are
+`landing-1280.png`, `success-1280.png`, `unavailable-1280.png` and their 390px
+equivalents. Continuation interpreter evidence, before/final hashes, preservation
+checks and final clipboard report are under `.pytest_cache/r41-continuation/`.
+The established visual PASS alerts, complete logging and clipboard reporting are
+retained. Browser cleanup completes before the existing dismissible alert dialogs.
+
+The exact R41 source inventory remains the two added and sixteen modified paths
+listed above. This continuation adds validation evidence to these two governing
+documents only; every prior document byte is preserved as an exact prefix, and
+the other 114 initial paths retain their hashes. HEAD, branch and Git index remain
+unchanged. No staging, commit or push. R38-R41, owner work and completed migrations
+remain preserved. No material blocker remains for R41 source/offline validation;
+live activation, scheduling and production retain their existing separate gates.

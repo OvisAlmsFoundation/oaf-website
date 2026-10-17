@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Meet GraManna, the charitable application in development at Ovis Alms Foundation. Find future application access, pilot availability, and launch updates.">
   <title>GraManna | Ovis Alms Foundation</title>
+  <script src="assets/email-confirmation.js"></script>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body class="gramanna-page">
@@ -223,7 +224,8 @@
           <p class="placeholder-text">Choose which future GraManna announcements you'd like to receive, from application launches to availability in your state. No account is needed.</p>
         </div>
 
-        <form id="notification-form" class="interface-card notification-preview" aria-labelledby="notification-preview-title" aria-describedby="subscription-note">
+        <div class="interface-card notification-preview">
+        <form id="notification-form" aria-labelledby="notification-preview-title" aria-describedby="subscription-note">
           <h3 id="notification-preview-title">Choose your updates</h3>
           <p id="subscription-note" class="interface-note">We save your email and selected preferences for future announcements. Email delivery is not connected yet; no confirmation email will be sent.</p>
           <label class="field-label" for="notification-email">Email address</label>
@@ -295,7 +297,7 @@
           </div>
           <label class="preference-option"><input type="checkbox" id="notification-consent" required autocomplete="off"> <span>I consent to Ovis Alms Foundation storing my email and preferences and emailing me the announcements I select. I can unsubscribe at any time.</span></label>
           <p class="interface-note">An existing active subscription keeps its original choices. To change them, use its private link to unsubscribe, then subscribe again.</p>
-          <noscript><p class="interface-note">Enable JavaScript to subscribe or unsubscribe.</p></noscript>
+          <noscript><p class="interface-note">Enable JavaScript to subscribe, confirm your email or unsubscribe.</p></noscript>
 
           <button class="button" type="submit" disabled>Subscribe</button>
           <p id="notification-message" class="interface-note" role="status" aria-live="polite" aria-atomic="true"></p>
@@ -307,6 +309,15 @@
             <p id="notification-unsubscribe-message" class="interface-note" role="status" aria-live="polite" aria-atomic="true"></p>
           </div>
         </form>
+        <form id="notification-confirmation-form" aria-labelledby="confirmation-request-title" hidden>
+          <h3 id="confirmation-request-title">Request or resend confirmation</h3>
+          <p class="interface-note">Already subscribed? Request a new link to confirm your email. Your announcement preferences stay the same.</p>
+          <label class="field-label" for="confirmation-email">Email address for confirmation</label>
+          <input class="form-control" id="confirmation-email" name="email" type="email" maxlength="254" autocomplete="email" required>
+          <button id="notification-confirmation-button" class="button" type="submit" disabled>Request or resend confirmation</button>
+          <p id="notification-confirmation-message" class="interface-note" role="status" aria-live="polite" aria-atomic="true"></p>
+        </form>
+        </div>
       </div>
     </section>
 
@@ -329,7 +340,7 @@
     </div>
   </footer>
 
-  <script src="assets/state-requests.js" defer></script>
   <script src="assets/notifications.js" defer></script>
+  <script src="assets/state-requests.js" defer></script>
 </body>
 </html>

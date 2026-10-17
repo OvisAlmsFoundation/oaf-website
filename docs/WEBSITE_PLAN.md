@@ -472,3 +472,280 @@ approved work. No staging, commits, pushes, GraManna edits or Cargo 29 features.
 source **206/206 statements, 68/68 branches**, complete changed feature
 modules **577/577 statements, 216/216 branches**, all 100%. Changed migration
 policy lines/decisions are covered. No live migration or delivery occurred.
+
+
+### R38: public email confirmation integration (2026-10-17)
+
+**SOURCE IMPLEMENTED / OFFLINE VALIDATED. LIVE EMAIL DELIVERY / OPERATIONAL
+ACTIVATION: OFF.** The appended R38 WORKFLOW entry records the exact contract,
+file inventory, preservation checks and validation evidence. The owner reports
+migrations 0001--0005 applied and verified in TESTING and DEVELOPMENT; this
+checkpoint performs no migration or live database/provider operation.
+
+- Add strict same-origin/browser-CSRF POST `/api/notifications/confirmation`
+  (`email` only) and `/api/notifications/confirm` (`token` only). All valid email
+  request outcomes are generic. Tokens never enter public API responses. Existing
+  expiry, supersession, safe-repeat, timestamp, withdrawal and suppression rules
+  remain authoritative; only valid confirmation verifies mailbox ownership.
+- Default-off factory injection `confirmation_enabled=False` enables persistence
+  and public operations only when explicitly True. No existing environment or
+  launcher enables it. OFF preserves signup/unsubscribe, performs no confirmation
+  reservation/mutation and displays no email-sent claim. No sender, dispatcher or
+  recurring processing is started by either flag state.
+- Enabled NEW signup uses the same locked transaction for consent, applicable
+  quotas, verification reservation and existing durable outbox intent. Duplicate
+  email/receipt submissions leave original preferences, consent and pending work
+  intact, including deliberate repeats after lost commit acknowledgements.
+  Quota/suppression-denied signup may save consent without reserving email work;
+  subsequent requests remain subject to the unchanged durable rules.
+- Accessible request/resend and explicit confirmation controls reuse the current
+  notification card and CSS. The reserved `#confirm-email=` capability is cleared
+  before application requests; opening it never verifies automatically. Existing
+  unsubscribe links, privacy, responsive layout and keyboard behavior are retained.
+- Focused backend: 656 passing tests, then the expanded 80-test public file PASS
+  (660 distinct cases across the selection), zero unexpected external access.
+  Confirmation and preserved signup/unsubscribe Playwright checks PASS at 1280px
+  and 390px, with zero page errors/external requests. Full PowerShell transcripts,
+  failed harness history, screenshots and preservation evidence remain ignored
+  under `.pytest_cache/r38/`. Established interpreters, test guards, clipboard
+  workflow and visual completion/failure alerts are preserved.
+- Deterministic autonomy source/offline review PASS. Ordinary eligibility,
+  quotas, state transitions, token recovery, rollback and repeat handling require
+  no AI or per-subscriber administrator decisions. Operational invocation remains
+  an explicit next dependency, not a hidden manual subscriber workflow.
+
+Next smallest recommended checkpoint: **R39 bounded dispatcher invocation and
+restart recovery integration, source/offline only**. Reuse existing bounded
+processing, protected configuration and durable recovery; specify recurring
+invocation and sanitized monitoring without a new worker framework. Live provider
+configuration/sends, capability-link tracking validation, authenticated feedback/
+uncertainty reconciliation, bounded live API/transaction validation and production
+activation retain separate approval boundaries. No live sending/readiness is
+claimed. No GraManna source change, Git staging, commit or push occurs.
+
+
+### R39: bounded confirmation processor invocation (2026-10-17)
+
+**SOURCE/OFFLINE VALIDATED. LIVE PROVIDER DELIVERY / OPERATIONAL ACTIVATION:
+OFF.** The appended R39 WORKFLOW entry defines the complete invocation,
+scheduling, recovery, reporting and activation contract. Applied/verified
+migrations 0001--0005 in TESTING and DEVELOPMENT remain closed per the owner.
+
+- `python -u -B -m oaf_website.confirmation_processor --environment <profile>`
+  runs one existing confirmation dispatcher batch only after the explicit
+  `--enable-processing` switch. Default OFF returns a sanitized nonzero disabled
+  result without configuration/credential/key/database/provider access. Explicit
+  matching `OAF_ENV`, existing runtime database loaders/checkout identity checks,
+  approved nonsecret Brevo account metadata and secure confirmation page are
+  required. Production fails closed before credentials. There is no new settings
+  file, environment authority or public/application-startup processing.
+- The existing protected key loader gains `require_existing=True`: the processor
+  never creates a missing/replacement DPAPI key. Existing hosts keep their
+  create-once default. The existing Brevo loader/adapter, outbox, templates and
+  durable intent/attempt authority are reused; no schema, queue or framework is
+  added. Every invocation disposes its runtime engine.
+- Work remains at most 20 selected due intents and 20 expired-claim recoveries
+  per start, with five-minute leases, three attempts, 60/300-second safe retries
+  and the original 24-hour token expiry. Database claims/transaction locks govern
+  concurrency. Restart recovers the same pending token; expired claimed work can
+  retry safely. Possibly submitted work becomes/remains uncertain and never
+  blindly resends. Final lifecycle checks preserve expiry, supersession,
+  withdrawal, suppression and verification. Provider acceptance never verifies
+  ownership or establishes mailbox delivery.
+- JSON output contains only existing `status` and `processed` fields; exit 0 is
+  completed processing, 2 disabled/invalid arguments, 1 unavailable and 130
+  interrupted. Zero processed does not prove an empty outbox; recoveries or
+  ineligible/competing work may have been handled. Counts describe acknowledged
+  outcome persistence, not delivery. Existing ledger evidence remains authoritative
+  after interrupted/unacknowledged results; no private data or raw exceptions are
+  reported. Uncertain/terminal provider outcomes can accompany completed processing.
+- Future recurring invocation can use the approved host's existing scheduler.
+  The local Windows proposal is one start per minute from the website root under
+  the approved existing credential/DPAPI account, explicit matching environment,
+  approved metadata/page and enable switch. Disable overlapping starts as an
+  operational policy; database claims still protect concurrent invocations.
+  Scheduled starts discover due retries and bounded restart recovery automatically;
+  ordinary messages require no manual processing or AI. Capture JSON/exit status
+  in existing host logs/alerts and later authorize sanitized ledger observation.
+  No task, worker, background service, startup launcher or production setting is
+  registered/activated. Existing network inactivity bounds are not a total
+  wall-clock deadline; forced termination retains conservative uncertainty recovery.
+- Focused gate: **621 passed in 15.62 seconds**, including **95 new processor
+  cases**, zero unexpected external-access attempts. Guards, dedicated website
+  interpreter, `-B`, explicit pytest isolation and visible logged PowerShell
+  output/visual alerts are retained. The six selected files cover all R39
+  invocation, bounds, restart/commit, retry, concurrency, lifecycle, redaction and
+  R38 compatibility scenarios. No browser behavior changes, Playwright run,
+  GraManna access, package installation or migration certification occurs.
+- Deterministic autonomy source/offline review PASS. Ordinary decisions follow
+  existing authoritative rules. Activation/configuration, policy/key changes,
+  official approvals and exceptional evidence-backed corrections retain human
+  authority. Provider feedback/correlation/reconciliation remains separately
+  contracted; no lack of evidence permits a resend.
+
+R38 and owner changes, historical document prefixes, migrations/schema/manifest,
+runtime/deployment launchers and Git index are preserved. Exact R39 files are
+`oaf_website/confirmation_processor.py` (new), `oaf_website/local_testing.py`,
+`tests/test_confirmation_processor.py` (new), `tests/migration_offline.py`, and
+both governing documents. Ignored evidence/logs/report are in `.pytest_cache/r39/`;
+`Invoke-OAFCodex` and clipboard/completion workflow remain unchanged.
+
+Smallest next checkpoint: **R40 separately owner-authorized bounded TESTING
+end-to-end invocation and restart validation**, with a controlled mailbox and
+approved actual host/account/origin/protected configuration. Verify the stated
+activation prerequisites first and keep recurring scheduling and production
+inactive. Public activation compatibility, sender/link confidentiality and live
+API/claim/restart behavior remain within that future bounded authorization.
+Authenticated provider feedback remains separately contracted; R39 does not
+activate or certify live delivery or require another independent source review.
+
+
+### R40-B: controlled recipient enforcement and TESTING HTTPS preparation (2026-10-17)
+
+**SOURCE / OFFLINE VALIDATED. LIVE TESTING HTTPS / CONFIRMATION / PROVIDER
+ACTIVATION: OFF.** The appended R40-B WORKFLOW entry governs the complete contract,
+future startup procedure, exact inventory and evidence. R36 HEAD is unchanged;
+R38/R39 and owner work remain preserved. Applied/verified 0001--0005 work stays closed.
+
+- Enabled TESTING processor calls now require one deliberately supplied approved
+  `--testing-recipient` / `testing_recipient`. Normalize using existing mailbox
+  rules; reject missing/malformed/repeated CLI scope or enabled non-TESTING scope
+  before protected runtime access. Default OFF remains inert. No mailbox is chosen
+  or provisioned in this checkpoint; no new configuration authority is introduced.
+- Existing SQL filters both due intents and expired-claim recovery through the
+  authoritative subscriber's exact mailbox before stable ordering/LIMIT. Claims,
+  final committed submission preparation, outcome persistence, dispatcher and
+  Brevo adapter enforce the same scope. Never redirect another subscriber's message.
+  Unrelated records/claims/attempts remain untouched, including expired work.
+- Retain 20 due/20 recovery bounds, five-minute leases, three attempts, 60/300-second
+  safe backoff, original 24-hour expiry, lifecycle/suppression checks, durable history
+  and conservative uncertainty without automatic resend. Ordinary non-test
+  processing contracts remain intact; production remains blocked.
+- Add the explicit `oaf_website.local_testing_https` foreground host and HTTPS
+  factory seam using existing Flask/Werkzeug and public-file allowlist. Bind only
+  `127.0.0.1:443`, require explicit matching TESTING configuration, existing DPAPI key
+  and verified runtime checkout. Public confirmation defaults OFF; its explicit
+  enable switch never starts a processor. Existing HTTP TESTING and DEVELOPMENT/F2
+  conventions and PowerShell execution remain compatible.
+- Owner must select a loopback-resolving HTTPS hostname/origin and exact matching
+  `/gramanna.html` page, trusted valid matching certificate/noninteractive PEM key,
+  absolute protected file paths and port-443 availability/privilege. Strict templates
+  still reject HTTP/nonstandard HTTPS ports. TLS minimum 1.2, no certificate/trust
+  provisioning; Secure HttpOnly/SameSite cookies, origin/CSRF protections remain.
+- Focused gate: **737 passed in 20.67 seconds**, including **72 new recipient/HTTPS
+  cases**, zero unexpected external access. All 20 requested behavioral areas are
+  covered using existing early isolation guards, serialized SQL model, in-process
+  Flask and mocked TLS/server/provider dependencies. No real TLS key, socket,
+  PostgreSQL, credential, provider or email operation; no migration recertification
+  or browser campaign. Logs/snapshots/report remain ignored in `.pytest_cache/r40b/`;
+  existing visible PowerShell, clipboard and visual alert behavior is preserved.
+- Deterministic autonomy source/offline review PASS: fixed server-side selection,
+  scope/claim authorization, eligibility, retries, recovery and uncertainty hold.
+  No ordinary AI or administrator intervention; exceptional corrections and
+  operational/policy approvals retain existing authorized human controls.
+
+Smallest next checkpoint: **R40-C owner selection and prerequisite review for one
+bounded TESTING end-to-end operation**, followed only by separate explicit live
+authorization. Actual mailbox/account/origin/certificate/port choices, compatible
+public activation, sender/link confidentiality and live transaction/restart behavior
+remain prerequisites. Recurring scheduling and production stay OFF. No staging,
+commit/push, GraManna access or deployed/live delivery readiness is claimed.
+
+
+### R41: dedicated email confirmation page (2026-10-17)
+
+The approved source flow is now signup -> existing Brevo confirmation email ->
+dedicated OAF Website confirmation page -> one explicit Confirm email action ->
+existing authoritative verification POST -> success on the same page. No signup
+form or second navigation follows success. See the appended R41 WORKFLOW entry
+and final evidence for the exact implementation, inventory and validation status.
+
+- `confirm-email.html` and `assets/email-confirmation.js` reuse shared navigation,
+  typography, palette, card/button styles and responsive layout. Landing copy
+  identifies OVIS ALMS FOUNDATION and the selected GraManna announcements. Success
+  displays the green check, "Your email is confirmed!", the approved explanation
+  and "Email verification complete", with the confirmation action removed.
+- A head script clears the private fragment before API work. Existing session,
+  CSRF, same-origin and POST `/api/notifications/confirm` protections remain in
+  force. GET/page load/scanner previews never confirm. Fixed accessible busy,
+  success, invalid/expired/unavailable and network/server states follow backend
+  results, with one-action duplicate protection and deliberate safe retries.
+  No subscriber existence or raw server diagnostic is disclosed.
+- New emails use `/confirm-email.html#confirm-email=`. The narrow explicit runtime
+  validator supports exactly the dedicated path and legacy `/gramanna.html`
+  configuration, canonicalizing only the path on the same trusted HTTPS authority.
+  Exact TESTING origin, standard port, no credentials/query/fragment and strict
+  paths remain required. Existing issued legacy links forward their unchanged
+  fragment to the dedicated page before confirmation. No token is regenerated.
+  Unsubscribe links and their exact `/gramanna.html#unsubscribe=` contract remain.
+- Both independent public-confirmation/processor switches still default OFF.
+  Page serving starts no sender or scheduler. Endpoint authority, consent,
+  eligibility, cryptography, original expiry, stable timestamps, durable outbox,
+  safe retries/leases/uncertainty, Brevo, State Requests, Contact and shared-service
+  contracts are preserved. No schema or migration change is required.
+- The focused guarded backend gate passed **734 tests in 20.32 seconds**, zero
+  unexpected external-access attempts. It covers the unchanged lifecycle/security
+  rules plus trusted dedicated/legacy page configuration, new link rendering,
+  exact origin restrictions and mutation-free static page GETs. Browser evidence
+  is recorded separately in the final R41 validation entry. Existing PowerShell
+  live output, complete logging, visual alerts and clipboard workflow are retained.
+- Deterministic autonomy source review passes: fragment handling, explicit action,
+  authoritative results, retry/expiry/revocation and fixed accessible messages
+  require no AI or routine administrator decision. The capability stays transient;
+  reopening the original email link is needed after a fresh reload. JavaScript
+  and cookies are required. Resistance covers ordinary GET/page-load scanners,
+  without claiming to distinguish a deliberate authorized POST by a script client.
+
+The owner reports R40-F **END-TO-END TESTING CONFIRMATION PASS**, including Gmail
+receipt, explicit confirmation and database timestamp validation, with HTTPS shut
+down and port 443 released. R41 records that baseline only. Completed migrations
+0001--0005 in TESTING/DEVELOPMENT remain closed. No new live email, credential,
+database, provider, HTTPS, scheduler or production operation occurs. No GraManna
+source access/modification, package install, staging, commit or push occurs.
+Historical document bytes and owner notes remain intact. Operational activation,
+approved recurring scheduling/monitoring, production deployment/secrets and future
+authenticated feedback/reconciliation retain their separate gates. No production
+readiness or new live confirmation certification is claimed.
+
+
+R41 final status: **BLOCKED at the required Playwright desktop/mobile gate**.
+Source, guarded backend tests, syntax, whitespace and preservation checks pass.
+The current prohibition on GraManna paths conflicts with the established shared
+Playwright interpreter location, and Playwright is absent from the website
+interpreter. The interpreter-only clarification remains pending; no sibling path,
+package install or alternate method is used. The two intercepted browser scripts
+are prepared and syntax-checked but unexecuted, so responsive/keyboard/browser
+results are not claimed. Exact evidence and limitations are in the final R41
+WORKFLOW entry. Smallest next checkpoint: resolve that narrow tool boundary and
+run only the dedicated-confirmation and preserved subscription/unsubscribe
+browser checks at 1280px and 390px. Keep backend reruns proportional, live email,
+migrations, HTTPS, recurring processing and production activation out of scope.
+
+
+### R41 browser validation continuation PASS (2026-10-17)
+
+**R41 - SOURCE / OFFLINE VALIDATED.** This supersedes the historical R41 browser
+block above after the owner's explicit shared-interpreter clarification. Both
+prepared intercepted Chromium scripts passed unchanged at **1280px and 390px**
+using `..\GraManna\.venv\Scripts\python.exe`, installed Playwright **1.61.0** and
+the established Chromium cache through the existing live/transcribed helper.
+
+Dedicated confirmation, fragment privacy, explicit action, accessible busy/success
+states, keyboard/focus, invalid/expired and network/API/session failures, safe
+retries, default OFF, legacy links and existing request/signup/unsubscribe behavior
+PASS. Zero page errors or unexpected page requests; confirmation checks also report
+zero unexpected console errors. All six captured landing/success/unavailable
+screens were visually reviewed. No source/test correction was needed; the prior
+guarded **734-pass** backend evidence remains preserved without a redundant rerun.
+Deterministic autonomy source/offline review PASS.
+
+All 116 source paths matched the prior R41 hashes before execution. Only validation
+entries are appended to the two governing documents; original bytes, R38-R41 and
+owner work, backend/migration artifacts, HEAD and index are preserved. The exact
+R41 inventory remains as recorded in WORKFLOW. Logs/screenshots are under ignored
+`.pytest_cache/r41/`; continuation hashes, interpreter evidence and final clipboard
+report are under `.pytest_cache/r41-continuation/`. Existing visual alerts and
+clipboard/live-output/logging behavior are retained. No shared-environment writes,
+GraManna application inspection, install, credentials, database/provider/email,
+live activation, staging, commit or push. No material source/offline blocker
+remains; operational and production activation retain their separate gates.

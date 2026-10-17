@@ -1,4 +1,4 @@
-"""Offline-tested persistence foundation; deliberately unregistered, with no sender.
+"""Transactional notification persistence; no sender or runtime processor.
 
 Callers inject an already verified OAF engine and protected persistent secret.
 Every transition is transactional. Exceptions escape without logging private data;
@@ -127,28 +127,31 @@ class NotificationDeliveryStore:
         return True
 
     def request_confirmation(self, email):
-        """Internal sensitive return only. A future endpoint MUST return a generic receipt.
+        """Internal sensitive return only. Public callers discard it for a generic receipt.
 
-        No endpoint calls this until confirmation delivery is approved/available.
         Unknown, verified, suppressed and throttled addresses all return None.
         All requests consume the global budget; mailbox limits survive resubscription.
         """
         email = normalize_email(email)
         with self._transaction() as (connection, now):
-            if not self._budget(connection, self._digest("budget", "global"), now, 1000, 0):
-                return None
-            mailbox = self._digest("mailbox", email)
-            if not self._budget(connection, mailbox, now, 5, 60):
-                return None
-            subscriber = self._get(connection, notifications, email=email, unsubscribed_at=None)
-            if subscriber is None or self._get(connection, suppressions, mailbox_digest=mailbox):
-                return None
-            key = dict(subscription=subscriber["unsubscribe_digest"])
-            record = self._get(connection, verification, **key)
-            if record and record["verified_at"] is not None:
-                return None
-            from .confirmation_outbox import reserve_confirmation
-            return reserve_confirmation(self, connection, now, subscriber, record)
+            return self._request_confirmation(connection, now, email)
+
+    def _request_confirmation(self, connection, now, email):
+        """Share the caller's locked transaction, including a newly inserted signup."""
+        if not self._budget(connection, self._digest("budget", "global"), now, 1000, 0):
+            return None
+        mailbox = self._digest("mailbox", email)
+        if not self._budget(connection, mailbox, now, 5, 60):
+            return None
+        subscriber = self._get(connection, notifications, email=email, unsubscribed_at=None)
+        if subscriber is None or self._get(connection, suppressions, mailbox_digest=mailbox):
+            return None
+        key = dict(subscription=subscriber["unsubscribe_digest"])
+        record = self._get(connection, verification, **key)
+        if record and record["verified_at"] is not None:
+            return None
+        from .confirmation_outbox import reserve_confirmation
+        return reserve_confirmation(self, connection, now, subscriber, record)
 
     def confirm(self, token):
         """Fixed outcomes, no address disclosure; replay allowed only until original expiry."""

@@ -1,13 +1,13 @@
-"""Anonymous subscriptions, explicit consent and capability-only withdrawal."""
+"""Anonymous subscriptions, guarded email confirmation and capability-only withdrawal."""
 
 import hashlib
 import hmac
+import json
 import re
 
 from flask import jsonify, request
 from sqlalchemy import func, update
 from sqlalchemy.dialects.postgresql import insert
-from werkzeug.exceptions import BadRequest
 
 from .notification_schema import CONSENT_VERSION, notifications
 from .state_request_schema import STATE_CODES
@@ -15,6 +15,10 @@ from .state_request_schema import STATE_CODES
 TOKEN = re.compile(r"[0-9a-f]{64}")
 LOCAL = re.compile(r"[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*", re.ASCII)
 LABEL = re.compile(r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?", re.ASCII)
+CONFIRMATION_REQUESTED = "If confirmation is needed and permitted, we'll email a link."
+CONFIRMED = "Your email is confirmed."
+LINK_UNAVAILABLE = "This link is unavailable. Request a new confirmation link."
+CONFIRMATION_OFF = "Email confirmation is currently unavailable."
 
 
 class UnsubscribeCapabilities:
@@ -76,13 +80,25 @@ def validate_subscription(data):
 
 
 class SubscriptionStore:
-    def __init__(self, engine):
+    def __init__(self, engine, *, confirmation_store=None):
+        if confirmation_store is not None and confirmation_store.engine is not engine:
+            raise ValueError("Confirmation must share the subscription engine and transaction.")
         self.engine = engine
+        self.confirmation_store = confirmation_store
 
     def subscribe(self, values):
         # Both the permanent receipt PK and the partial active-email unique
         # index arbitrate races. No existing preference or token is replaced.
         statement = insert(notifications).values(**values).on_conflict_do_nothing()
+        if self.confirmation_store is not None:
+            delivery = self.confirmation_store
+            with delivery._transaction() as (connection, now):
+                created = connection.execute(statement.returning(notifications.c.unsubscribe_digest)).scalar_one_or_none()
+                if created is not None:
+                    # Only a genuinely new receipt/lifecycle may reserve work.
+                    # A repeat after a lost COMMIT response cannot rotate it.
+                    delivery._request_confirmation(connection, now, values["email"])
+            return
         with self.engine.begin() as connection:
             connection.execute(statement)
 
@@ -102,15 +118,58 @@ def subscription_response(values, capabilities):
 
 
 def register_notifications(app, store, capabilities, same_origin, valid_csrf, error):
+    confirmation = store.confirmation_store
+
     def payload():
         if not same_origin(mutation=True) or not valid_csrf():
             return None, error("Enable cookies, open this website, and try again.", 403)
         if request.mimetype != "application/json":
             return None, error("Submit the notification form and try again.", 415)
         try:
-            return request.get_json(), None
-        except BadRequest:
+            from .integrations import _strict_object, _invalid_constant
+            return json.loads(request.get_data().decode("utf-8"), object_pairs_hook=_strict_object,
+                              parse_constant=_invalid_constant), None
+        except (ValueError, UnicodeError, RecursionError):
             return None, error("Submit the notification form and try again.", 400)
+
+    @app.post("/api/notifications/confirmation")
+    def request_confirmation():
+        data, failure = payload()
+        if failure is not None:
+            return failure
+        if confirmation is None:
+            return error(CONFIRMATION_OFF, 503)
+        try:
+            if type(data) is not dict or set(data) != {"email"}:
+                raise ValueError("Enter only your email address.")
+            email = normalize_email(data["email"])
+        except ValueError as invalid:
+            return error(str(invalid), 400)
+        try:
+            confirmation.request_confirmation(email)  # Never expose the sensitive return.
+        except Exception:
+            app.logger.warning("Notification confirmation reservation unavailable.")
+            return error("We could not confirm this request. Please try again later.", 503)
+        return jsonify(status="received", message=CONFIRMATION_REQUESTED)
+
+    @app.post("/api/notifications/confirm")
+    def confirm():
+        data, failure = payload()
+        if failure is not None:
+            return failure
+        if confirmation is None:
+            return error(CONFIRMATION_OFF, 503)
+        if (type(data) is not dict or set(data) != {"token"}
+                or type(data["token"]) is not str or not TOKEN.fullmatch(data["token"])):
+            return error(LINK_UNAVAILABLE, 400)
+        try:
+            outcome = confirmation.confirm(data["token"])
+        except Exception:
+            app.logger.warning("Notification confirmation persistence unavailable.")
+            return error("We could not confirm this action. Please try this link again.", 503)
+        if outcome != "verified":
+            return error(LINK_UNAVAILABLE, 400)
+        return jsonify(status="confirmed", message=CONFIRMED)
 
     @app.post("/api/notifications")
     def subscribe():

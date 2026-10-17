@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Confirm your email address for your selected GraManna announcements from Ovis Alms Foundation.">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Confirm your email | Ovis Alms Foundation</title>
+  <!-- Capture and clear the private fragment before other resources or API work. -->
+  <script src="assets/email-confirmation.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="email-confirmation-page">
+  <header class="site-header">
+    <a class="foundation-name foundation-home" href="index.html">Ovis Alms Foundation</a>
+    <nav aria-label="Main navigation">
+      <a href="index.html">Home</a>
+      <a href="about.html">About</a>
+      <a href="gramanna.html">GraManna</a>
+      <a href="faq.html">FAQ</a>
+      <a href="contact.html">Contact</a>
+      <a class="nav-support" href="support.html">Support</a>
+    </nav>
+  </header>
+
+  <main class="email-confirmation-main">
+    <section id="email-confirmation" class="interface-card email-confirmation-card" aria-labelledby="email-confirmation-title" aria-busy="false">
+      <p class="eyebrow">OVIS ALMS FOUNDATION</p>
+      <svg id="email-confirmation-check" class="email-confirmation-check" viewBox="0 0 48 48" fill="none" aria-hidden="true" focusable="false" hidden>
+        <circle cx="24" cy="24" r="22" fill="currentColor" />
+        <path d="m14 24 7 7 14-15" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      <h1 id="email-confirmation-title" tabindex="-1">Confirm your email</h1>
+      <p id="email-confirmation-explanation">You're almost done! Please confirm your email address to receive the GraManna announcements you selected.</p>
+      <button id="email-confirmation-button" class="button" type="button" disabled>Confirm email</button>
+      <p id="email-confirmation-status" class="interface-note" role="status" aria-live="polite" aria-atomic="true"></p>
+      <p id="email-confirmation-error" class="interface-note" role="alert" aria-atomic="true"></p>
+      <p id="email-confirmation-help" class="interface-note" hidden><a href="gramanna.html#confirmation-request-title">Request a new confirmation link</a> from the notification page.</p>
+      <noscript><p class="interface-note">Enable JavaScript and cookies, then reopen the private link in your email to confirm your address.</p></noscript>
+    </section>
+  </main>
+
+  <footer>
+    <div>&copy; 2026 Ovis Alms Foundation. All rights reserved.</div>
+  </footer>
+</body>
+</html>

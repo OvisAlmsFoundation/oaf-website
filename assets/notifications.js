@@ -1,4 +1,14 @@
 (() => {
+  const openedFragment = location.hash;
+  if (openedFragment.startsWith('#confirm-email=') || openedFragment.startsWith('#unsubscribe=')) {
+    // Strip private capabilities before DOM work or any application requests.
+    history.replaceState(null, '', location.pathname + location.search);
+  }
+  if (openedFragment.startsWith('#confirm-email=')) {
+    // Keep issued links usable without a query, storage handoff or token renewal.
+    location.replace('confirm-email.html' + openedFragment);
+    return;
+  }
   const form = document.getElementById('notification-form');
   const email = document.getElementById('notification-email');
   const web = document.getElementById('notify-web');
@@ -15,8 +25,14 @@
   const withdrawal = document.getElementById('notification-unsubscribe');
   const withdrawButton = document.getElementById('notification-unsubscribe-button');
   const withdrawNote = document.getElementById('notification-unsubscribe-message');
+  const confirmationForm = document.getElementById('notification-confirmation-form');
+  const confirmationEmail = document.getElementById('confirmation-email');
+  const requestButton = document.getElementById('notification-confirmation-button');
+  const requestNote = document.getElementById('notification-confirmation-message');
   let busy = false;
   let csrf;
+  let sessionLoading;
+  let confirmationEnabled = null;
   let submission;
   let withdrawalToken;
 
@@ -33,11 +49,14 @@
 
   function controls(disabled) {
     busy = disabled;
-    [email, web, android, ios, statePreference, consent, button, withdrawButton]
+    [email, web, android, ios, statePreference, consent, button, withdrawButton, confirmationEmail]
       .forEach(control => { control.disabled = disabled; });
     updateState();
     withdrawButton.disabled = disabled || !withdrawalToken;
+    requestButton.disabled = disabled || !confirmationEnabled;
+    button.disabled = disabled || !(globalThis.crypto && crypto.getRandomValues);
     form.setAttribute('aria-busy', String(disabled));
+    confirmationForm.setAttribute('aria-busy', String(disabled));
   }
 
   async function api(path, body) {
@@ -65,12 +84,30 @@
   }
 
   async function session() {
-    if (!csrf) csrf = (await api('/api/notifications/session')).csrf_token;
+    if (csrf) return;
+    if (!sessionLoading) sessionLoading = api('/api/notifications/session').then(data => {
+      if (typeof data.csrf_token !== 'string' || !/^[0-9a-f]{64}$/.test(data.csrf_token)) {
+        throw new Error('We could not confirm this action. Try again.');
+      }
+      csrf = data.csrf_token;
+      confirmationEnabled = data.confirmation_enabled === true;
+      confirmationForm.hidden = !confirmationEnabled;
+      document.getElementById('subscription-note').textContent = confirmationEnabled ?
+        "We save your email and selected preferences for future announcements. If confirmation is needed and permitted, we'll email a link." :
+        'We save your email and selected preferences for future announcements. Email delivery is not connected yet; no confirmation email will be sent.';
+    }).finally(() => { sessionLoading = null; });
+    await sessionLoading;
   }
 
-  function readWithdrawalLink() {
-    if (!location.hash.startsWith('#unsubscribe=')) return;
-    const token = location.hash.slice('#unsubscribe='.length);
+  function readConfirmationLink(fragment = location.hash) {
+    if (!fragment.startsWith('#confirm-email=')) return;
+    history.replaceState(null, '', location.pathname + location.search);
+    location.replace('confirm-email.html' + fragment);
+  }
+
+  function readWithdrawalLink(fragment = location.hash) {
+    if (!fragment.startsWith('#unsubscribe=')) return;
+    const token = fragment.slice('#unsubscribe='.length);
     // Fragments never reach HTTP/access logs. Remove the capability from the
     // address bar before any API call; no token is put in a query or path.
     history.replaceState(null, '', location.pathname + location.search);
@@ -137,11 +174,34 @@
     }
   });
 
+  confirmationForm.addEventListener('submit', async event => {
+    event.preventDefault();
+    if (busy || !confirmationEnabled) return;
+    const address = confirmationEmail.value;
+    controls(true);
+    message(requestNote, 'Requesting a confirmation link...');
+    try {
+      await session();
+      if (!confirmationEnabled) throw new Error('Email confirmation is currently unavailable.');
+      const data = await api('/api/notifications/confirmation', { email: address });
+      message(requestNote, data.message);
+    } catch (error) {
+      message(requestNote, error.message, true);
+    } finally {
+      controls(false);
+    }
+  });
+
   statePreference.addEventListener('change', updateState);
   window.addEventListener('pageshow', updateState);
-  window.addEventListener('hashchange', readWithdrawalLink);
+  window.addEventListener('hashchange', () => readWithdrawalLink());
+  window.addEventListener('hashchange', () => readConfirmationLink());
   if (globalThis.crypto && crypto.getRandomValues) button.disabled = false;
   else message(note, 'Open this website over HTTPS to subscribe securely.', true);
   updateState();
-  readWithdrawalLink();
+  readWithdrawalLink(openedFragment);
+  readConfirmationLink(openedFragment);
+  // Clear either private fragment before the first API request. This script
+  // precedes the State Request script, which also performs an initial fetch.
+  session().then(() => controls(busy)).catch(() => controls(busy));
 })();

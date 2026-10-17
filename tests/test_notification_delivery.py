@@ -16,7 +16,7 @@ from sqlalchemy.sql import operators
 from sqlalchemy.sql.elements import BindParameter, BooleanClauseList, Null, True_, False_, Grouping
 from sqlalchemy.sql.dml import Insert, Update
 from sqlalchemy.sql.functions import Function
-from sqlalchemy.sql.selectable import Select
+from sqlalchemy.sql.selectable import Select, ScalarSelect
 from sqlalchemy.dialects import postgresql
 
 from oaf_website import notification_delivery as service
@@ -33,6 +33,7 @@ EVENT = str(UUID(int=1))
 class Result:
     def __init__(self, value): self.value = value
     def scalar_one(self): return self.value
+    def scalar_one_or_none(self): return self.value
     def mappings(self): return self.value
 
 
@@ -53,6 +54,11 @@ class Model:
             model = self
 
             def evaluate(node, row):
+                if isinstance(node, ScalarSelect):
+                    statement = node.element
+                    column = list(statement.selected_columns)[0]
+                    return [r[column.name] for r in pending[column.table.name]
+                            if all(evaluate(c, r) for c in statement._where_criteria)]
                 if isinstance(node, BindParameter): return node.value
                 if isinstance(node, Null): return None
                 if isinstance(node, True_): return True
@@ -101,7 +107,7 @@ class Model:
                         if duplicate and statement._post_values_clause is None:
                             raise RuntimeError("synthetic unique constraint rejection")
                         if not duplicate: pending[item.name].append(deepcopy(values))
-                        return Result(None)
+                        return Result(values["unsubscribe_digest"] if statement._returning and not duplicate else None)
                     if isinstance(statement, Update):
                         for row in pending[statement.table.name]:
                             if all(evaluate(c, row) for c in statement._where_criteria):

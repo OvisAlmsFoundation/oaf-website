@@ -168,7 +168,11 @@ def _build_app(store, recognition, public_origin, *, allow_insecure_localhost=Fa
         cookie = None
         if token is None:
             token, cookie = recognition.issue()
-        response = jsonify(csrf_token=recognition.csrf(token))
+        body = dict(csrf_token=recognition.csrf(token))
+        if request.path == "/api/notifications/session":
+            body["confirmation_enabled"] = (subscription_store is not None
+                                            and subscription_store.confirmation_store is not None)
+        response = jsonify(body)
         if cookie is not None:
             response.set_cookie(cookie_name, cookie, max_age=COOKIE_AGE,
                                 secure=secure, httponly=True, samesite="Lax", path="/")
@@ -229,7 +233,7 @@ def _build_app(store, recognition, public_origin, *, allow_insecure_localhost=Fa
 
 
 def create_app(*, expected_profile, recognition_secret, public_origin,
-               allow_insecure_localhost=False, integration_config=None):
+               allow_insecure_localhost=False, integration_config=None, confirmation_enabled=False):
     """Explicit runtime factory. No schema creation, migration or secret fallback.
 
     Supply one persistent, protected recognition secret to every API worker.
@@ -237,7 +241,11 @@ def create_app(*, expected_profile, recognition_secret, public_origin,
     Optional IntegrationConfig is injected from protected backend configuration;
     its environment must match the verified runtime profile. None disables the
     service routes. No additional environment-variable allowlist is introduced.
+    confirmation_enabled must be explicitly True to enable reservation/confirmation;
+    it never constructs a provider adapter or starts outbox processing.
     """
+    if type(confirmation_enabled) is not bool:
+        raise ValueError("Email confirmation activation must be an explicit boolean.")
     recognition = BrowserRecognition(recognition_secret)
     # Validate the origin before any configuration/credential access.
     _build_app(None, recognition, public_origin,
@@ -259,9 +267,13 @@ def create_app(*, expected_profile, recognition_secret, public_origin,
     from .notifications import SubscriptionStore
     from .interest_reporting import InterestSummaryStore
     from .contact_mail import ConfiguredSMTP
+    confirmation = None
+    if confirmation_enabled:
+        from .notification_delivery import NotificationDeliveryStore
+        confirmation = NotificationDeliveryStore(engine, recognition.secret, config.profile)
     app = _build_app(RequestStore(engine), recognition, public_origin,
                      allow_insecure_localhost=allow_insecure_localhost,
-                     subscription_store=SubscriptionStore(engine),
+                     subscription_store=SubscriptionStore(engine, confirmation_store=confirmation),
                      integration_config=integration_config, environment=config.profile,
                      reporting_store=InterestSummaryStore(engine, config.profile)
                      if integration_config is not None else None,

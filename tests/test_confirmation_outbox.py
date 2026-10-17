@@ -36,7 +36,8 @@ def reserve(model, store):
     return subscription, token, model.rows(intents)[-1]["intent"]
 
 
-def test_restart_recovers_original_capability_and_authoritative_recipient(setup):
+@pytest.mark.parametrize('page_path', ['/gramanna.html', '/confirm-email.html'])
+def test_restart_recovers_original_capability_and_authoritative_recipient(setup, page_path):
     model, store, transport, _ = setup
     subscription, token, intent = reserve(model, store)
     assert token not in repr(model.records) and intent != token
@@ -49,11 +50,11 @@ def test_restart_recovers_original_capability_and_authoritative_recipient(setup)
         assert data["to"] == [{"email": "subscriber1@example.invalid"}]
         assert data["sender"] == {"name":"Ovis Alms Foundation", "email":"communications@updates.ovisalmsfoundation.org"}
         assert data["replyTo"] == {"email":"contact@ovisalmsfoundation.org"}
-        assert PAGE + "#confirm-email=" + token in data["textContent"]
+        assert PAGE.replace('/gramanna.html', '/confirm-email.html') + "#confirm-email=" + token in data["textContent"]
         assert token in data["htmlContent"]
         return response()
     transport.side_effect = send
-    dispatcher = o.ConfirmationDispatcher(restarted, CONFIG, PAGE, transport=transport)
+    dispatcher = o.ConfirmationDispatcher(restarted, CONFIG, PAGE.replace('/gramanna.html', page_path), transport=transport)
     assert dispatcher.process() == BatchResult("processed", 1)
     assert model.rows(intents)[0]["status"] == "accepted"
     assert model.rows(verification)[0]["verified_at"] is None

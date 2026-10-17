@@ -242,6 +242,48 @@ def test_default_transport_and_invalid_adapter_configuration():
 def test_untrusted_confirmation_and_withdrawal_pages_fail_safely(page):
     with pytest.raises(ValueError) as error: messages.secure_page(page)
     assert error.value.__context__ is None
+    with pytest.raises(ValueError) as error: messages.secure_confirmation_page(page)
+    assert error.value.__context__ is None
+
+
+@pytest.mark.parametrize('authority', ['website.example', 'website.example:443'])
+@pytest.mark.parametrize('path', ['/gramanna.html', '/confirm-email.html'])
+def test_confirmation_destination_is_dedicated_with_exact_legacy_configuration_compatibility(authority, path):
+    page = 'https://' + authority + path
+    destination = 'https://' + authority + '/confirm-email.html'
+    assert messages.secure_confirmation_page(page) == destination
+    message = messages.verification_message('a' * 64, page)
+    assert destination + '#confirm-email=' + 'a' * 64 in message.text
+    assert destination + '#confirm-email=' + 'a' * 64 in message.html
+    assert '/gramanna.html' not in message.text + message.html
+    # The withdrawal page contract is independently restricted to its old path.
+    if path == '/confirm-email.html':
+        with pytest.raises(ValueError): messages.secure_page(page)
+        with pytest.raises(ValueError):
+            messages.release_message(payload(), 'b' * 64, UnsubscribeCapabilities(SECRET), page)
+
+
+@pytest.mark.parametrize('page', [
+    'http://website.example/confirm-email.html',
+    'https://website.example:5443/confirm-email.html',
+    'https://user@website.example/confirm-email.html',
+    'https://website.example/confirm-email.html?token=private',
+    'https://website.example/confirm-email.html#confirm-email=private',
+    'https://website.example/confirm-email.html?',
+    'https://website.example/confirm-email.html#',
+    'https://website.example/sub/confirm-email.html',
+    'https://website.example/../confirm-email.html',
+    'https://website.example/%63onfirm-email.html',
+    'https://website.example//confirm-email.html',
+    'https://website.example/CONFIRM-EMAIL.html',
+    'https://website.example/confirm-email.html/',
+    'https://website.example/confirm-email.html\n',
+    'https://-bad.example/confirm-email.html',
+    'https://bad..example/confirm-email.html',
+])
+def test_confirmation_path_extension_never_accepts_other_destinations(page):
+    with pytest.raises(ValueError): messages.secure_confirmation_page(page)
+    with pytest.raises(ValueError): messages.verification_message('a' * 64, page)
 
 
 @pytest.mark.parametrize("token", [None, 3, "", "A"*64, "f"*63, "f"*64+"\n"])

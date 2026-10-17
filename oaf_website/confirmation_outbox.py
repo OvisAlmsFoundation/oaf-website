@@ -12,8 +12,9 @@ from .notification_delivery_schema import verification, suppressions
 from .notification_schema import notifications
 from .confirmation_outbox_schema import intents, confirmation_attempts
 from .brevo import BrevoAdapter, BrevoConfig, BrevoConfigurationError, ProviderOutcome
+from .brevo import validate_recipient_scope
 from .notification_dispatch import BatchResult
-from .notification_messages import secure_page, verification_message
+from .notification_messages import secure_confirmation_page, verification_message
 
 
 def capability(store, subscription, intent):
@@ -57,6 +58,25 @@ def reserve_confirmation(store, connection, now, subscriber, record):
 
 
 class ConfirmationOutboxStore(NotificationDeliveryStore):
+    def __init__(self, engine, secret, environment, *, recipient_scope=None):
+        validate_recipient_scope(recipient_scope, environment)
+        super().__init__(engine, secret, environment)
+        self.recipient_scope = recipient_scope
+
+    def _require_scoped_record(self, connection, record):
+        if self.recipient_scope is not None:
+            subscriber = self._get(connection, notifications,
+                                   unsubscribe_digest=record["subscription"])
+            self.recipient_scope.require(None if subscriber is None else subscriber["email"])
+
+    def _scoped(self, statement):
+        if self.recipient_scope is not None:
+            # Filter BEFORE ordering/LIMIT. No unrelated claim/attempt is recovered.
+            statement = statement.where(intents.c.subscription.in_(
+                select(notifications.c.unsubscribe_digest).where(
+                    notifications.c.email == self.recipient_scope.mailbox)))
+        return statement
+
     def _eligible_confirmation(self, connection, record, now):
         subscriber = self._get(connection, notifications, unsubscribe_digest=record["subscription"])
         current = self._get(connection, verification, subscription=record["subscription"])
@@ -82,13 +102,14 @@ class ConfirmationOutboxStore(NotificationDeliveryStore):
             # Bound recovery work too. Final claims/dispatch recheck authority.
             statement = select(intents).where(intents.c.status.in_(("claimed", "submitting")),
                 intents.c.lease_until <= now).order_by(intents.c.intent).limit(limit)
-            for record in connection.execute(statement).mappings():
+            for record in connection.execute(self._scoped(statement)).mappings():
+                self._require_scoped_record(connection, record)
                 submitting = record["status"] == "submitting"
                 finish(self, connection, record, now, "submission_unknown" if submitting else "claim_expired",
                        "uncertain" if submitting else "failed")
             statement = select(intents.c.intent).where(intents.c.status.in_(("pending", "failed")),
                 intents.c.attempts < 3, intents.c.next_attempt_at <= now).order_by(intents.c.intent).limit(limit)
-            return [row["intent"] for row in connection.execute(statement).mappings()]
+            return [row["intent"] for row in connection.execute(self._scoped(statement)).mappings()]
 
     def claim_confirmation(self, intent):
         with self._transaction() as (connection, now):
@@ -96,6 +117,7 @@ class ConfirmationOutboxStore(NotificationDeliveryStore):
             if (record is None or record["status"] not in {"pending", "failed"} or record["attempts"] >= 3
                     or record["next_attempt_at"] is None or record["next_attempt_at"] > now):
                 return None
+            self._require_scoped_record(connection, record)
             if self._eligible_confirmation(connection, record, now) is None:
                 finish(self, connection, record, now, "ineligible", "suppressed")
                 return None
@@ -116,6 +138,7 @@ class ConfirmationOutboxStore(NotificationDeliveryStore):
             record = self._get(connection, intents, intent=intent)
             if not self._owns_confirmation(record, claim, "claimed") or record["lease_until"] <= now:
                 return None
+            self._require_scoped_record(connection, record)
             eligible = self._eligible_confirmation(connection, record, now)
             if eligible is None:
                 finish(self, connection, record, now, "ineligible", "suppressed")
@@ -126,6 +149,8 @@ class ConfirmationOutboxStore(NotificationDeliveryStore):
             except Exception:
                 finish(self, connection, record, now, "not_submitted", "failed")
                 return None
+            # Recheck the locked authoritative row immediately before authorization.
+            self._require_scoped_record(connection, record)
             self._update(connection, intents, dict(intent=intent), status="submitting",
                          lease_until=now + timedelta(minutes=5), updated_at=now)
             self._update(connection, confirmation_attempts, dict(intent=intent, attempt=record["attempts"]),
@@ -140,6 +165,7 @@ class ConfirmationOutboxStore(NotificationDeliveryStore):
             record = self._get(connection, intents, intent=intent)
             if not self._owns_confirmation(record, claim, "submitting"):
                 return False
+            self._require_scoped_record(connection, record)
             # A provider must never turn an echoed bearer into durable correlation
             # data. Preserve the outcome but discard such a private identifier.
             if message_id is not None and capability(self, record["subscription"], intent) in message_id:
@@ -152,8 +178,8 @@ class ConfirmationDispatcher:
     def __init__(self, store, config, confirmation_page, *, transport=None):
         if type(config) is not BrevoConfig or config.environment != store.environment:
             raise BrevoConfigurationError("Brevo configuration must match the confirmation environment.")
-        self.store, self.page = store, secure_page(confirmation_page)
-        self.adapter = BrevoAdapter(config, transport=transport)
+        self.store, self.page = store, secure_confirmation_page(confirmation_page)
+        self.adapter = BrevoAdapter(config, transport=transport, recipient_scope=store.recipient_scope)
 
     def process(self, *, limit=20):
         if type(limit) is not int or not 1 <= limit <= 20:
@@ -167,6 +193,8 @@ class ConfirmationDispatcher:
                 prepared = self.store.prepare_confirmation(intent, claim, self.page)
                 if prepared is None:
                     continue
+                if self.store.recipient_scope is not None:
+                    self.store.recipient_scope.require(prepared[0])
                 try:
                     outcome = self.adapter.submit(*prepared)
                 except Exception:

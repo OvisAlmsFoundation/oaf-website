@@ -6,6 +6,7 @@ import re
 from urllib.parse import urlsplit
 
 from .notification_delivery import CONTENT_VERSION, HEX
+from .notifications import LABEL
 
 
 @dataclass(frozen=True, repr=False)
@@ -15,19 +16,36 @@ class Message:
     html: str = field(repr=False)
 
 
-def secure_page(value):
+def _secure_page(value, paths):
     # Only a trusted server-injected absolute HTTPS page, never a request Host.
     try:
         parsed = urlsplit(value)
         if (parsed.scheme != "https" or not parsed.hostname or parsed.username is not None
                 or parsed.password is not None or parsed.port not in {None, 443}
-                or parsed.query or parsed.fragment or parsed.path != "/gramanna.html"
+                or parsed.query or parsed.fragment or parsed.path not in paths
+                or len(parsed.hostname) > 253
+                or not all(LABEL.fullmatch(label) for label in parsed.hostname.split("."))
                 or not re.fullmatch(r"https://[A-Za-z0-9.-]+(?::443)?/[A-Za-z0-9/_-]+\.html", value)):
             raise ValueError
         return value
     except Exception:
         pass
     raise ValueError("A configured secure notification page is required.") from None
+
+
+def secure_page(value):
+    """The unchanged exact notification/withdrawal-page contract."""
+    return _secure_page(value, {"/gramanna.html"})
+
+
+def secure_confirmation_page(value):
+    """Accept the two exact trusted paths; render new mail to the dedicated page.
+
+    Existing explicit /gramanna.html configuration remains compatible. Only its
+    fixed path changes; HTTPS, configured authority and standard port are kept.
+    """
+    page = _secure_page(value, {"/gramanna.html", "/confirm-email.html"})
+    return page.rsplit("/", 1)[0] + "/confirm-email.html"
 
 
 def _message(subject, intro, label, link, footer):
@@ -38,14 +56,10 @@ def _message(subject, intro, label, link, footer):
 
 
 def verification_message(token, confirmation_page):
-    """Internal outbox rendering; public confirmation UI/route remains inactive.
-
-    The future approved page must consume/clear the fragment locally and POST the
-    token under existing same-origin/CSRF protections, never a logged URL query.
-    """
+    """Render a private fragment for the explicit, scanner-resistant public UI."""
     if type(token) is not str or HEX.fullmatch(token) is None:
         raise ValueError("Invalid confirmation capability.")
-    link = secure_page(confirmation_page) + "#confirm-email=" + token
+    link = secure_confirmation_page(confirmation_page) + "#confirm-email=" + token
     return _message("Confirm your OAF notification subscription",
         "Please confirm this email address for your requested OAF notifications.",
         "Confirm email", link,

@@ -28,6 +28,33 @@ class BrevoConfigurationError(ValueError):
 
 
 @dataclass(frozen=True)
+class TestingRecipientScope:
+    """Deliberate operational boundary, never a replacement recipient."""
+    environment: str
+    mailbox: str = field(repr=False)
+
+    def __post_init__(self):
+        from .notifications import normalize_email
+        if self.environment != "testing":
+            raise BrevoConfigurationError("Controlled recipients require TESTING.")
+        try:
+            object.__setattr__(self, "mailbox", normalize_email(self.mailbox))
+        except Exception:
+            raise BrevoConfigurationError("A valid controlled recipient is required.") from None
+
+    def require(self, email):
+        # Authoritative storage and the provider payload must already be canonical.
+        if type(email) is not str or email != self.mailbox:
+            raise BrevoConfigurationError("Controlled recipient scope mismatch.")
+
+
+def validate_recipient_scope(scope, environment):
+    if scope is not None and (type(scope) is not TestingRecipientScope
+                              or environment != "testing" or scope.environment != environment):
+        raise BrevoConfigurationError("Controlled recipient configuration mismatch.")
+
+
+@dataclass(frozen=True)
 class BrevoConfig:
     environment: str
     api_key: str = field(repr=False)
@@ -154,14 +181,18 @@ class BrevoHTTPS:
 
 
 class BrevoAdapter:
-    def __init__(self, config, *, transport=None):
+    def __init__(self, config, *, transport=None, recipient_scope=None):
         if type(config) is not BrevoConfig:
             raise BrevoConfigurationError("Brevo configuration unavailable.")
         self.config = config
+        validate_recipient_scope(recipient_scope, config.environment)
+        self.recipient_scope = recipient_scope
         self.transport = BrevoHTTPS() if transport is None else transport
 
     def submit(self, email, message):
         from .notifications import normalize_email
+        if self.recipient_scope is not None:
+            self.recipient_scope.require(email)
         # Message is produced only by the fixed internal template constructors.
         payload = {"sender": {"name": FROM_NAME, "email": FROM_EMAIL},
                    "replyTo": {"email": REPLY_TO}, "to": [{"email": normalize_email(email)}],
