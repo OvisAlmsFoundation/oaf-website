@@ -17,7 +17,9 @@ from sqlalchemy import text
 from .migration_config import IDENTITIES, Failure, MigrationError
 from .state_request_schema import STATE_REQUESTS, REQUEST_OBJECTS, REQUEST_GRANTS, REQUEST_EDGES
 from .notification_schema import NOTIFICATIONS, NOTIFICATION_OBJECTS, NOTIFICATION_GRANTS, NOTIFICATION_EDGES
+from .notification_delivery_schema import DELIVERY, TABLES as DELIVERY_TABLES, OBJECTS as DELIVERY_OBJECTS, GRANTS as DELIVERY_GRANTS, EDGES as DELIVERY_EDGES
 
+from .confirmation_outbox_schema import OUTBOX, TABLES as OUTBOX_TABLES, OBJECTS as OUTBOX_OBJECTS, GRANTS as OUTBOX_GRANTS, EDGES as OUTBOX_EDGES
 
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE = "0001_migration_baseline"
@@ -28,14 +30,17 @@ FRAMEWORK_FILES = frozenset({
     "oaf_website/migrate.py", "oaf_website/migration_validation.py",
     "oaf_website/database_config.py", "oaf_website/__init__.py",
     "oaf_website/migration_authority.py",
-    "requirements.txt",
+    "requirements.txt", "oaf_website/confirmation_outbox_schema.py",
     "oaf_website/state_request_schema.py", "oaf_website/state_request_validation.py",
     "oaf_website/notification_schema.py", "oaf_website/notification_validation.py",
+    "oaf_website/notification_delivery_schema.py", "oaf_website/notification_delivery_validation.py",
 })
 REVISION_FILE = f"migrations/versions/{BASELINE}.py"
 REQUEST_REVISION_FILE = f"migrations/versions/{STATE_REQUESTS}.py"
 NOTIFICATION_REVISION_FILE = f"migrations/versions/{NOTIFICATIONS}.py"
-REVISION_FILES = frozenset({REVISION_FILE, REQUEST_REVISION_FILE, NOTIFICATION_REVISION_FILE})
+DELIVERY_REVISION_FILE = f"migrations/versions/{DELIVERY}.py"
+OUTBOX_REVISION_FILE = f"migrations/versions/{OUTBOX}.py"
+REVISION_FILES = frozenset({REVISION_FILE, REQUEST_REVISION_FILE, NOTIFICATION_REVISION_FILE, DELIVERY_REVISION_FILE, OUTBOX_REVISION_FILE})
 HASH_MODE = "sha256-utf8-lf"
 STATE_CONTRACT = {
     "base": {"revision": None, "managed_objects": []},
@@ -58,6 +63,8 @@ STATE_CONTRACT[NOTIFICATIONS] = {
     "revision": NOTIFICATIONS,
     "managed_objects": STATE_CONTRACT[STATE_REQUESTS]["managed_objects"] + NOTIFICATION_OBJECTS,
 }
+STATE_CONTRACT[DELIVERY] = {"revision": DELIVERY, "managed_objects": STATE_CONTRACT[NOTIFICATIONS]["managed_objects"] + DELIVERY_OBJECTS}
+STATE_CONTRACT[OUTBOX] = {"revision": OUTBOX, "managed_objects": STATE_CONTRACT[DELIVERY]["managed_objects"] + OUTBOX_OBJECTS}
 SECURITY_CONTRACT = {
     "schema": "oaf_website",
     "owners": {name: i.owner for name, i in IDENTITIES.items()},
@@ -97,13 +104,18 @@ SECURITY_CONTRACT = {
         "no_nonowner_grant_options", "restrictive_global_and_schema_defaults",
     ],
 }
-SECURITY_CONTRACT["runtime_object_grants"] = REQUEST_GRANTS + NOTIFICATION_GRANTS
+SECURITY_CONTRACT["runtime_object_grants"] = REQUEST_GRANTS + NOTIFICATION_GRANTS + DELIVERY_GRANTS + OUTBOX_GRANTS
 SECURITY_CONTRACT["state_request_types"] = "private_row_type_array_uses_element_acl_no_public_or_runtime_usage"
 SECURITY_CONTRACT["dependencies"]["state_request_edges"] = REQUEST_EDGES
 SECURITY_CONTRACT["postconditions"] += ["exact_state_request_definition", "exact_state_request_runtime_grants"]
 SECURITY_CONTRACT["notification_types"] = "private_row_type_array_uses_element_acl_no_public_or_runtime_usage"
 SECURITY_CONTRACT["dependencies"]["notification_edges"] = NOTIFICATION_EDGES
 SECURITY_CONTRACT["postconditions"] += ["exact_notification_definition", "exact_notification_runtime_grants"]
+SECURITY_CONTRACT["dependencies"]["notification_delivery_edges"] = DELIVERY_EDGES
+SECURITY_CONTRACT["postconditions"] += ["exact_notification_delivery_definition", "exact_notification_delivery_runtime_grants"]
+
+SECURITY_CONTRACT["dependencies"]["confirmation_outbox_edges"] = OUTBOX_EDGES
+SECURITY_CONTRACT["postconditions"] += ["exact_confirmation_outbox_definition", "exact_confirmation_outbox_runtime_grants"]
 
 
 def digest(data: bytes) -> str:
@@ -232,7 +244,9 @@ def validate_artifacts(
 def _validate_artifacts(start, target, manifest_hash, revision_hash):
     if (start, target) not in {(BASE, BASELINE), (BASELINE, BASELINE),
                                (BASELINE, STATE_REQUESTS), (STATE_REQUESTS, STATE_REQUESTS),
-                               (STATE_REQUESTS, NOTIFICATIONS), (NOTIFICATIONS, NOTIFICATIONS)}:
+                               (STATE_REQUESTS, NOTIFICATIONS), (NOTIFICATIONS, NOTIFICATIONS),
+                               (NOTIFICATIONS, DELIVERY), (DELIVERY, DELIVERY),
+                               (DELIVERY, OUTBOX), (OUTBOX, OUTBOX)}:
         raise MigrationError(Failure.STARTING_REVISION)
     if any(not isinstance(h, str) or not re.fullmatch(r"[0-9a-f]{64}", h)
            for h in (manifest_hash, revision_hash)):
@@ -254,7 +268,7 @@ def _validate_artifacts(start, target, manifest_hash, revision_hash):
     if set(framework) != FRAMEWORK_FILES:
         raise MigrationError(Failure.ARTIFACT_HASH)
     revisions = document["revisions"]
-    if not isinstance(revisions, list) or len(revisions) != 3:
+    if not isinstance(revisions, list) or len(revisions) != 5:
         raise MigrationError(Failure.ARTIFACT_HASH)
     if revisions[0] != {
         "id": BASELINE, "parent": None, "file": REVISION_FILE,
@@ -268,6 +282,14 @@ def _validate_artifacts(start, target, manifest_hash, revision_hash):
         "id": NOTIFICATIONS, "parent": STATE_REQUESTS, "file": NOTIFICATION_REVISION_FILE,
         "sha256": revisions[2].get("sha256"), "starting_state": STATE_REQUESTS,
         "target_state": NOTIFICATIONS, "grants": NOTIFICATION_GRANTS,
+    } or revisions[3] != {
+        "id": DELIVERY, "parent": NOTIFICATIONS, "file": DELIVERY_REVISION_FILE,
+        "sha256": revisions[3].get("sha256"), "starting_state": NOTIFICATIONS,
+        "target_state": DELIVERY, "grants": DELIVERY_GRANTS,
+    } or revisions[4] != {
+        "id": OUTBOX, "parent": DELIVERY, "file": OUTBOX_REVISION_FILE,
+        "sha256": revisions[4].get("sha256"), "starting_state": DELIVERY,
+        "target_state": OUTBOX, "grants": OUTBOX_GRANTS,
     } or revision_hash != next(r["sha256"] for r in revisions if r["id"] == target):
         raise MigrationError(Failure.ARTIFACT_HASH)
     # Explicit single linear root, no missing ancestors/branches/second heads.
@@ -353,6 +375,30 @@ def downgrade():
             and isinstance(notification_tree.body[0].value.value, str)):
         notification_tree.body.pop(0)
     if ast.dump(notification_tree) != ast.dump(ast.parse(expected_notification_revision)):
+        raise MigrationError(Failure.ARTIFACT_HASH)
+    expected_delivery_revision = expected_notification_revision.replace(
+        "notification_schema", "notification_delivery_schema").replace(
+        "upgrade_notifications", "upgrade_notification_delivery").replace(
+        'revision = "0003_notifications"', 'revision = "0004_notification_delivery"').replace(
+        'down_revision = "0002_state_requests"', 'down_revision = "0003_notifications"')
+    delivery_tree = ast.parse((ROOT / DELIVERY_REVISION_FILE).read_text(encoding="utf-8"))
+    if (delivery_tree.body and isinstance(delivery_tree.body[0], ast.Expr)
+            and isinstance(delivery_tree.body[0].value, ast.Constant)
+            and isinstance(delivery_tree.body[0].value.value, str)):
+        delivery_tree.body.pop(0)
+    if ast.dump(delivery_tree) != ast.dump(ast.parse(expected_delivery_revision)):
+        raise MigrationError(Failure.ARTIFACT_HASH)
+    expected_outbox_revision = expected_delivery_revision.replace(
+        "notification_delivery_schema", "confirmation_outbox_schema").replace(
+        "upgrade_notification_delivery", "upgrade_confirmation_outbox").replace(
+        'revision = "0004_notification_delivery"', 'revision = "0005_confirmation_outbox"').replace(
+        'down_revision = "0003_notifications"', 'down_revision = "0004_notification_delivery"')
+    outbox_tree = ast.parse((ROOT / OUTBOX_REVISION_FILE).read_text(encoding="utf-8"))
+    if (outbox_tree.body and isinstance(outbox_tree.body[0], ast.Expr)
+            and isinstance(outbox_tree.body[0].value, ast.Constant)
+            and isinstance(outbox_tree.body[0].value.value, str)):
+        outbox_tree.body.pop(0)
+    if ast.dump(outbox_tree) != ast.dump(ast.parse(expected_outbox_revision)):
         raise MigrationError(Failure.ARTIFACT_HASH)
     return VerifiedArtifacts(manifest_hash, revision_hash, start, target)
 
@@ -604,19 +650,27 @@ def catalog_state(connection, identity) -> str:
         FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
         WHERE n.nspname='oaf_website' ORDER BY c.relname
     """)
-    state = (BASE if not relations else NOTIFICATIONS
+    state = (BASE if not relations else OUTBOX
+             if any(r["name"] == "notification_confirmation_intents" for r in relations) else DELIVERY
+             if any(r["name"] == "notification_release_events" for r in relations) else NOTIFICATIONS
              if any(r["name"] == "notifications" for r in relations) else STATE_REQUESTS
              if any(r["name"] == "state_requests" for r in relations) else BASELINE)
     names = [(r["name"], r["kind"]) for r in relations]
     expected_relations = [] if state == BASE else [("alembic_version", "r"), ("alembic_version_pkc", "i")]
-    if state in {STATE_REQUESTS, NOTIFICATIONS}:
+    if state in {STATE_REQUESTS, NOTIFICATIONS, DELIVERY, OUTBOX}:
         expected_relations += [("state_requests", "r"), ("state_requests_pk", "i")]
-    if state == NOTIFICATIONS:
+    if state in {NOTIFICATIONS, DELIVERY, OUTBOX}:
         expected_relations += [("notifications", "r"), ("notifications_pk", "i"), ("notifications_active_email", "i")]
+    if state in {DELIVERY, OUTBOX}:
+        expected_relations += [(o["name"], "r" if o["kind"] == "table" else "i")
+                               for o in DELIVERY_OBJECTS if o["kind"] in {"table", "index"}]
+    if state == OUTBOX:
+        expected_relations += [(o["name"], "r" if o["kind"] == "table" else "i")
+                               for o in OUTBOX_OBJECTS if o["kind"] in {"table", "index"}]
     if names != sorted(expected_relations):
         raise MigrationError(Failure.DRIFT)
     if any(r["owner"] != identity.owner or r["persistence"] != "p"
-           or r["rls"] or r["force_rls"] or r["rules"] or r["triggers"] or r["options"]
+           or r["rls"] or r["force_rls"] or r["rules"] or (r["triggers"] != (state in {DELIVERY, OUTBOX} and r["name"] in {"notifications", "notification_verification", "notification_release_events", "notification_deliveries", "notification_delivery_attempts"} or state == OUTBOX and r["name"] in {"notification_confirmation_intents", "notification_confirmation_attempts"})) or r["options"]
            for r in relations):
         raise MigrationError(Failure.DRIFT)
     types = rows(connection, """
@@ -630,10 +684,16 @@ def catalog_state(connection, identity) -> str:
         raise MigrationError(Failure.DRIFT)
     if state != BASE:
         expected_types = [("_alembic_version", "b", identity.owner), ("alembic_version", "c", identity.owner)]
-        if state in {STATE_REQUESTS, NOTIFICATIONS}:
+        if state in {STATE_REQUESTS, NOTIFICATIONS, DELIVERY, OUTBOX}:
             expected_types += [("_state_requests", "b", identity.owner), ("state_requests", "c", identity.owner)]
-        if state == NOTIFICATIONS:
+        if state in {NOTIFICATIONS, DELIVERY, OUTBOX}:
             expected_types += [("_notifications", "b", identity.owner), ("notifications", "c", identity.owner)]
+        if state in {DELIVERY, OUTBOX}:
+            expected_types += [(name, kind, identity.owner) for item in DELIVERY_TABLES
+                               for name, kind in [(item.name, "c"), ("_" + item.name, "b")]]
+        if state == OUTBOX:
+            expected_types += [(name, kind, identity.owner) for item in OUTBOX_TABLES
+                               for name, kind in [(item.name, "c"), ("_" + item.name, "b")]]
         if ([(t["name"], t["kind"], t["owner"]) for t in types] != sorted(expected_types)
                 or any(not t["element"] if t["kind"] == "b" else not t["relation"] for t in types)):
             raise MigrationError(Failure.DRIFT)
@@ -651,12 +711,21 @@ def catalog_state(connection, identity) -> str:
         """):
             raise MigrationError(Failure.DRIFT)
         verify_generated_type_privileges(connection, identity)
-        if state in {STATE_REQUESTS, NOTIFICATIONS}:
+        if state in {STATE_REQUESTS, NOTIFICATIONS, DELIVERY, OUTBOX}:
             from .state_request_validation import verify_state_requests
             verify_state_requests(connection, identity)
-        if state == NOTIFICATIONS:
+        if state in {NOTIFICATIONS, DELIVERY, OUTBOX}:
             from .notification_validation import verify_notifications
             verify_notifications(connection, identity)
+    if state in {DELIVERY, OUTBOX}:
+        from .notification_delivery_validation import verify_delivery
+        if state == OUTBOX:
+            from .notification_delivery_schema import MUTABLE, FK_TRIGGERS
+            from .confirmation_outbox_schema import MUTABLE as outbox_mutable, FK_TRIGGERS as outbox_triggers
+            verify_delivery(connection, identity, tables=DELIVERY_TABLES + OUTBOX_TABLES,
+                            mutable={**MUTABLE, **outbox_mutable}, expected_triggers=FK_TRIGGERS + outbox_triggers)
+        else:
+            verify_delivery(connection, identity)
     verify_dependencies(connection, identity, state)
     if state == BASE:
         if scalar(connection, """
@@ -724,7 +793,8 @@ def verify_dependencies(connection, identity, state):
         SELECT 'schema' AS label, 'pg_catalog.pg_namespace'::pg_catalog.regclass::bigint AS classid,
                oid::bigint AS objid FROM pg_catalog.pg_namespace WHERE nspname='oaf_website'
         UNION ALL
-        SELECT CASE WHEN c.relname='state_requests' THEN 'request_table'
+        SELECT CASE WHEN left(c.relname,13)='notification_' THEN 'delivery_' || CASE c.relkind WHEN 'r' THEN 'table_' ELSE 'index_' END || c.relname
+                    WHEN c.relname='state_requests' THEN 'request_table'
                     WHEN c.relname='state_requests_pk' THEN 'request_index'
                     WHEN c.relname='notifications' THEN 'notification_table'
                     WHEN c.relname='notifications_pk' THEN 'notification_index'
@@ -734,7 +804,8 @@ def verify_dependencies(connection, identity, state):
           FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
          WHERE n.nspname='oaf_website'
         UNION ALL
-        SELECT CASE WHEN t.typname='state_requests' THEN 'request_row_type'
+        SELECT CASE WHEN left(t.typname,13)='notification_' OR left(t.typname,14)='_notification_' THEN 'delivery_type_' || t.typname
+                    WHEN t.typname='state_requests' THEN 'request_row_type'
                     WHEN t.typname='_state_requests' THEN 'request_array_type'
                     WHEN t.typname='notifications' THEN 'notification_row_type'
                     WHEN t.typname='_notifications' THEN 'notification_array_type'
@@ -743,7 +814,8 @@ def verify_dependencies(connection, identity, state):
           FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace
          WHERE n.nspname='oaf_website'
         UNION ALL
-        SELECT CASE WHEN c.conname='state_requests_pk' THEN 'request_primary_key'
+        SELECT CASE WHEN left(c.conname,13)='notification_' THEN 'delivery_constraint_' || c.conname
+                    WHEN c.conname='state_requests_pk' THEN 'request_primary_key'
                     WHEN c.conname='state_requests_state_check' THEN 'request_check'
                     WHEN c.conname='notifications_pk' THEN 'notification_primary_key'
                     WHEN c.conname LIKE 'notifications_%' THEN 'notification_' || c.conname
@@ -758,6 +830,13 @@ def verify_dependencies(connection, identity, state):
           JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
          WHERE n.nspname='oaf_website'
         UNION ALL
+        SELECT 'delivery_trigger_' || c.conname || '_' || r.relname || '_' || t.tgtype::text,
+               'pg_catalog.pg_trigger'::pg_catalog.regclass::bigint, t.oid::bigint
+          FROM pg_catalog.pg_trigger t JOIN pg_catalog.pg_constraint c ON c.oid=t.tgconstraint
+          JOIN pg_catalog.pg_class r ON r.oid=t.tgrelid
+          JOIN pg_catalog.pg_namespace n ON n.oid=c.connamespace
+         WHERE n.nspname='oaf_website' AND left(c.conname,13)='notification_'
+        UNION ALL
         SELECT 'default_' || d.defaclnamespace::text || '_' || d.defaclobjtype::text,
                'pg_catalog.pg_default_acl'::pg_catalog.regclass::bigint, d.oid::bigint
           FROM pg_catalog.pg_default_acl d JOIN pg_catalog.pg_roles r ON r.oid=d.defaclrole
@@ -767,11 +846,15 @@ def verify_dependencies(connection, identity, state):
     labels = [o['label'] for o in objects]
     expected_labels = {'schema'} if state == BASE else {
         'schema', 'table', 'index', 'row_type', 'array_type', 'primary_key'}
-    if state in {STATE_REQUESTS, NOTIFICATIONS}:
+    if state in {STATE_REQUESTS, NOTIFICATIONS, DELIVERY, OUTBOX}:
         expected_labels |= {'request_table', 'request_index', 'request_row_type',
                             'request_array_type', 'request_primary_key', 'request_check', 'request_default'}
-    if state == NOTIFICATIONS:
+    if state in {NOTIFICATIONS, DELIVERY, OUTBOX}:
         expected_labels |= {edge[0] for edge in NOTIFICATION_EDGES}
+    if state in {DELIVERY, OUTBOX}:
+        expected_labels |= {edge[0] for edge in DELIVERY_EDGES}
+    if state == OUTBOX:
+        expected_labels |= {edge[0] for edge in OUTBOX_EDGES}
     if (len(set(labels)) != len(labels) or
             {v for v in labels if not v.startswith('default_')} != expected_labels):
         raise MigrationError(Failure.DRIFT)
@@ -788,18 +871,53 @@ def verify_dependencies(connection, identity, state):
         "refobjid::bigint, refobjsubid, deptype FROM pg_catalog.pg_depend WHERE "
         + ' OR '.join(clauses), **parameters)
     actual = []
+    generated_toast = {}
     for d in dependencies:
         source = addresses.get((d['classid'], d['objid']))
         target = addresses.get((d['refclassid'], d['refobjid']))
+        if (source is None and target is not None
+                and d['classid'] == d['refclassid']
+                and (d['objsubid'], d['refobjsubid'], d['deptype']) == (0, 0, 'i')):
+            # Only the exact whole-relation internal edge to a managed parent.
+            # TOAST names are not identity; bind both OIDs through reltoastrelid.
+            toast = rows(connection, """
+                SELECT 'pg_catalog.pg_class'::pg_catalog.regclass::bigint AS classid,
+                       t.oid::bigint AS objid, t.relkind AS kind, n.nspname AS schema,
+                       pg_catalog.pg_get_userbyid(t.relowner) AS owner,
+                       t.relpersistence AS persistence, t.relacl AS acl,
+                       t.reltoastrelid::bigint AS toast, p.oid::bigint AS parent,
+                       p.reltoastrelid::bigint AS parent_toast, p.relkind AS parent_kind,
+                       pn.nspname AS parent_schema,
+                       pg_catalog.pg_get_userbyid(p.relowner) AS parent_owner,
+                       p.relpersistence AS parent_persistence
+                FROM pg_catalog.pg_class p
+                JOIN pg_catalog.pg_class t ON t.oid=p.reltoastrelid
+                JOIN pg_catalog.pg_namespace n ON n.oid=t.relnamespace
+                JOIN pg_catalog.pg_namespace pn ON pn.oid=p.relnamespace
+                WHERE p.oid=:parent AND t.oid=:source
+            """, parent=d['refobjid'], source=d['objid'])
+            if toast != [dict(classid=d['classid'], objid=d['objid'], kind='t', schema='pg_toast',
+                              owner=identity.owner, persistence='p', acl=None, toast=0,
+                              parent=d['refobjid'], parent_toast=d['objid'], parent_kind='r',
+                              parent_schema='oaf_website', parent_owner=identity.owner,
+                              parent_persistence='p')]:
+                raise MigrationError(Failure.DRIFT)
+            source = f"toast_{d['objid']}"
+            generated_toast[source] = (source, 0, target, 0, 'i')
         if source is None or target is None:
             raise MigrationError(Failure.DRIFT)
         actual.append((source, d['objsubid'], target, d['refobjsubid'], d['deptype']))
     expected = set() if state == BASE else {
         tuple(edge) for edge in SECURITY_CONTRACT['dependencies']['baseline_edges']}
-    if state in {STATE_REQUESTS, NOTIFICATIONS}:
+    expected |= set(generated_toast.values())
+    if state in {STATE_REQUESTS, NOTIFICATIONS, DELIVERY, OUTBOX}:
         expected |= {tuple(edge) for edge in REQUEST_EDGES}
-    if state == NOTIFICATIONS:
+    if state in {NOTIFICATIONS, DELIVERY, OUTBOX}:
         expected |= {tuple(edge) for edge in NOTIFICATION_EDGES}
+    if state in {DELIVERY, OUTBOX}:
+        expected |= {tuple(edge) for edge in DELIVERY_EDGES}
+    if state == OUTBOX:
+        expected |= {tuple(edge) for edge in OUTBOX_EDGES}
     for label in labels:
         if label.startswith('default_'):
             _, namespace, kind = label.split('_')

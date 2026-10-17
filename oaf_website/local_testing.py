@@ -18,8 +18,8 @@ from .state_requests import create_app
 ROOT = Path(__file__).resolve().parents[1]
 SECRET_PATH = ROOT / "config/local/state-request-recognition.dpapi"
 PUBLIC_FILES = (
-    "index.html", "about.html", "gramanna.html", "styles.css",
-    "assets/state-requests.js", "assets/notifications.js", "assets/images/gramanna-logo.png",
+    "index.html", "about.html", "gramanna.html", "faq.html", "support.html", "contact.html", "styles.css",
+    "assets/state-requests.js", "assets/notifications.js", "assets/contact.js", "assets/images/gramanna-logo.png",
     "assets/images/hero-gifts.webp",
 )
 

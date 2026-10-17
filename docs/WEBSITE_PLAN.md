@@ -356,3 +356,119 @@ My suggestion:
 - eventually 1–2 short paragraphs underneath;
 - no button and no image for now.
 That gives the page some breathing room after the visually heavy hero and before the GraManna section.
+
+
+### Step 6G / Checkpoint 6G-1: approved persistence source (2026-10-15)
+
+The owner approved the Step 6G direction and this bounded source/offline checkpoint.
+The authoritative contract is the Checkpoint 6G-1 entry in `WORKFLOW.md`.
+It preserves the current OAF/GraManna shared services, existing public behavior,
+original notification subscriber/email/consent records and all owner-authored work.
+
+- Additive `0004_notification_delivery`, parent `0003_notifications`, defines
+  lifecycle-bound double opt-in verification, durable confirmation quotas,
+  independent Android/iOS release events, per-lifecycle delivery ledgers, attempt
+  audit and durable mailbox suppression. No existing subscriber is auto-verified.
+- Internal unregistered services enforce a 24-hour protected confirmation token,
+  bounded resends, stable event/payload/semantic deduplication, fixed template and
+  audience cutoff, verified active platform eligibility, durable claims, final
+  withdrawal/suppression checks, bounded safe retries and uncertain-submission holds.
+  Provider acceptance never means final email delivery.
+- No second subscriber list, separate admin app, free-form announcements, Cargo 29
+  functionality, sender, live worker, release ingress or provider webhook is added.
+  Public verification remains inactive until confirmation messages can be delivered.
+- Source and offline validation do not establish live database, Brevo or deployment
+  readiness. All 0001--0003 revision bytes and existing safeguards remain intact.
+  Integrity hashes are not approval. Independent exact-artifact review and separate
+  TESTING/DEVELOPMENT execution authorizations remain required before any application.
+- Deterministic autonomy source review passes: routine decisions use explicit
+  rules; approved launch provenance, policy changes and exceptional corrections
+  remain governed controls. Uncertain outcomes never authorize another send.
+- Next checkpoint is separately approved Brevo adapter source and synthetic outcome
+  validation, including reliable confirmation handoff and provider reconciliation.
+  Real credentials, provider setup, live sends, migrations, deployment and Git
+  staging/commits/pushes remain outside this checkpoint.
+
+6G-1 focused offline gate: 676 passed; new source/revision coverage 100% statements
+and branches; changed migration-policy decisions fully covered. No live migration
+or email occurred. See WORKFLOW.md for the exact file inventory and local evidence.
+
+
+### Checkpoint 6G-2: Brevo adapter source / offline gate (2026-10-15)
+
+The bounded adapter and release processor source is implemented and offline-tested;
+the complete checkpoint remains open at the confirmation-outbox approval boundary.
+See the authoritative 6G-2 entry in WORKFLOW.md for the exact contract and evidence.
+
+- Direct fixed Brevo HTTPS transactional POST, verifying TLS, 5-second connect and
+  10-second response inactivity timeouts, bounded response bodies, strict response
+  validation, no redirects/proxies/ambient HTTP credentials or hidden POST retries.
+- Existing exact-target pinned Windows credential convention; DEVELOPMENT target
+  `OAF Website/development/Brevo/ApiKey`. No real key read; production remains gated.
+- Approved From/Reply-To identities and deterministic verification/Android/iOS copy.
+  Release links use the accepted official event URL and existing OAF withdrawal UI.
+  Confirmation rendering is a seam only; its reserved fragment is not activated.
+- Batches of at most 20 provider submissions use the existing durable claims,
+  consent/verification cutoff, final withdrawal/suppression check, attempt history,
+  bounded retry and uncertain-outcome hold. Acceptance is not mailbox delivery.
+- Final scoped gate: 663 passed; zero unexpected external-access attempts;
+  new source 202/202 statements and 56/56 branches, 100%. With the changed delivery
+  service: 440/440 statements and 152/152 branches, 100%.
+- Deterministic review passes for implemented operations, without AI or a second
+  administrator Send action. Authenticated feedback/correlation remains deferred.
+- Reliable confirmation handoff cannot be completed with the current digest-only
+  reservation and release-only delivery tables. No persistence workaround or
+  approved-artifact rewrite is introduced. Public verification/sending stays off.
+- Exact next checkpoint, requiring approval: **6G-2A: confirmation outbox contract,
+  additive successor source and focused offline validation**, parent 0004, with
+  atomic durable intent/attempts and reviewed token recovery without raw storage.
+
+All owner/Contact/shared-service work, initial document bytes, Git index and
+0001--0004 artifacts are preserved. No GraManna change, real Brevo API request,
+email, migration, production activation, deployment, staging, commit or push occurs.
+This is source/offline evidence, not live delivery readiness.
+
+
+### Checkpoint 6G-2A: durable confirmation outbox source (2026-10-15)
+
+The owner authorizes this bounded OAF Website source/offline successor. The full
+contract and exact file inventory are in the appended 6G-2A WORKFLOW.md entry;
+prior entries and owner/Contact/shared-service work remain preserved.
+
+- Every new confirmation reservation atomically commits the verification digest,
+  original 24-hour expiry, unchanged global/mailbox quotas and pending intent.
+  A restart can reconstruct the same bearer using HMAC-SHA256 with the existing
+  persistent protected key and explicit recovery/version/environment/lifecycle
+  domain separation plus a random persisted 256-bit context. No raw bearer is
+  stored; old irreversible-only reservations are never falsely reconstructed.
+- Additive `0005_confirmation_outbox`, parent `0004_notification_delivery`, adds
+  only lifecycle/version intent and attempt history. Existing release tables
+  cannot safely represent confirmation work; no earlier table/revision is changed.
+  Exact manifest/catalog/ACL/dependency validation and narrow runtime column grants
+  preserve independent review and separate TESTING/DEVELOPMENT execution gates.
+- Internal bounded processing recovers pending links, enforces one-use durable
+  claims, cancels obsolete resend versions and checks original consent, expiry,
+  verification and suppression immediately before its committed dispatch boundary.
+  Safe failures use unchanged 60/300-second backoff and three-attempt ceiling;
+  uncertain submissions are held without blind retry. Audit identifiers cannot
+  retain an echoed confirmation bearer. Provider acceptance never verifies email.
+- The existing Brevo adapter/template and approved From/Reply-To identities are
+  reused. Public confirmation UI/routes, scheduler/worker activation, live provider
+  credentials/sends, migrations and production configuration are not activated.
+  Ordinary lifecycle/recovery decisions require no AI or administrator intervention;
+  policy changes and exceptional corrections retain human authority.
+- Final focused counts/coverage and preservation evidence are appended to WORKFLOW
+  and kept under ignored `.pytest_cache/checkpoint6g2a/`. Offline synthetic checks
+  establish no PostgreSQL, provider or deployed delivery readiness.
+
+Exact next checkpoint: **6G-2A independent exact-artifact/prerequisite review** of
+0005 and changed manifest/helpers, with unexecuted 0004 retaining its own review
+and exact-transition execution boundary. Separate TESTING execution must precede
+separate DEVELOPMENT authorization. Public confirmation integration, processor
+invocation and authenticated reconciliation/live activation remain separately
+approved work. No staging, commits, pushes, GraManna edits or Cargo 29 features.
+
+6G-2A SOURCE/OFFLINE PASS: **1,022 tests**, zero external-access attempts; new
+source **206/206 statements, 68/68 branches**, complete changed feature
+modules **577/577 statements, 216/216 branches**, all 100%. Changed migration
+policy lines/decisions are covered. No live migration or delivery occurred.

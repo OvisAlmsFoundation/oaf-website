@@ -95,6 +95,12 @@ class SubscriptionStore:
             connection.execute(statement)
 
 
+def subscription_response(values, capabilities):
+    # Sign only the submitted receipt, never an existing email's private digest.
+    return jsonify(status="received", unsubscribe_token=capabilities.issue(values['unsubscribe_digest']),
+                   message="Your submission was processed. New subscriptions are saved; existing active preferences stay unchanged. No email has been sent.")
+
+
 def register_notifications(app, store, capabilities, same_origin, valid_csrf, error):
     def payload():
         if not same_origin(mutation=True) or not valid_csrf():
@@ -122,8 +128,7 @@ def register_notifications(app, store, capabilities, same_origin, valid_csrf, er
             return error("We could not confirm your subscription. Try again with the same form; duplicates are prevented.", 503)
         # Same response for a new receipt, active email duplicate or retry.
         # Sign only the caller's receipt, never look up an existing email's token.
-        return jsonify(status="received", unsubscribe_token=capabilities.issue(values['unsubscribe_digest']),
-                       message="Your submission was processed. New subscriptions are saved; existing active preferences stay unchanged. No email has been sent.")
+        return subscription_response(values, capabilities)
 
     @app.post("/api/notifications/unsubscribe")
     def unsubscribe():

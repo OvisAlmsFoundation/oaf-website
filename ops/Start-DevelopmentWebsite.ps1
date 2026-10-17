@@ -4,7 +4,8 @@ param(
     [switch]$NoBrowser,
     [switch]$NoAlert,
     [switch]$AlertOnly,
-    [ValidateSet('success', 'failure')][string]$AlertStatus = 'success'
+    [ValidateSet('success', 'failure')][string]$AlertStatus = 'success',
+    [switch]$EnableIntegrations
 )
 
 Set-StrictMode -Version 2.0
@@ -60,7 +61,9 @@ try {
         if (-not $taskChrome) { throw 'Google Chrome is unavailable in its standard installation locations.' }
     }
     $env:OAF_ENV = 'development'
-    & $taskPython -B -m oaf_website.local_development 2>&1 | ForEach-Object {
+    $taskPythonArguments = @('-B', '-m', 'oaf_website.local_development')
+    if ($EnableIntegrations) { $taskPythonArguments += '--integrations' }
+    & $taskPython @taskPythonArguments 2>&1 | ForEach-Object {
         $taskLine = [string]$_
         $taskLines.Add($taskLine)
         Write-Host $taskLine

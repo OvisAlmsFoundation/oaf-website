@@ -42,7 +42,7 @@ def test_authoritative_manifest_and_single_root():
     assert (a.expected_start, a.target) == ("base", "0001_migration_baseline")
     document = json.loads((ROOT / "migrations/manifest.json").read_bytes())
     assert document["approval_status"] == "pending_independent_review"
-    assert len(document["revisions"]) == 3
+    assert len(document["revisions"]) == 5
     assert document["revisions"][0]["parent"] is None
     assert document["revisions"][1]["parent"] == v.BASELINE
     assert set(document["framework"]) == v.FRAMEWORK_FILES
@@ -53,7 +53,7 @@ def test_authoritative_manifest_and_single_root():
 
 
 def test_digest_utf8_lf_normalization():
-    assert v.digest("é\n".encode()) == v.digest("é\r\n".encode())
+    assert v.digest("Ã©\n".encode()) == v.digest("Ã©\r\n".encode())
 
 
 @pytest.mark.parametrize("payload", [b"\xef\xbb\xbf{}", b"a\rb"])

@@ -1,14 +1,18 @@
 """Normal loopback DEVELOPMENT host; no migrations or database administration."""
 
+import argparse
 import os
 from pathlib import Path
+import re
 import stat
+import tomllib
 
 from flask import send_file
 from sqlalchemy import text
 from werkzeug.serving import WSGIRequestHandler, make_server
 
-from .database_config import DatabaseConfigurationError
+from .database_config import DatabaseConfigurationError, _validate_environment, _windows_password
+from .integrations import IntegrationConfig, IntegrationConfigurationError
 from .local_testing import PUBLIC_FILES, ROOT, SECRET_PATH, recognition_secret
 from .state_requests import create_app
 
@@ -17,6 +21,52 @@ PORT = 5055
 ORIGIN = f"http://{HOST}:{PORT}"
 ADDRESS = ORIGIN + "/gramanna.html"
 READY_LINE = "DEVELOPMENT READY: " + ADDRESS
+INTEGRATION_PATH = ROOT / "config/local/integrations.toml"
+INTEGRATION_SERVICES = (
+    "OAF Website/development/Integrations/Submission",
+    "OAF Website/development/Integrations/Reporting",
+)
+
+
+def load_development_integration_config(*, local_config_path=INTEGRATION_PATH,
+                                        environ=None, credential_loader=None):
+    """Load requested DEVELOPMENT configuration; never provision or use a fallback.
+
+    Only non-secret client metadata belongs in TOML. Credentials come from the
+    existing pinned Windows backend, using exact machine-local generic targets.
+    Injection arguments support offline tests, not runtime location overrides.
+    """
+    environment = dict(os.environ if environ is None else environ)
+    _validate_environment(environment, "development")
+    for path in (ROOT, ROOT / "config", local_config_path.parent, local_config_path):
+        if path.exists() and path.lstat().st_file_attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT:
+            raise IntegrationConfigurationError("Redirected integration configuration locations are prohibited.")
+        if path.is_symlink():
+            raise IntegrationConfigurationError("Redirected integration configuration locations are prohibited.")
+    try:
+        with local_config_path.open("rb") as source:
+            document = tomllib.load(source)
+    except (OSError, ValueError):
+        # Parser/IO exceptions may contain private supplied text; discard them.
+        pass
+    else:
+        settings = document.get("development")
+        if (set(document) != {"development"} or type(settings) is not dict
+                or set(settings) != {"client_id"} or type(settings["client_id"]) is not str
+                or re.fullmatch(r"[a-z][a-z0-9_-]{0,63}", settings["client_id"], re.ASCII) is None):
+            raise IntegrationConfigurationError("Invalid DEVELOPMENT integration metadata.")
+        provider = _windows_password if credential_loader is None else credential_loader
+        try:
+            submission, reporting = (
+                provider(service, settings["client_id"], environment, exact_target=True)
+                for service in INTEGRATION_SERVICES
+            )
+        except Exception:
+            pass
+        else:
+            return IntegrationConfig("development", settings["client_id"], submission, reporting)
+        raise IntegrationConfigurationError("DEVELOPMENT integration credentials are unavailable.")
+    raise IntegrationConfigurationError("DEVELOPMENT integration metadata is missing or invalid.")
 
 
 class QuietHandler(WSGIRequestHandler):
@@ -25,16 +75,20 @@ class QuietHandler(WSGIRequestHandler):
         pass
 
 
-def development_app():
+def development_app(*, enable_integrations=False):
     if os.environ.get("OAF_ENV") != "development":
         raise RuntimeError("This launcher requires OAF_ENV=development; no profile fallback is permitted.")
+    if type(enable_integrations) is not bool:
+        raise IntegrationConfigurationError("Integration activation requires an explicit boolean.")
     # Preserve the existing protected key and explicit public-file allowlist.
     # Importing local_testing does not load its credential or connect to TESTING.
     for path in (ROOT, ROOT / "config", SECRET_PATH.parent, SECRET_PATH):
         if path.exists() and path.lstat().st_file_attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT:
             raise RuntimeError("Redirected workspace/configuration/key locations are prohibited.")
+    integration_config = load_development_integration_config() if enable_integrations else None
     app = create_app(expected_profile="development", recognition_secret=recognition_secret(),
-                     public_origin=ORIGIN, allow_insecure_localhost=True)
+                     public_origin=ORIGIN, allow_insecure_localhost=True,
+                     integration_config=integration_config)
     for number, name in enumerate(PUBLIC_FILES):
         if not (ROOT / name).is_file():
             raise RuntimeError("A required public website file is missing.")
@@ -71,12 +125,16 @@ def verify_runtime(app):
     # Closing the connection rolls back the read-only transaction before normal use.
 
 
-def main():
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--integrations", action="store_true",
+                        help="Require protected DEVELOPMENT shared-service configuration.")
+    options = parser.parse_args(argv)
     app = server = None
     try:
         if Path.cwd().resolve() != ROOT:
             raise RuntimeError("Run from the OAF Website repository root.")
-        app = development_app()
+        app = development_app(enable_integrations=options.integrations)
         verify_runtime(app)
         server = make_server(HOST, PORT, app, threaded=True, request_handler=QuietHandler)
         print("Runtime verified: oaf_website_dev / oaf_website_app; SCRAM; SELECT/INSERT only.", flush=True)
@@ -86,7 +144,7 @@ def main():
         server.serve_forever()
     except KeyboardInterrupt:
         print("DEVELOPMENT server stopped.", flush=True)
-    except (DatabaseConfigurationError, RuntimeError) as error:
+    except (DatabaseConfigurationError, IntegrationConfigurationError, RuntimeError) as error:
         print("BLOCKED: " + str(error), flush=True)
         return 2
     except Exception as error:

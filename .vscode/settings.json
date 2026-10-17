@@ -8,7 +8,7 @@
     }
   ],
   "python.terminal.activateEnvironment": true,
-  "terminal.integrated.cwd": "${workspaceFolder}",
+  "terminal.integrated.cwd": "C:\\Users\\ovisa\\Documents\\OAF_App\\Development\\OAF Website",
   "terminal.integrated.defaultProfile.windows": "PowerShell",
   "terminal.integrated.profiles.windows": {
     "PowerShell": {

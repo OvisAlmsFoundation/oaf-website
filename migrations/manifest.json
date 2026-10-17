@@ -7,11 +7,14 @@
     "migrations/env.py": "09fcd94121f9ba0287d33d9b779f2b7845be56f23fea23aaafb5ae891fe661d4",
     "migrations/script.py.mako": "ed31327e01d48ec1ba1e91f5dc5b347fed7e9a8c9733b50d49c8085e86815bdc",
     "oaf_website/__init__.py": "ad4cfd8e9137a2e69abe6fdad18114a9918fccf918cbe59e181a9edd78436eb5",
+    "oaf_website/confirmation_outbox_schema.py": "82bf813978acdafe87b6e0d802e0b5d4fca4fa71cac910bd14228cdb298fea47",
     "oaf_website/database_config.py": "bffc9d41024c7d562944d67c55cff254e63c0f5c83f54ec4b2384c64ab51ed60",
     "oaf_website/migrate.py": "706a6fefaca086f43bd2729c1cafefdb5bfe3bbd2f71e7a404e2e922454ae1e0",
-    "oaf_website/migration_authority.py": "7654a552106b7ef3ec5827decf0ea9f61b317b2265c4364a0d5d7278549da6ce",
+    "oaf_website/migration_authority.py": "77b7116cf76f3c6167a23c642b08d22c58590b1f33051a64f432501af1ce4e63",
     "oaf_website/migration_config.py": "9c537cceaed6c84b3050f4db0a2510e6588e4259e927b35322e86cab91ab3587",
-    "oaf_website/migration_validation.py": "a5ef986aae4515d0f39c416dad812a0479c094b9d5b81a37c04d298f88b05b23",
+    "oaf_website/migration_validation.py": "07a761af384e88f05101af6986ce72ecbffa944eca8281f52a23adc0389f29a0",
+    "oaf_website/notification_delivery_schema.py": "e9ade89429338037648922a06e96da77418556285a94ac4fb7e12c91b0928c92",
+    "oaf_website/notification_delivery_validation.py": "7bad66fbe86dfbf13ffa44b9df6cf443eed4f36177eceee3051f8977040f430b",
     "oaf_website/notification_schema.py": "8609e44436663db7d7a99ec7964ebaec4658b0491412d366b17f4d7850bd77e4",
     "oaf_website/notification_validation.py": "939200c718fa5131427315ce6b7f10ebe4177653c7744d54c3e593d263a26267",
     "oaf_website/state_request_schema.py": "440924c43651c6b7d1e5c8745de705dd0ceeb589eb10422e805131ede51f9647",
@@ -67,6 +70,378 @@
         },
         {
           "object": "oaf_website.notifications.unsubscribed_at",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        }
+      ]
+    },
+    {
+      "id": "0004_notification_delivery",
+      "parent": "0003_notifications",
+      "file": "migrations/versions/0004_notification_delivery.py",
+      "sha256": "314647d47e2eacaec8a1bc83e90f3dde7b249e049bb1d488c66e9d073c9ac5b8",
+      "starting_state": "0003_notifications",
+      "target_state": "0004_notification_delivery",
+      "grants": [
+        {
+          "object": "oaf_website.notification_verification",
+          "role": "matching_runtime",
+          "privileges": [
+            "SELECT",
+            "INSERT"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_verification.token_digest",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_verification.issued_at",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_verification.expires_at",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_verification.verified_at",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_confirmation_limits",
+          "role": "matching_runtime",
+          "privileges": [
+            "SELECT",
+            "INSERT"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_confirmation_limits.window_start",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_confirmation_limits.last_requested_at",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_confirmation_limits.requests",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_release_events",
+          "role": "matching_runtime",
+          "privileges": [
+            "SELECT",
+            "INSERT"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_release_events.status",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_release_events.updated_at",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_deliveries",
+          "role": "matching_runtime",
+          "privileges": [
+            "SELECT",
+            "INSERT"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_deliveries.status",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_deliveries.attempts",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_deliveries.claim_digest",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_deliveries.lease_until",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_deliveries.next_attempt_at",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_deliveries.outcome",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_deliveries.provider_message_id",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_deliveries.updated_at",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_deliveries.accepted_at",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_delivery_attempts",
+          "role": "matching_runtime",
+          "privileges": [
+            "SELECT",
+            "INSERT"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_delivery_attempts.submitting_at",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_delivery_attempts.finished_at",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_delivery_attempts.outcome",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_delivery_attempts.provider_message_id",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_suppressions",
+          "role": "matching_runtime",
+          "privileges": [
+            "SELECT",
+            "INSERT"
+          ],
+          "grant_option": false
+        }
+      ]
+    },
+    {
+      "id": "0005_confirmation_outbox",
+      "parent": "0004_notification_delivery",
+      "file": "migrations/versions/0005_confirmation_outbox.py",
+      "sha256": "923b78ae214ef702bf6c8cf781a64649c3eb8baac3618b932ba1b916a1995c3b",
+      "starting_state": "0004_notification_delivery",
+      "target_state": "0005_confirmation_outbox",
+      "grants": [
+        {
+          "object": "oaf_website.notification_confirmation_intents",
+          "role": "matching_runtime",
+          "privileges": [
+            "SELECT",
+            "INSERT"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_confirmation_intents.status",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_confirmation_intents.attempts",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_confirmation_intents.claim_digest",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_confirmation_intents.lease_until",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_confirmation_intents.next_attempt_at",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_confirmation_intents.outcome",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_confirmation_intents.provider_message_id",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_confirmation_intents.updated_at",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_confirmation_intents.accepted_at",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_confirmation_attempts",
+          "role": "matching_runtime",
+          "privileges": [
+            "SELECT",
+            "INSERT"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_confirmation_attempts.submitting_at",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_confirmation_attempts.finished_at",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_confirmation_attempts.outcome",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_confirmation_attempts.provider_message_id",
           "role": "matching_runtime",
           "privileges": [
             "UPDATE"
@@ -263,6 +638,836 @@
           "name": "notifications.created_at"
         }
       ]
+    },
+    "0004_notification_delivery": {
+      "revision": "0004_notification_delivery",
+      "managed_objects": [
+        {
+          "kind": "table",
+          "name": "alembic_version"
+        },
+        {
+          "kind": "index",
+          "name": "alembic_version_pkc"
+        },
+        {
+          "kind": "row_type",
+          "name": "alembic_version"
+        },
+        {
+          "kind": "array_type",
+          "name": "_alembic_version"
+        },
+        {
+          "kind": "primary_key",
+          "name": "alembic_version_pkc"
+        },
+        {
+          "kind": "table",
+          "name": "state_requests"
+        },
+        {
+          "kind": "index",
+          "name": "state_requests_pk"
+        },
+        {
+          "kind": "row_type",
+          "name": "state_requests"
+        },
+        {
+          "kind": "array_type",
+          "name": "_state_requests"
+        },
+        {
+          "kind": "primary_key",
+          "name": "state_requests_pk"
+        },
+        {
+          "kind": "check",
+          "name": "state_requests_state_check"
+        },
+        {
+          "kind": "default",
+          "name": "state_requests.created_at"
+        },
+        {
+          "kind": "table",
+          "name": "notifications"
+        },
+        {
+          "kind": "index",
+          "name": "notifications_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notifications_active_email"
+        },
+        {
+          "kind": "row_type",
+          "name": "notifications"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notifications"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notifications_pk"
+        },
+        {
+          "kind": "check",
+          "name": "notifications_token_check"
+        },
+        {
+          "kind": "check",
+          "name": "notifications_email_check"
+        },
+        {
+          "kind": "check",
+          "name": "notifications_preferences_check"
+        },
+        {
+          "kind": "check",
+          "name": "notifications_state_check"
+        },
+        {
+          "kind": "check",
+          "name": "notifications_consent_check"
+        },
+        {
+          "kind": "check",
+          "name": "notifications_lifecycle_check"
+        },
+        {
+          "kind": "default",
+          "name": "notifications.created_at"
+        },
+        {
+          "kind": "table",
+          "name": "notification_verification"
+        },
+        {
+          "kind": "row_type",
+          "name": "notification_verification"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notification_verification"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notification_verification_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notification_verification_pk"
+        },
+        {
+          "kind": "foreign_key",
+          "name": "notification_verification_subscription_fk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_verification_time_check"
+        },
+        {
+          "kind": "unique",
+          "name": "notification_verification_token"
+        },
+        {
+          "kind": "index",
+          "name": "notification_verification_token"
+        },
+        {
+          "kind": "check",
+          "name": "notification_verification_token_check"
+        },
+        {
+          "kind": "table",
+          "name": "notification_confirmation_limits"
+        },
+        {
+          "kind": "row_type",
+          "name": "notification_confirmation_limits"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notification_confirmation_limits"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_limits_bucket_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_limits_count_check"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notification_confirmation_limits_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notification_confirmation_limits_pk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_limits_time_check"
+        },
+        {
+          "kind": "table",
+          "name": "notification_release_events"
+        },
+        {
+          "kind": "row_type",
+          "name": "notification_release_events"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notification_release_events"
+        },
+        {
+          "kind": "check",
+          "name": "notification_release_events_content_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_release_events_digest_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_release_events_environment_check"
+        },
+        {
+          "kind": "unique",
+          "name": "notification_release_events_launch"
+        },
+        {
+          "kind": "index",
+          "name": "notification_release_events_launch"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notification_release_events_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notification_release_events_pk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_release_events_platform_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_release_events_status_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_release_events_time_check"
+        },
+        {
+          "kind": "table",
+          "name": "notification_deliveries"
+        },
+        {
+          "kind": "row_type",
+          "name": "notification_deliveries"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notification_deliveries"
+        },
+        {
+          "kind": "check",
+          "name": "notification_deliveries_accepted_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_deliveries_attempts_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_deliveries_claim_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_deliveries_digest_check"
+        },
+        {
+          "kind": "foreign_key",
+          "name": "notification_deliveries_event_fk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_deliveries_outcome_check"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notification_deliveries_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notification_deliveries_pk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_deliveries_retry_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_deliveries_status_check"
+        },
+        {
+          "kind": "foreign_key",
+          "name": "notification_deliveries_subscription_fk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_deliveries_time_check"
+        },
+        {
+          "kind": "index",
+          "name": "notification_deliveries_lease"
+        },
+        {
+          "kind": "index",
+          "name": "notification_deliveries_retry"
+        },
+        {
+          "kind": "table",
+          "name": "notification_delivery_attempts"
+        },
+        {
+          "kind": "row_type",
+          "name": "notification_delivery_attempts"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notification_delivery_attempts"
+        },
+        {
+          "kind": "check",
+          "name": "notification_delivery_attempts_attempt_check"
+        },
+        {
+          "kind": "foreign_key",
+          "name": "notification_delivery_attempts_delivery_fk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_delivery_attempts_outcome_check"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notification_delivery_attempts_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notification_delivery_attempts_pk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_delivery_attempts_time_check"
+        },
+        {
+          "kind": "table",
+          "name": "notification_suppressions"
+        },
+        {
+          "kind": "row_type",
+          "name": "notification_suppressions"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notification_suppressions"
+        },
+        {
+          "kind": "check",
+          "name": "notification_suppressions_digest_check"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notification_suppressions_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notification_suppressions_pk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_suppressions_reason_check"
+        }
+      ]
+    },
+    "0005_confirmation_outbox": {
+      "revision": "0005_confirmation_outbox",
+      "managed_objects": [
+        {
+          "kind": "table",
+          "name": "alembic_version"
+        },
+        {
+          "kind": "index",
+          "name": "alembic_version_pkc"
+        },
+        {
+          "kind": "row_type",
+          "name": "alembic_version"
+        },
+        {
+          "kind": "array_type",
+          "name": "_alembic_version"
+        },
+        {
+          "kind": "primary_key",
+          "name": "alembic_version_pkc"
+        },
+        {
+          "kind": "table",
+          "name": "state_requests"
+        },
+        {
+          "kind": "index",
+          "name": "state_requests_pk"
+        },
+        {
+          "kind": "row_type",
+          "name": "state_requests"
+        },
+        {
+          "kind": "array_type",
+          "name": "_state_requests"
+        },
+        {
+          "kind": "primary_key",
+          "name": "state_requests_pk"
+        },
+        {
+          "kind": "check",
+          "name": "state_requests_state_check"
+        },
+        {
+          "kind": "default",
+          "name": "state_requests.created_at"
+        },
+        {
+          "kind": "table",
+          "name": "notifications"
+        },
+        {
+          "kind": "index",
+          "name": "notifications_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notifications_active_email"
+        },
+        {
+          "kind": "row_type",
+          "name": "notifications"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notifications"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notifications_pk"
+        },
+        {
+          "kind": "check",
+          "name": "notifications_token_check"
+        },
+        {
+          "kind": "check",
+          "name": "notifications_email_check"
+        },
+        {
+          "kind": "check",
+          "name": "notifications_preferences_check"
+        },
+        {
+          "kind": "check",
+          "name": "notifications_state_check"
+        },
+        {
+          "kind": "check",
+          "name": "notifications_consent_check"
+        },
+        {
+          "kind": "check",
+          "name": "notifications_lifecycle_check"
+        },
+        {
+          "kind": "default",
+          "name": "notifications.created_at"
+        },
+        {
+          "kind": "table",
+          "name": "notification_verification"
+        },
+        {
+          "kind": "row_type",
+          "name": "notification_verification"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notification_verification"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notification_verification_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notification_verification_pk"
+        },
+        {
+          "kind": "foreign_key",
+          "name": "notification_verification_subscription_fk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_verification_time_check"
+        },
+        {
+          "kind": "unique",
+          "name": "notification_verification_token"
+        },
+        {
+          "kind": "index",
+          "name": "notification_verification_token"
+        },
+        {
+          "kind": "check",
+          "name": "notification_verification_token_check"
+        },
+        {
+          "kind": "table",
+          "name": "notification_confirmation_limits"
+        },
+        {
+          "kind": "row_type",
+          "name": "notification_confirmation_limits"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notification_confirmation_limits"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_limits_bucket_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_limits_count_check"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notification_confirmation_limits_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notification_confirmation_limits_pk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_limits_time_check"
+        },
+        {
+          "kind": "table",
+          "name": "notification_release_events"
+        },
+        {
+          "kind": "row_type",
+          "name": "notification_release_events"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notification_release_events"
+        },
+        {
+          "kind": "check",
+          "name": "notification_release_events_content_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_release_events_digest_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_release_events_environment_check"
+        },
+        {
+          "kind": "unique",
+          "name": "notification_release_events_launch"
+        },
+        {
+          "kind": "index",
+          "name": "notification_release_events_launch"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notification_release_events_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notification_release_events_pk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_release_events_platform_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_release_events_status_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_release_events_time_check"
+        },
+        {
+          "kind": "table",
+          "name": "notification_deliveries"
+        },
+        {
+          "kind": "row_type",
+          "name": "notification_deliveries"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notification_deliveries"
+        },
+        {
+          "kind": "check",
+          "name": "notification_deliveries_accepted_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_deliveries_attempts_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_deliveries_claim_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_deliveries_digest_check"
+        },
+        {
+          "kind": "foreign_key",
+          "name": "notification_deliveries_event_fk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_deliveries_outcome_check"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notification_deliveries_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notification_deliveries_pk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_deliveries_retry_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_deliveries_status_check"
+        },
+        {
+          "kind": "foreign_key",
+          "name": "notification_deliveries_subscription_fk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_deliveries_time_check"
+        },
+        {
+          "kind": "index",
+          "name": "notification_deliveries_lease"
+        },
+        {
+          "kind": "index",
+          "name": "notification_deliveries_retry"
+        },
+        {
+          "kind": "table",
+          "name": "notification_delivery_attempts"
+        },
+        {
+          "kind": "row_type",
+          "name": "notification_delivery_attempts"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notification_delivery_attempts"
+        },
+        {
+          "kind": "check",
+          "name": "notification_delivery_attempts_attempt_check"
+        },
+        {
+          "kind": "foreign_key",
+          "name": "notification_delivery_attempts_delivery_fk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_delivery_attempts_outcome_check"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notification_delivery_attempts_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notification_delivery_attempts_pk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_delivery_attempts_time_check"
+        },
+        {
+          "kind": "table",
+          "name": "notification_suppressions"
+        },
+        {
+          "kind": "row_type",
+          "name": "notification_suppressions"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notification_suppressions"
+        },
+        {
+          "kind": "check",
+          "name": "notification_suppressions_digest_check"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notification_suppressions_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notification_suppressions_pk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_suppressions_reason_check"
+        },
+        {
+          "kind": "table",
+          "name": "notification_confirmation_intents"
+        },
+        {
+          "kind": "row_type",
+          "name": "notification_confirmation_intents"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notification_confirmation_intents"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_intents_accepted_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_intents_attempts_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_intents_claim_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_intents_context_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_intents_digest_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_intents_outcome_check"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notification_confirmation_intents_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notification_confirmation_intents_pk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_intents_retry_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_intents_status_check"
+        },
+        {
+          "kind": "foreign_key",
+          "name": "notification_confirmation_intents_subscription_fk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_intents_time_check"
+        },
+        {
+          "kind": "index",
+          "name": "notification_confirmation_intents_lease"
+        },
+        {
+          "kind": "index",
+          "name": "notification_confirmation_intents_retry"
+        },
+        {
+          "kind": "index",
+          "name": "notification_confirmation_intents_subscription"
+        },
+        {
+          "kind": "table",
+          "name": "notification_confirmation_attempts"
+        },
+        {
+          "kind": "row_type",
+          "name": "notification_confirmation_attempts"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notification_confirmation_attempts"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_attempts_attempt_check"
+        },
+        {
+          "kind": "foreign_key",
+          "name": "notification_confirmation_attempts_intent_fk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_attempts_outcome_check"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notification_confirmation_attempts_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notification_confirmation_attempts_pk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_attempts_time_check"
+        }
+      ]
     }
   },
   "security": {
@@ -295,6 +1500,358 @@
       },
       {
         "object": "oaf_website.notifications.unsubscribed_at",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_verification",
+        "role": "matching_runtime",
+        "privileges": [
+          "SELECT",
+          "INSERT"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_verification.token_digest",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_verification.issued_at",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_verification.expires_at",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_verification.verified_at",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_confirmation_limits",
+        "role": "matching_runtime",
+        "privileges": [
+          "SELECT",
+          "INSERT"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_confirmation_limits.window_start",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_confirmation_limits.last_requested_at",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_confirmation_limits.requests",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_release_events",
+        "role": "matching_runtime",
+        "privileges": [
+          "SELECT",
+          "INSERT"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_release_events.status",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_release_events.updated_at",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_deliveries",
+        "role": "matching_runtime",
+        "privileges": [
+          "SELECT",
+          "INSERT"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_deliveries.status",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_deliveries.attempts",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_deliveries.claim_digest",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_deliveries.lease_until",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_deliveries.next_attempt_at",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_deliveries.outcome",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_deliveries.provider_message_id",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_deliveries.updated_at",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_deliveries.accepted_at",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_delivery_attempts",
+        "role": "matching_runtime",
+        "privileges": [
+          "SELECT",
+          "INSERT"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_delivery_attempts.submitting_at",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_delivery_attempts.finished_at",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_delivery_attempts.outcome",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_delivery_attempts.provider_message_id",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_suppressions",
+        "role": "matching_runtime",
+        "privileges": [
+          "SELECT",
+          "INSERT"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_confirmation_intents",
+        "role": "matching_runtime",
+        "privileges": [
+          "SELECT",
+          "INSERT"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_confirmation_intents.status",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_confirmation_intents.attempts",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_confirmation_intents.claim_digest",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_confirmation_intents.lease_until",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_confirmation_intents.next_attempt_at",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_confirmation_intents.outcome",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_confirmation_intents.provider_message_id",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_confirmation_intents.updated_at",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_confirmation_intents.accepted_at",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_confirmation_attempts",
+        "role": "matching_runtime",
+        "privileges": [
+          "SELECT",
+          "INSERT"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_confirmation_attempts.submitting_at",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_confirmation_attempts.finished_at",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_confirmation_attempts.outcome",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_confirmation_attempts.provider_message_id",
         "role": "matching_runtime",
         "privileges": [
           "UPDATE"
@@ -626,6 +2183,1578 @@
           8,
           "n"
         ]
+      ],
+      "notification_delivery_edges": [
+        [
+          "delivery_table_notification_verification",
+          0,
+          "schema",
+          0,
+          "n"
+        ],
+        [
+          "delivery_type_notification_verification",
+          0,
+          "delivery_table_notification_verification",
+          0,
+          "i"
+        ],
+        [
+          "delivery_type__notification_verification",
+          0,
+          "delivery_type_notification_verification",
+          0,
+          "i"
+        ],
+        [
+          "delivery_constraint_notification_verification_pk",
+          0,
+          "delivery_table_notification_verification",
+          1,
+          "a"
+        ],
+        [
+          "delivery_index_notification_verification_pk",
+          0,
+          "delivery_constraint_notification_verification_pk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_constraint_notification_verification_subscription_fk",
+          0,
+          "delivery_table_notification_verification",
+          1,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_verification_subscription_fk",
+          0,
+          "notification_index",
+          0,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_verification_subscription_fk",
+          0,
+          "notification_table",
+          1,
+          "n"
+        ],
+        [
+          "delivery_trigger_notification_verification_subscription_fk_notifications_9",
+          0,
+          "delivery_constraint_notification_verification_subscription_fk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_trigger_notification_verification_subscription_fk_notifications_17",
+          0,
+          "delivery_constraint_notification_verification_subscription_fk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_trigger_notification_verification_subscription_fk_notification_verification_5",
+          0,
+          "delivery_constraint_notification_verification_subscription_fk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_trigger_notification_verification_subscription_fk_notification_verification_17",
+          0,
+          "delivery_constraint_notification_verification_subscription_fk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_constraint_notification_verification_time_check",
+          0,
+          "delivery_table_notification_verification",
+          4,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_verification_time_check",
+          0,
+          "delivery_table_notification_verification",
+          4,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_verification_time_check",
+          0,
+          "delivery_table_notification_verification",
+          3,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_verification_time_check",
+          0,
+          "delivery_table_notification_verification",
+          3,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_verification_time_check",
+          0,
+          "delivery_table_notification_verification",
+          5,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_verification_time_check",
+          0,
+          "delivery_table_notification_verification",
+          5,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_verification_token",
+          0,
+          "delivery_table_notification_verification",
+          2,
+          "a"
+        ],
+        [
+          "delivery_index_notification_verification_token",
+          0,
+          "delivery_constraint_notification_verification_token",
+          0,
+          "i"
+        ],
+        [
+          "delivery_constraint_notification_verification_token_check",
+          0,
+          "delivery_table_notification_verification",
+          2,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_verification_token_check",
+          0,
+          "delivery_table_notification_verification",
+          2,
+          "n"
+        ],
+        [
+          "delivery_table_notification_confirmation_limits",
+          0,
+          "schema",
+          0,
+          "n"
+        ],
+        [
+          "delivery_type_notification_confirmation_limits",
+          0,
+          "delivery_table_notification_confirmation_limits",
+          0,
+          "i"
+        ],
+        [
+          "delivery_type__notification_confirmation_limits",
+          0,
+          "delivery_type_notification_confirmation_limits",
+          0,
+          "i"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_limits_bucket_check",
+          0,
+          "delivery_table_notification_confirmation_limits",
+          1,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_limits_bucket_check",
+          0,
+          "delivery_table_notification_confirmation_limits",
+          1,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_limits_count_check",
+          0,
+          "delivery_table_notification_confirmation_limits",
+          4,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_limits_count_check",
+          0,
+          "delivery_table_notification_confirmation_limits",
+          4,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_limits_pk",
+          0,
+          "delivery_table_notification_confirmation_limits",
+          1,
+          "a"
+        ],
+        [
+          "delivery_index_notification_confirmation_limits_pk",
+          0,
+          "delivery_constraint_notification_confirmation_limits_pk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_limits_time_check",
+          0,
+          "delivery_table_notification_confirmation_limits",
+          3,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_limits_time_check",
+          0,
+          "delivery_table_notification_confirmation_limits",
+          3,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_limits_time_check",
+          0,
+          "delivery_table_notification_confirmation_limits",
+          2,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_limits_time_check",
+          0,
+          "delivery_table_notification_confirmation_limits",
+          2,
+          "n"
+        ],
+        [
+          "delivery_table_notification_release_events",
+          0,
+          "schema",
+          0,
+          "n"
+        ],
+        [
+          "delivery_type_notification_release_events",
+          0,
+          "delivery_table_notification_release_events",
+          0,
+          "i"
+        ],
+        [
+          "delivery_type__notification_release_events",
+          0,
+          "delivery_type_notification_release_events",
+          0,
+          "i"
+        ],
+        [
+          "delivery_constraint_notification_release_events_content_check",
+          0,
+          "delivery_table_notification_release_events",
+          9,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_release_events_content_check",
+          0,
+          "delivery_table_notification_release_events",
+          9,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_release_events_digest_check",
+          0,
+          "delivery_table_notification_release_events",
+          10,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_release_events_digest_check",
+          0,
+          "delivery_table_notification_release_events",
+          10,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_release_events_environment_check",
+          0,
+          "delivery_table_notification_release_events",
+          3,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_release_events_environment_check",
+          0,
+          "delivery_table_notification_release_events",
+          3,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_release_events_launch",
+          0,
+          "delivery_table_notification_release_events",
+          3,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_release_events_launch",
+          0,
+          "delivery_table_notification_release_events",
+          4,
+          "a"
+        ],
+        [
+          "delivery_index_notification_release_events_launch",
+          0,
+          "delivery_constraint_notification_release_events_launch",
+          0,
+          "i"
+        ],
+        [
+          "delivery_constraint_notification_release_events_pk",
+          0,
+          "delivery_table_notification_release_events",
+          1,
+          "a"
+        ],
+        [
+          "delivery_index_notification_release_events_pk",
+          0,
+          "delivery_constraint_notification_release_events_pk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_constraint_notification_release_events_platform_check",
+          0,
+          "delivery_table_notification_release_events",
+          4,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_release_events_platform_check",
+          0,
+          "delivery_table_notification_release_events",
+          4,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_release_events_status_check",
+          0,
+          "delivery_table_notification_release_events",
+          11,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_release_events_status_check",
+          0,
+          "delivery_table_notification_release_events",
+          11,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_release_events_time_check",
+          0,
+          "delivery_table_notification_release_events",
+          7,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_release_events_time_check",
+          0,
+          "delivery_table_notification_release_events",
+          7,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_release_events_time_check",
+          0,
+          "delivery_table_notification_release_events",
+          8,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_release_events_time_check",
+          0,
+          "delivery_table_notification_release_events",
+          8,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_release_events_time_check",
+          0,
+          "delivery_table_notification_release_events",
+          12,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_release_events_time_check",
+          0,
+          "delivery_table_notification_release_events",
+          12,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_release_events_time_check",
+          0,
+          "delivery_table_notification_release_events",
+          13,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_release_events_time_check",
+          0,
+          "delivery_table_notification_release_events",
+          13,
+          "n"
+        ],
+        [
+          "delivery_table_notification_deliveries",
+          0,
+          "schema",
+          0,
+          "n"
+        ],
+        [
+          "delivery_type_notification_deliveries",
+          0,
+          "delivery_table_notification_deliveries",
+          0,
+          "i"
+        ],
+        [
+          "delivery_type__notification_deliveries",
+          0,
+          "delivery_type_notification_deliveries",
+          0,
+          "i"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_accepted_check",
+          0,
+          "delivery_table_notification_deliveries",
+          12,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_accepted_check",
+          0,
+          "delivery_table_notification_deliveries",
+          12,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_accepted_check",
+          0,
+          "delivery_table_notification_deliveries",
+          3,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_accepted_check",
+          0,
+          "delivery_table_notification_deliveries",
+          3,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_attempts_check",
+          0,
+          "delivery_table_notification_deliveries",
+          4,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_attempts_check",
+          0,
+          "delivery_table_notification_deliveries",
+          4,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_claim_check",
+          0,
+          "delivery_table_notification_deliveries",
+          5,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_claim_check",
+          0,
+          "delivery_table_notification_deliveries",
+          5,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_claim_check",
+          0,
+          "delivery_table_notification_deliveries",
+          6,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_claim_check",
+          0,
+          "delivery_table_notification_deliveries",
+          6,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_claim_check",
+          0,
+          "delivery_table_notification_deliveries",
+          3,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_claim_check",
+          0,
+          "delivery_table_notification_deliveries",
+          3,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_digest_check",
+          0,
+          "delivery_table_notification_deliveries",
+          5,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_digest_check",
+          0,
+          "delivery_table_notification_deliveries",
+          5,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_event_fk",
+          0,
+          "delivery_table_notification_deliveries",
+          1,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_event_fk",
+          0,
+          "delivery_index_notification_release_events_pk",
+          0,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_event_fk",
+          0,
+          "delivery_table_notification_release_events",
+          1,
+          "n"
+        ],
+        [
+          "delivery_trigger_notification_deliveries_event_fk_notification_release_events_9",
+          0,
+          "delivery_constraint_notification_deliveries_event_fk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_trigger_notification_deliveries_event_fk_notification_release_events_17",
+          0,
+          "delivery_constraint_notification_deliveries_event_fk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_trigger_notification_deliveries_event_fk_notification_deliveries_5",
+          0,
+          "delivery_constraint_notification_deliveries_event_fk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_trigger_notification_deliveries_event_fk_notification_deliveries_17",
+          0,
+          "delivery_constraint_notification_deliveries_event_fk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_outcome_check",
+          0,
+          "delivery_table_notification_deliveries",
+          8,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_outcome_check",
+          0,
+          "delivery_table_notification_deliveries",
+          8,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_pk",
+          0,
+          "delivery_table_notification_deliveries",
+          1,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_pk",
+          0,
+          "delivery_table_notification_deliveries",
+          2,
+          "a"
+        ],
+        [
+          "delivery_index_notification_deliveries_pk",
+          0,
+          "delivery_constraint_notification_deliveries_pk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_retry_check",
+          0,
+          "delivery_table_notification_deliveries",
+          4,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_retry_check",
+          0,
+          "delivery_table_notification_deliveries",
+          4,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_retry_check",
+          0,
+          "delivery_table_notification_deliveries",
+          7,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_retry_check",
+          0,
+          "delivery_table_notification_deliveries",
+          7,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_retry_check",
+          0,
+          "delivery_table_notification_deliveries",
+          3,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_retry_check",
+          0,
+          "delivery_table_notification_deliveries",
+          3,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_status_check",
+          0,
+          "delivery_table_notification_deliveries",
+          3,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_status_check",
+          0,
+          "delivery_table_notification_deliveries",
+          3,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_subscription_fk",
+          0,
+          "delivery_table_notification_deliveries",
+          2,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_subscription_fk",
+          0,
+          "notification_index",
+          0,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_subscription_fk",
+          0,
+          "notification_table",
+          1,
+          "n"
+        ],
+        [
+          "delivery_trigger_notification_deliveries_subscription_fk_notifications_9",
+          0,
+          "delivery_constraint_notification_deliveries_subscription_fk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_trigger_notification_deliveries_subscription_fk_notifications_17",
+          0,
+          "delivery_constraint_notification_deliveries_subscription_fk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_trigger_notification_deliveries_subscription_fk_notification_deliveries_5",
+          0,
+          "delivery_constraint_notification_deliveries_subscription_fk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_trigger_notification_deliveries_subscription_fk_notification_deliveries_17",
+          0,
+          "delivery_constraint_notification_deliveries_subscription_fk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_time_check",
+          0,
+          "delivery_table_notification_deliveries",
+          12,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_time_check",
+          0,
+          "delivery_table_notification_deliveries",
+          12,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_time_check",
+          0,
+          "delivery_table_notification_deliveries",
+          10,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_time_check",
+          0,
+          "delivery_table_notification_deliveries",
+          10,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_time_check",
+          0,
+          "delivery_table_notification_deliveries",
+          11,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_deliveries_time_check",
+          0,
+          "delivery_table_notification_deliveries",
+          11,
+          "n"
+        ],
+        [
+          "delivery_index_notification_deliveries_lease",
+          0,
+          "delivery_table_notification_deliveries",
+          3,
+          "a"
+        ],
+        [
+          "delivery_index_notification_deliveries_lease",
+          0,
+          "delivery_table_notification_deliveries",
+          6,
+          "a"
+        ],
+        [
+          "delivery_index_notification_deliveries_retry",
+          0,
+          "delivery_table_notification_deliveries",
+          3,
+          "a"
+        ],
+        [
+          "delivery_index_notification_deliveries_retry",
+          0,
+          "delivery_table_notification_deliveries",
+          7,
+          "a"
+        ],
+        [
+          "delivery_table_notification_delivery_attempts",
+          0,
+          "schema",
+          0,
+          "n"
+        ],
+        [
+          "delivery_type_notification_delivery_attempts",
+          0,
+          "delivery_table_notification_delivery_attempts",
+          0,
+          "i"
+        ],
+        [
+          "delivery_type__notification_delivery_attempts",
+          0,
+          "delivery_type_notification_delivery_attempts",
+          0,
+          "i"
+        ],
+        [
+          "delivery_constraint_notification_delivery_attempts_attempt_check",
+          0,
+          "delivery_table_notification_delivery_attempts",
+          3,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_delivery_attempts_attempt_check",
+          0,
+          "delivery_table_notification_delivery_attempts",
+          3,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_delivery_attempts_delivery_fk",
+          0,
+          "delivery_table_notification_delivery_attempts",
+          1,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_delivery_attempts_delivery_fk",
+          0,
+          "delivery_table_notification_delivery_attempts",
+          2,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_delivery_attempts_delivery_fk",
+          0,
+          "delivery_index_notification_deliveries_pk",
+          0,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_delivery_attempts_delivery_fk",
+          0,
+          "delivery_table_notification_deliveries",
+          1,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_delivery_attempts_delivery_fk",
+          0,
+          "delivery_table_notification_deliveries",
+          2,
+          "n"
+        ],
+        [
+          "delivery_trigger_notification_delivery_attempts_delivery_fk_notification_deliveries_9",
+          0,
+          "delivery_constraint_notification_delivery_attempts_delivery_fk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_trigger_notification_delivery_attempts_delivery_fk_notification_deliveries_17",
+          0,
+          "delivery_constraint_notification_delivery_attempts_delivery_fk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_trigger_notification_delivery_attempts_delivery_fk_notification_delivery_attempts_5",
+          0,
+          "delivery_constraint_notification_delivery_attempts_delivery_fk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_trigger_notification_delivery_attempts_delivery_fk_notification_delivery_attempts_17",
+          0,
+          "delivery_constraint_notification_delivery_attempts_delivery_fk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_constraint_notification_delivery_attempts_outcome_check",
+          0,
+          "delivery_table_notification_delivery_attempts",
+          7,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_delivery_attempts_outcome_check",
+          0,
+          "delivery_table_notification_delivery_attempts",
+          7,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_delivery_attempts_pk",
+          0,
+          "delivery_table_notification_delivery_attempts",
+          1,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_delivery_attempts_pk",
+          0,
+          "delivery_table_notification_delivery_attempts",
+          2,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_delivery_attempts_pk",
+          0,
+          "delivery_table_notification_delivery_attempts",
+          3,
+          "a"
+        ],
+        [
+          "delivery_index_notification_delivery_attempts_pk",
+          0,
+          "delivery_constraint_notification_delivery_attempts_pk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_constraint_notification_delivery_attempts_time_check",
+          0,
+          "delivery_table_notification_delivery_attempts",
+          4,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_delivery_attempts_time_check",
+          0,
+          "delivery_table_notification_delivery_attempts",
+          4,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_delivery_attempts_time_check",
+          0,
+          "delivery_table_notification_delivery_attempts",
+          6,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_delivery_attempts_time_check",
+          0,
+          "delivery_table_notification_delivery_attempts",
+          6,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_delivery_attempts_time_check",
+          0,
+          "delivery_table_notification_delivery_attempts",
+          5,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_delivery_attempts_time_check",
+          0,
+          "delivery_table_notification_delivery_attempts",
+          5,
+          "n"
+        ],
+        [
+          "delivery_table_notification_suppressions",
+          0,
+          "schema",
+          0,
+          "n"
+        ],
+        [
+          "delivery_type_notification_suppressions",
+          0,
+          "delivery_table_notification_suppressions",
+          0,
+          "i"
+        ],
+        [
+          "delivery_type__notification_suppressions",
+          0,
+          "delivery_type_notification_suppressions",
+          0,
+          "i"
+        ],
+        [
+          "delivery_constraint_notification_suppressions_digest_check",
+          0,
+          "delivery_table_notification_suppressions",
+          1,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_suppressions_digest_check",
+          0,
+          "delivery_table_notification_suppressions",
+          1,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_suppressions_pk",
+          0,
+          "delivery_table_notification_suppressions",
+          1,
+          "a"
+        ],
+        [
+          "delivery_index_notification_suppressions_pk",
+          0,
+          "delivery_constraint_notification_suppressions_pk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_constraint_notification_suppressions_reason_check",
+          0,
+          "delivery_table_notification_suppressions",
+          2,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_suppressions_reason_check",
+          0,
+          "delivery_table_notification_suppressions",
+          2,
+          "n"
+        ]
+      ],
+      "confirmation_outbox_edges": [
+        [
+          "delivery_table_notification_confirmation_intents",
+          0,
+          "schema",
+          0,
+          "n"
+        ],
+        [
+          "delivery_type_notification_confirmation_intents",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          0,
+          "i"
+        ],
+        [
+          "delivery_type__notification_confirmation_intents",
+          0,
+          "delivery_type_notification_confirmation_intents",
+          0,
+          "i"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_accepted_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          13,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_accepted_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          13,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_accepted_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          4,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_accepted_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          4,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_attempts_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          5,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_attempts_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          5,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_claim_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          6,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_claim_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          6,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_claim_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          7,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_claim_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          7,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_claim_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          4,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_claim_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          4,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_context_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          1,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_context_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          1,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_context_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          2,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_context_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          2,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_digest_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          6,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_digest_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          6,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_outcome_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          9,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_outcome_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          9,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_pk",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          1,
+          "a"
+        ],
+        [
+          "delivery_index_notification_confirmation_intents_pk",
+          0,
+          "delivery_constraint_notification_confirmation_intents_pk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_retry_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          5,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_retry_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          5,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_retry_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          8,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_retry_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          8,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_retry_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          4,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_retry_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          4,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_status_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          4,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_status_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          4,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_subscription_fk",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          3,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_subscription_fk",
+          0,
+          "notification_index",
+          0,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_subscription_fk",
+          0,
+          "notification_table",
+          1,
+          "n"
+        ],
+        [
+          "delivery_trigger_notification_confirmation_intents_subscription_fk_notifications_9",
+          0,
+          "delivery_constraint_notification_confirmation_intents_subscription_fk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_trigger_notification_confirmation_intents_subscription_fk_notifications_17",
+          0,
+          "delivery_constraint_notification_confirmation_intents_subscription_fk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_trigger_notification_confirmation_intents_subscription_fk_notification_confirmation_intents_5",
+          0,
+          "delivery_constraint_notification_confirmation_intents_subscription_fk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_trigger_notification_confirmation_intents_subscription_fk_notification_confirmation_intents_17",
+          0,
+          "delivery_constraint_notification_confirmation_intents_subscription_fk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_time_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          13,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_time_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          13,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_time_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          11,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_time_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          11,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_time_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          12,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_time_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          12,
+          "n"
+        ],
+        [
+          "delivery_index_notification_confirmation_intents_lease",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          4,
+          "a"
+        ],
+        [
+          "delivery_index_notification_confirmation_intents_lease",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          7,
+          "a"
+        ],
+        [
+          "delivery_index_notification_confirmation_intents_retry",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          4,
+          "a"
+        ],
+        [
+          "delivery_index_notification_confirmation_intents_retry",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          8,
+          "a"
+        ],
+        [
+          "delivery_index_notification_confirmation_intents_subscription",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          3,
+          "a"
+        ],
+        [
+          "delivery_table_notification_confirmation_attempts",
+          0,
+          "schema",
+          0,
+          "n"
+        ],
+        [
+          "delivery_type_notification_confirmation_attempts",
+          0,
+          "delivery_table_notification_confirmation_attempts",
+          0,
+          "i"
+        ],
+        [
+          "delivery_type__notification_confirmation_attempts",
+          0,
+          "delivery_type_notification_confirmation_attempts",
+          0,
+          "i"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_attempts_attempt_check",
+          0,
+          "delivery_table_notification_confirmation_attempts",
+          2,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_attempts_attempt_check",
+          0,
+          "delivery_table_notification_confirmation_attempts",
+          2,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_attempts_intent_fk",
+          0,
+          "delivery_table_notification_confirmation_attempts",
+          1,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_attempts_intent_fk",
+          0,
+          "delivery_index_notification_confirmation_intents_pk",
+          0,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_attempts_intent_fk",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          1,
+          "n"
+        ],
+        [
+          "delivery_trigger_notification_confirmation_attempts_intent_fk_notification_confirmation_intents_9",
+          0,
+          "delivery_constraint_notification_confirmation_attempts_intent_fk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_trigger_notification_confirmation_attempts_intent_fk_notification_confirmation_intents_17",
+          0,
+          "delivery_constraint_notification_confirmation_attempts_intent_fk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_trigger_notification_confirmation_attempts_intent_fk_notification_confirmation_attempts_5",
+          0,
+          "delivery_constraint_notification_confirmation_attempts_intent_fk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_trigger_notification_confirmation_attempts_intent_fk_notification_confirmation_attempts_17",
+          0,
+          "delivery_constraint_notification_confirmation_attempts_intent_fk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_attempts_outcome_check",
+          0,
+          "delivery_table_notification_confirmation_attempts",
+          6,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_attempts_outcome_check",
+          0,
+          "delivery_table_notification_confirmation_attempts",
+          6,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_attempts_pk",
+          0,
+          "delivery_table_notification_confirmation_attempts",
+          1,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_attempts_pk",
+          0,
+          "delivery_table_notification_confirmation_attempts",
+          2,
+          "a"
+        ],
+        [
+          "delivery_index_notification_confirmation_attempts_pk",
+          0,
+          "delivery_constraint_notification_confirmation_attempts_pk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_attempts_time_check",
+          0,
+          "delivery_table_notification_confirmation_attempts",
+          3,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_attempts_time_check",
+          0,
+          "delivery_table_notification_confirmation_attempts",
+          3,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_attempts_time_check",
+          0,
+          "delivery_table_notification_confirmation_attempts",
+          5,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_attempts_time_check",
+          0,
+          "delivery_table_notification_confirmation_attempts",
+          5,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_attempts_time_check",
+          0,
+          "delivery_table_notification_confirmation_attempts",
+          4,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_attempts_time_check",
+          0,
+          "delivery_table_notification_confirmation_attempts",
+          4,
+          "n"
+        ]
       ]
     },
     "version_table": "oaf_website.alembic_version",
@@ -643,7 +3772,11 @@
       "exact_state_request_definition",
       "exact_state_request_runtime_grants",
       "exact_notification_definition",
-      "exact_notification_runtime_grants"
+      "exact_notification_runtime_grants",
+      "exact_notification_delivery_definition",
+      "exact_notification_delivery_runtime_grants",
+      "exact_confirmation_outbox_definition",
+      "exact_confirmation_outbox_runtime_grants"
     ],
     "state_request_types": "private_row_type_array_uses_element_acl_no_public_or_runtime_usage",
     "notification_types": "private_row_type_array_uses_element_acl_no_public_or_runtime_usage"

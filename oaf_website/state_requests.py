@@ -21,6 +21,10 @@ from .state_request_schema import STATE_CODES, state_requests
 COOKIE_AGE = 60 * 60 * 24 * 365
 
 
+def valid_state(value):
+    return type(value) is str and value in STATE_CODES
+
+
 class BrowserRecognition:
     def __init__(self, secret):
         if type(secret) is not bytes or len(secret) < 32:
@@ -102,7 +106,8 @@ def _origin(value):
 
 
 def _build_app(store, recognition, public_origin, *, allow_insecure_localhost=False,
-               subscription_store=None):
+               subscription_store=None, integration_config=None, reporting_store=None,
+               environment=None, contact_sender=None):
     trusted = _origin(public_origin)
     parts = urlsplit(public_origin)
     if (trusted is None or parts.path not in {"", "/"} or parts.query
@@ -185,7 +190,7 @@ def _build_app(store, recognition, public_origin, *, allow_insecure_localhost=Fa
         except BadRequest:
             return error("Choose one state and try again.", 400)
         if (type(data) is not dict or set(data) != {"state"}
-                or type(data["state"]) is not str or data["state"] not in STATE_CODES):
+                or not valid_state(data["state"])):
             return error("Select one of the 50 U.S. states.", 400)
         try:
             accepted = store.submit(data["state"], recognition.browser_key(token))
@@ -209,24 +214,37 @@ def _build_app(store, recognition, public_origin, *, allow_insecure_localhost=Fa
             return error("State totals are temporarily unavailable.", 503)
         return jsonify(totals=counts)
 
+    from .contact import register_contact
+    register_contact(app, recognition, cookie_name, same_origin, valid_csrf, error,
+                     sender=contact_sender)
     if subscription_store is not None:
         from .notifications import UnsubscribeCapabilities, register_notifications
         register_notifications(app, subscription_store, UnsubscribeCapabilities(recognition.secret),
                                same_origin, valid_csrf, error)
+    if integration_config is not None:
+        from .integrations import register_integrations
+        register_integrations(app, integration_config, environment, recognition, trusted,
+                              allow_insecure_localhost, store, subscription_store, reporting_store)
     return app
 
 
 def create_app(*, expected_profile, recognition_secret, public_origin,
-               allow_insecure_localhost=False):
+               allow_insecure_localhost=False, integration_config=None):
     """Explicit runtime factory. No schema creation, migration or secret fallback.
 
     Supply one persistent, protected recognition secret to every API worker.
     Serve /api through the public site's origin; no credentialed CORS is enabled.
+    Optional IntegrationConfig is injected from protected backend configuration;
+    its environment must match the verified runtime profile. None disables the
+    service routes. No additional environment-variable allowlist is introduced.
     """
     recognition = BrowserRecognition(recognition_secret)
     # Validate the origin before any configuration/credential access.
     _build_app(None, recognition, public_origin,
                allow_insecure_localhost=allow_insecure_localhost)
+    if integration_config is not None:
+        from .integrations import validate_configuration
+        validate_configuration(integration_config, expected_profile, recognition.secret)
     config = (load_testing_database_config() if expected_profile == "testing" else
               load_database_config(expected_profile=expected_profile))
     engine = create_engine(
@@ -239,8 +257,14 @@ def create_app(*, expected_profile, recognition_secret, public_origin,
                  _verify_checkout(config, dbapi, record, proxy))
     # Build again with the configured store. No engine connection occurs here.
     from .notifications import SubscriptionStore
+    from .interest_reporting import InterestSummaryStore
+    from .contact_mail import ConfiguredSMTP
     app = _build_app(RequestStore(engine), recognition, public_origin,
                      allow_insecure_localhost=allow_insecure_localhost,
-                     subscription_store=SubscriptionStore(engine))
+                     subscription_store=SubscriptionStore(engine),
+                     integration_config=integration_config, environment=config.profile,
+                     reporting_store=InterestSummaryStore(engine, config.profile)
+                     if integration_config is not None else None,
+                     contact_sender=ConfiguredSMTP(config.profile))
     app.extensions["state_requests_engine"] = engine
     return app

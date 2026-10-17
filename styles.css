@@ -28,6 +28,7 @@ body {
 
 nav {
   display: flex;
+  align-items: center;
   gap: 28px;
 }
 
@@ -54,6 +55,19 @@ nav a,
 .site-header nav a:focus-visible {
   outline: 2px solid #496d60;
   outline-offset: 2px;
+}
+
+.site-header nav .nav-support {
+  padding: 6px 14px;
+  margin: -6px 0;
+  background: #315e50;
+  color: #fff;
+  border-radius: 3px;
+}
+
+.site-header nav .nav-support:hover,
+.site-header nav .nav-support:focus-visible {
+  background-color: #285244;
 }
 
 .footer-links a:hover {
@@ -188,6 +202,27 @@ h2 {
   height: auto;
 }
 
+.how-it-works-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.how-it-works-overview {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #666;
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.how-it-works-divider {
+  height: 1.25em;
+  border-left: 1px solid #c4d2c9;
+}
+
 .steps {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -304,6 +339,98 @@ footer {
 .footer-links {
   display: flex;
   gap: 22px;
+}
+
+/* Informational pages: readable columns using the shared layout and palette. */
+.faq-page,
+.support-page,
+.contact-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.faq-page footer,
+.support-page footer,
+.contact-page footer {
+  margin-top: auto;
+}
+
+.faq-page .section-inner,
+.support-page .section-inner,
+.contact-page .section-inner {
+  max-width: 800px;
+}
+
+.faq-intro,
+.support-intro,
+.contact-intro {
+  background: #edf1ee;
+}
+
+.faq-intro h1,
+.support-intro h1,
+.contact-intro h1 {
+  margin: 0;
+  color: #233f36;
+  font-size: clamp(2.3rem, 5vw, 4.5rem);
+  letter-spacing: -0.025em;
+  line-height: 1.08;
+}
+
+.faq-item + .faq-item {
+  margin-top: 40px;
+  padding-top: 40px;
+  border-top: 1px solid #dce5df;
+}
+
+.faq-item h2 {
+  margin: 0 0 20px;
+  color: #233f36;
+  font-size: clamp(1.35rem, 2.4vw, 1.65rem);
+  line-height: 1.4;
+}
+
+.faq-item p,
+.support-content p {
+  margin: 0 0 16px;
+  color: #555;
+  font-size: 1.1rem;
+  line-height: 1.7;
+}
+
+.faq-item > p:last-child,
+.support-content > p:last-child {
+  margin-bottom: 0;
+}
+
+.support-donation .button {
+  margin-top: 0;
+}
+
+.faq-item a:not(.button) {
+  color: #315e50;
+  text-underline-offset: 3px;
+}
+
+.faq-page a:focus-visible,
+.support-page a:focus-visible {
+  outline: 2px solid #496d60;
+  outline-offset: 3px;
+}
+
+#notification-form {
+  scroll-margin-top: 150px;
+}
+
+@media (max-width: 750px) {
+  .faq-page .content-section,
+  .support-page .content-section,
+  .contact-page .content-section {
+    padding-top: 60px;
+    padding-bottom: 60px;
+  }
 }
 
 /* About page: build on the shared sections, typography, and components. */
@@ -568,22 +695,32 @@ button.button {
 
 .pilot-state-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
-  gap: 16px;
-  margin: 30px 0 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 20px 0 0;
   padding: 0;
   list-style: none;
 }
 
 .pilot-state-card {
-  padding: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  height: 44px;
+  padding: 2px 6px;
   border: 1px dashed #8aa397;
   border-radius: 8px;
   background: var(--program-surface);
 }
 
-.pilot-state-card h3 {
+.gramanna-page .pilot-state-card h3 {
+  margin: 0;
   color: var(--program-ink);
+  font-size: 1rem;
+  line-height: 1.15;
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
 .pilot-state-card p {
@@ -711,6 +848,10 @@ button.button {
 }
 
 @media (max-width: 550px) {
+  .pilot-state-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .gramanna-access-grid {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -792,4 +933,23 @@ button.button {
   .footer-links {
     flex-wrap: wrap;
   }
+}
+
+/* Contact uses the shared form controls and informational-page layout. */
+.contact-page textarea {
+  resize: vertical;
+}
+
+.contact-feedback {
+  overflow-wrap: anywhere;
+  scroll-margin-top: 180px;
+}
+
+.contact-feedback:focus-visible {
+  outline: 2px solid #496d60;
+  outline-offset: 3px;
+}
+
+.contact-feedback[role="alert"] {
+  color: #873d32;
 }

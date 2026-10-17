@@ -46,7 +46,7 @@ if sys.platform == "win32":
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SECRET = "STAGE3-SYNTHETIC-NOT-A-DATABASE-PASSWORD:@/é"
+SECRET = "STAGE3-SYNTHETIC-NOT-A-DATABASE-PASSWORD:@/Ã©"
 ATTEMPTS = []
 EARLY_REGISTERED = False
 PRODUCTION_IMPORTS = []
@@ -58,6 +58,12 @@ APPROVED_TESTS = frozenset({
     "tests/test_migration_operational.py",
     "tests/test_state_requests.py", "tests/test_state_request_migration.py",
     "tests/test_notifications.py", "tests/test_notification_migration.py",
+    "tests/test_integrations.py",
+    "tests/test_development_integrations.py",
+    "tests/test_contact.py",
+    "tests/test_notification_delivery.py", "tests/test_notification_delivery_migration.py",
+    "tests/test_confirmation_outbox.py", "tests/test_confirmation_outbox_migration.py",
+    "tests/test_brevo.py", "tests/test_notification_dispatch.py",
 })
 _guard = pytest.MonkeyPatch()
 _REAL_AUDIT = str(Path(os.environ.get('LOCALAPPDATA', 'C:/unavailable')) /

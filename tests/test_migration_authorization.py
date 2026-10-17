@@ -140,8 +140,10 @@ def test_stage5_installed_alembic_schema_transaction_and_history(context_setup):
         'CONSTRAINT alembic_version_pkc PRIMARY KEY (version_num) )')
     script = ScriptDirectory.from_config(Config(str(ROOT / "alembic.ini")))
     assert script.get_bases() == [v.BASELINE]
-    assert script.get_heads() == [v.NOTIFICATIONS]
+    assert script.get_heads() == [v.OUTBOX]
     assert [(r.revision, r.down_revision) for r in script.walk_revisions()] == [
+        (v.OUTBOX, v.DELIVERY),
+        (v.DELIVERY, v.NOTIFICATIONS),
         (v.NOTIFICATIONS, v.STATE_REQUESTS),
         (v.STATE_REQUESTS, v.BASELINE), (v.BASELINE, None)]
 
