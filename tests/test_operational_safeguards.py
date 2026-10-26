@@ -696,7 +696,7 @@ def test_partial_duplicate_or_invalid_exceptional_scope_rejects_before_protected
 # Step 5 confirmation-only handoff. Real authority helpers; synthetic files only.
 @pytest.fixture
 def step5_once(tmp_path, monkeypatch):
-    path=Path(__file__).resolve().parents[1]/'.pytest_cache/step5-confirmation-once-v1-20261023/confirmation_once.py'
+    path=Path(__file__).resolve().parent/'fixtures/confirmation_once.py'
     spec=importlib.util.spec_from_file_location('step5_once_synthetic',path)
     adapter=importlib.util.module_from_spec(spec);spec.loader.exec_module(adapter)
     clock=datetime.fromisoformat(adapter.ISSUED)+timedelta(minutes=10)
@@ -864,7 +864,7 @@ def test_step5_once_expiry_after_consumption_stops_before_processor(step5_once,m
 @pytest.fixture
 def step5_supersession(step5_once, monkeypatch):
     old,b,tmp=step5_once
-    source=PACKAGE.parent/'step5-authorization-supersession-v1-20261023/confirmation_once.py'
+    source=Path(__file__).resolve().parent/'fixtures/confirmation_supersession.py'
     spec=importlib.util.spec_from_file_location('step5_supersession_synthetic',source)
     new=importlib.util.module_from_spec(spec);spec.loader.exec_module(new)
     monkeypatch.setattr(new,'base',old)
