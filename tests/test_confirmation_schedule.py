@@ -476,12 +476,18 @@ def test_scheduled_cli_delegates_existing_one_shot_and_records_only_safe_fields(
         assert "synthetic-account" not in json.dumps(record)
 
 
-def test_export_synthetic_action_for_powershell_parser_only(scheduled, monkeypatch):
+def test_export_synthetic_action_for_powershell_parser_only(scheduled, monkeypatch, tmp_path):
     # No task is registered or run. Retain the exact synthetic definition so the
     # visible PowerShell harness can independently parse its decoded action.
-    monkeypatch.setattr(schedule, "ROOT", Path(__file__).resolve().parents[1] / "synthetic OAF's Website")
+    monkeypatch.setattr(schedule, "ROOT", tmp_path / "synthetic OAF's Website")
     xml = schedule.task_xml(profile="testing", windows_user=SID, enabled=True,
         account="synthetic-account", page=PAGE, recipient=MAILBOX)
-    evidence = Path(__file__).resolve().parents[1] / ".pytest_cache/r44"
-    evidence.mkdir(exist_ok=True)
-    (evidence / "synthetic-task.xml").write_text(xml, encoding="utf-8")
+    evidence = tmp_path / "synthetic-task.xml"
+    evidence.write_text(xml, encoding="utf-8")
+    assert evidence.read_text(encoding="utf-8") == xml
+    task = ET.fromstring(xml)
+    action = task.find("t:Actions/t:Exec/t:Arguments", NS).text
+    script = base64.b64decode(action.split()[-1]).decode("utf-16-le")
+    assert str(schedule.ROOT).replace("'", "''") in script
+    assert script.endswith("exit $LASTEXITCODE")
+    assert_no_runtime(scheduled)

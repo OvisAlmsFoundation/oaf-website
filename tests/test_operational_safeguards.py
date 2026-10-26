@@ -29,6 +29,7 @@ from test_brevo import CONFIG, PAGE, response
 
 MAILBOX='subscriber1@example.invalid'
 PACKAGE=Path(__file__).absolute().parents[1]/'.pytest_cache/operational-safeguards-v1-20261021'
+PREFLIGHT=Path(__file__).resolve().parent/'fixtures/readonly_snapshot.py'
 OFFLINE_EVIDENCE_DIRECTORY=os.environ.get('TEST_EVIDENCE_DIRECTORY')
 
 
@@ -519,15 +520,13 @@ def test_scheduler_reporting_failure_preserves_count_and_original_failure(runtim
     assert runtime.model.rows(intents)[0]['status']=='accepted'
 
 def load_preflight(monkeypatch):
-    import sys
-    monkeypatch.syspath_prepend(str(PACKAGE))
-    spec=importlib.util.spec_from_file_location('safeguard_preflight',PACKAGE/'preflight.py')
+    spec=importlib.util.spec_from_file_location('safeguard_preflight',PREFLIGHT)
     module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
     return module
 
 def test_outcome_observation_requires_no_provider_or_protected_key(monkeypatch):
     module=load_preflight(monkeypatch)
-    source=(PACKAGE/'preflight.py').read_text()
+    source=PREFLIGHT.read_text(encoding='utf-8')
     tree=__import__('ast').parse(source)
     # The actual classifier observes a consistent accepted result without a store
     # or a key. Its identity anchors are the existing immutable fingerprints.
@@ -620,8 +619,10 @@ def test_actual_readonly_snapshot_is_independent_of_provider_readiness(monkeypat
     plain=module.plain
     monkeypatch.setattr(module,'plain',lambda path:Path(path) if 'config' in Path(path).parts else plain(path))
     monkeypatch.setattr(module,'verify_checkout_files',lambda:dict(owner_sid='synthetic',source={}))
-    contract=json.loads((PACKAGE/'package-contract.json').read_text())
-    contract.update(original_identities={},current_reviewed_source_fingerprint=module.fingerprint({}))
+    contract=dict(original_identities={},current_reviewed_source_fingerprint=module.fingerprint({}),
+        schedule=dict(execution_limit_seconds=240,expiry_margin_seconds=30,lead_seconds=300,trigger_window_seconds=90),
+        timing=dict(evidence_freshness_seconds=900,before_enable_lead_seconds=120,snapshot_allowance_seconds=30,
+            database_clock_agreement_seconds=5))
     monkeypatch.setattr(module,'original_contract',lambda:contract)
     monkeypatch.setattr(module,'BASE',tmp_path);monkeypatch.setattr(module,'utc_now',lambda:model.now)
     monkeypatch.setattr(module,'MAILBOX',MAILBOX);monkeypatch.setattr(module,'PRIMARY_MAILBOX','primary@example.invalid')
