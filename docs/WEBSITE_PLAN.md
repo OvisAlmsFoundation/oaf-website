@@ -1223,3 +1223,141 @@ do not pass; exact results, baseline comparison and source identities are retain
 with the candidate. No Git delivery or live operation occurred. The existing
 shutdown/refinement/Step 6 roadmap remains; WORKFLOW holds the sole improvement
 register and the one next controlled-installation action.
+
+
+### Step 4 CLOSED / PASS and approved UI refinements (recorded 2026-10-26)
+
+The owner accepted **Step 4 CLOSED / PASS** from October 25, 2026 live
+Eyes & Clicks with CloudCake's original management link after withdrawal.
+The page showed "This link is unavailable. Use your latest email or request a
+new link." with no editable preferences, Save control, reactivation capability
+or protected-preference disclosure. This browser observation is distinct from
+the earlier accepted source/test evidence for expiration, revocation, lifecycle
+binding, session deadlines and stale authority. A screenshot does not
+independently establish backend timestamps or database mutations.
+
+The current detailed closure, UI installation and evidence record is in
+[WORKFLOW.md](WORKFLOW.md#step-4-owner-closure-and-approved-ui-refinements-recorded-2026-10-26).
+The approved presentation batch is complete: active-management instructions
+follow available authorized editing; verified withdrawal keeps its exact
+success message; generic-link privacy and recovery remain intact; shared
+success/error/information/processing feedback is reused with an empty-border
+correction; and the redundant signup paragraph is removed while one feedback
+area remains beneath Subscribe. Newer installed safeguards and all historical
+documentation are preserved.
+
+Focused installed-source Chromium validation: **60 PASS**, 30 checks each at
+1280 x 844 and 390 x 844, native exit 0; full-page captures reviewed. Intercepted
+synthetic APIs only, no backend/operational certification. No full pytest/CI
+campaign, server/tunnel/guard restart, Brevo activation/email/provider request,
+credential/database/migration operation, GraManna write or Git delivery.
+Evidence: `.pytest_cache/step4-ui-closure-20261026T161838Z-2669eded/`.
+
+The previously queued signup refinement is completed by this batch. The existing
+remaining-diagnostics candidate and its canonical/coverage limitations remain
+separate; Step 6 is not started or assigned an invented scope.
+**ONE next action:** resume the existing remaining-diagnostics installation
+checkpoint within its separate scope.
+
+
+### Notification Management V2 Step 6 - DEVELOPMENT Migration 0006 closure (2026-10-26)
+
+**Step 6 - CLOSED / PASS - October 26, 2026.** Owner-authorized completion
+of Notification Management V2 Step 6 - DEVELOPMENT Migration 0006, recorded
+from accepted evidence without repeating validation or live operations.
+5P: SIMPLE. DIRECT. SUFFICIENT. EFFICIENT. SAFE.
+
+Migration `0006_notification_management` is applied and verified in both
+**TESTING and DEVELOPMENT**. This current closure updates the earlier pending
+Step 6 direction; every historical entry and owner-authored note is preserved.
+
+Accepted artifact and focused validation evidence:
+
+- Artifact correction: **PASS**; exactly two migration integrity files corrected.
+- Focused validation: **209 tests PASS**, accepted prior evidence; not rerun here.
+- Corrected artifact approval: `32144895-ddad-4083-bece-6a2287a0f719`.
+- Manifest SHA256:
+  `dc44f7d95e9f63a498bbb004472de710bcc8d445a0f32280140cf9e53134e212`.
+- Revision 0006 SHA256:
+  `12c5721415d543cced10edf1c54028bbca675bff4db7e8cb8b36994543643801`.
+
+Accepted environment outcomes:
+
+- **TESTING - PASS**, run `3a1e54fb-4bf0-494e-9c0c-f4066eb7ae07`:
+  outcome `verified_noop`; authoritative identity/catalog checks **PASS**;
+  no database mutation; rollback, audit and cleanup confirmed.
+- **DEVELOPMENT - PASS**, transition
+  `0005_confirmation_outbox` -> `0006_notification_management`;
+  run `038d48d8-c5e6-42fd-9c4b-5060451385af`;
+  authorization reference `eef90020-e111-459b-a09d-ce3997f211b7`;
+  outcome `applied_and_verified`; database commit confirmed; postcommit
+  validation, audit publication, lock release and cleanup **PASS**;
+  native exit **0**; first failure **NONE**.
+
+All existing historical audit records, claims, migration evidence, project
+files, Git index and owner changes were preserved in the accepted work.
+This documentation-only closure appends to `docs/WEBSITE_PLAN.md` and
+`docs/WORKFLOW.md`, preserving all prior document bytes and existing Git state.
+No source, test, configuration or migration edits, credential/live database
+access, authorization issuance/consumption, provider/email/service changes,
+GraManna modification or Git staging/commit/push/reset/clean/stash occur here.
+No production deployment or new whole-suite coverage certification is claimed.
+`Invoke-OAFCodex` remains the sole final clipboard delivery, verified read-back
+and visual-alert mechanism; no unobserved final delivery is asserted and no
+reporting machinery is changed.
+
+**ONE next existing roadmap milestone: Step 7 - Final Verification / Git
+Checkpoint - NOT STARTED.** This closure does not start that milestone.
+
+
+### Notification Management V2 Step 7 - final verification and Git readiness (2026-10-26)
+
+**VERIFICATION PASS / GIT READY; owner closure and Git delivery pending.**
+Steps 1-6 remain CLOSED / PASS. Accepted migration, focused 209-test,
+60-check UI, owner Eyes & Clicks and historical Linux CI evidence is reused.
+The current manifest and revision 0006 match the accepted Step 6 hashes.
+No completed migration, live operation or browser acceptance was repeated.
+
+The exact Git-normalized candidate based on `main` at
+`3f3099df9582065213941c431527fee975b648ab` passes the existing canonical
+CI shard/combination procedure locally: **3,592 tests PASS**, zero failures,
+errors or skips; **5,671/5,671 statements and 2,004/2,004 branches, 100%**
+across all 33 application modules. Historical canonical/coverage blockers
+and pending repair-installation descriptions above retain their historical
+scope; installed repairs and this current evidence govern final readiness.
+The older Linux CI GREEN is not attributed to these uncommitted changes.
+
+The scoped security/deterministic-autonomy review passes. Existing server
+authority, lifecycle isolation, audit, suppression and recovery remain intact;
+AI is not an operational dependency. This batch only appends documentation.
+All owner source changes, prior document bytes, HEAD and the empty index are
+preserved. The complete final candidate inventory, preservation checks and
+logs are under `.pytest_cache/s7-20261026T195026Z-f4ccc056/`; details are in
+WORKFLOW's matching Step 7 record. No genuine delivery blocker remains.
+
+**ONE next action:** owner decision on the separate final Git delivery.
+Step 7 is not declared CLOSED, and no staging, commit or push occurred.
+
+
+### Notification Management V2 Step 7 - final closure and Git delivery (2026-10-26)
+
+**Step 7 - CLOSED / PASS - October 26, 2026.** Steps 1-6 remain CLOSED / PASS.
+The owner accepts final verification and explicitly authorizes delivery of the
+nine accepted changes plus these append-only Step 7 closure records on `main`.
+This current closure supersedes the earlier pending owner-decision wording;
+all historical content and owner notes are retained.
+
+Accepted final evidence is reused from
+`.pytest_cache/s7-20261026T195026Z-f4ccc056/verification-final.json`:
+**3,592 tests PASS; 5,671/5,671 statements and 2,004/2,004 branches covered**;
+both shards and combiner exit 0; UTF-8, Git equivalence, security and
+deterministic autonomy PASS. Executable, test, configuration and asset inputs
+remain identical to that tested candidate. No test campaign is repeated.
+
+Delivery validates the documentation delta and exact staged candidate, reviews
+the complete staged diff and preserves all nine accepted changes. The authorized
+commit message is `Close Notification Management V2 Step 7`; delivery uses the
+existing `origin` remote and `main` without force or history rewrite. Actual
+commit/tree identities, native exits and push outcome belong in the final
+consolidated delivery report. The owner independently checks GitHub CI;
+this delivery does not query or monitor it. Exit after successful push/report.

@@ -3755,3 +3755,304 @@ shutdown, matching its baseline hashes and using the existing startup-integrity
 procedure. No shutdown is authorized here. Before any later Git push, resolve the
 baseline validation failures and meet the full canonical zero-failure and 100%
 application coverage gates on the exact final Git candidate. Step 6 remains later.
+
+
+## Step 4 owner closure and approved UI refinements (recorded 2026-10-26)
+
+**STEP 4 CLOSED / PASS.** On October 25, 2026, the owner performed live
+Eyes & Clicks using CloudCake's original management link after the subscription
+had been withdrawn. The owner reported this browser message:
+
+> This link is unavailable. Use your latest email or request a new link.
+
+The owner observed no editable subscription preferences, no Save control, no
+reactivation capability and no disclosure of protected preferences, and accepted
+Step 4 CLOSED / PASS. This is the accepted owner browser observation, recorded
+here without repeating the live exercise. It does not independently establish
+backend timestamps, database mutations or every backend enforcement condition.
+Earlier accepted source/test evidence separately covers expiration, revocation,
+lifecycle binding, session deadlines and stale authority. That accepted evidence
+is reused; those properties are not newly inferred from the screenshot.
+
+### One approved presentation correction batch
+
+Compared the current five frontend files with
+`.pytest_cache/global-action-feedback-16abb8e4d8f44c9d8ab4d49368e866e7/proposed-changes.patch`
+and its candidate files before editing. The shared action-feedback CSS, existing
+status/alert elements, status categories, icons, colors and live announcements
+were already installed. Preserved the newer management withdrawal-only,
+authority-rejection, receipt/acknowledgment, conditional legacy-message and
+recovery behavior instead of overwriting it with the historical candidate.
+
+- Both active-management instructions are hidden initially and when authorized
+  editable preferences are unavailable: "Choose the GraManna announcements you
+  want to receive." and "Opening a link makes no changes." They remain visible
+  for valid authorized active preference management.
+- The existing verified withdrawal/acknowledgment path retains exactly:
+  "You have unsubscribed from all notifications for this subscription." Invalid
+  or unauthenticated links retain generic unavailable feedback; legacy
+  conditional acknowledgments do not assert subscriber withdrawal status.
+  Existing recovery eligibility, visibility and request behavior are preserved.
+- Reused the global success checkmark/subtle green, error warning/subtle red,
+  neutral information icon and processing hourglass/dashed styling. Corrected
+  the empty processing region's leftover dashed border with zero border width;
+  the existing empty live region remains in the DOM.
+- Removed the explanatory paragraph immediately below "Choose your updates",
+  its obsolete description references and its JavaScript text update. Kept
+  one existing action-feedback area directly beneath Subscribe. Announcement
+  choices, consent, labels, controls and confirmation-request behavior remain.
+
+### Focused validation, preservation and limits
+
+Evidence: `.pytest_cache/step4-ui-closure-20261026T161838Z-2669eded/`.
+Reused the existing prepared Playwright audit/interception procedure against
+installed files with the approved sibling interpreter, read-only packages and
+Chromium. One connected focused validation covers **60 PASS checks**, **30 each
+at 1280 x 844 and 390 x 844**, native exit **0**. Invalid/malformed/revoked-link
+privacy, authorized editing/save, stale authority, verified withdrawal and
+acknowledgment without a second save, conditional legacy responses, recovery,
+signup/confirmation ON and OFF, processing and errors pass. Keyboard/focus,
+busy controls, live semantics, valid ARIA references, forced colors, wrapping
+and page/message overflow pass. Text contrast remains success 10.03:1,
+information/processing 15.05:1 and error 6.81:1. Zero page errors or unexpected
+requests. Full-page desktop/mobile captures were visually reviewed.
+
+The initial focused browser iteration also exited 0; its visual review exposed
+the empty processing-border artifact at `styles.css:.action-message:empty`.
+That actual expected/observed mismatch is preserved in `stages.jsonl`; the final
+connected iteration verifies its correction. Earlier captures with sticky-header
+overlays remain historical; final full-page captures avoid that capture artifact.
+No canonical pytest or GitHub Linux CI campaign was repeated.
+
+Only five frontend files and these two governing documents change. Complete
+original documentation bytes remain prefixes; prior owner changes and historical
+evidence are retained. HEAD/index, backend, routes, consent/authority/lifecycle
+contracts, database, email, webhook and API source remain unchanged. All browser
+API responses were intercepted and synthetic; these checks establish frontend
+behavior, not new backend or deployment certification. No manual screen-reader
+certification is claimed.
+
+The owner reports all four terminals were closed overnight. This batch did not
+require or restart TESTING HTTPS, Cloudflare or the forwarding guard. Brevo
+outbound processing was not enabled or invoked. No email, provider request,
+credential access, migration, operational database action, GraManna repository
+change or Git stage/commit/push occurred. Existing sanitized logging,
+first-failure evidence, clipboard read-back and OAF alert reporting are retained
+with the consolidated report and reporting receipt.
+
+The queued signup refinement is complete; earlier pending-refinement statements
+remain historical. The separately prepared remaining-diagnostics candidate and
+its recorded canonical/coverage limitations are outside this UI batch and retain
+their existing disposition. Step 6 scope is not invented or started.
+
+**ONE next action:** resume the existing remaining-diagnostics installation
+checkpoint within its separate scope.
+
+
+## Routine DEVELOPMENT website viewing (2026-10-26)
+
+In the OAF Website VS Code workspace, use **Terminal > Run Task... >
+OAF Website: Start DEVELOPMENT** (or **Ctrl+Shift+P > Tasks: Run Task**,
+then select that task). It runs the existing launcher in a visible dedicated
+PowerShell terminal and opens Chrome at **http://127.0.0.1:5055/gramanna.html**.
+Direct equivalent from the repository root in Windows PowerShell 5.1:
+
+```powershell
+.\ops\Start-DevelopmentWebsite.ps1
+```
+
+Use the existing launcher without `-EnableIntegrations`. Ordinary HTML, CSS and
+JavaScript edits need no TESTING HTTPS source-hash reconciliation; refresh the
+local page after saving. The task leaves an occupied port/existing server alone.
+Keep its terminal open while viewing. Leave the running TESTING HTTPS server,
+its launcher/hash safeguards, Cloudflare and forwarding guard untouched.
+
+DEVELOPMENT binds only to 127.0.0.1:5055 and requires the existing
+`oaf_website_dev` / `oaf_website_app` identity and DEVELOPMENT Credential Manager
+reference. Conflicting environment/database settings fail closed; startup checks
+use read-only queries. Integrations, confirmation and management are disabled by
+default; webhook processing fails closed without its configuration. The existing
+recognition key, cookies, CSRF/origin checks, sanitized simultaneous log,
+first-failure diagnostics, verified clipboard and OAF alert remain in use.
+
+For visual inspection, browse without submitting Contact, subscription or State
+Request forms, and without using live email links. Contact SMTP is loaded only
+on submission; it is not globally disabled by DEVELOPMENT. This viewing procedure
+does not authorize email delivery, provider processing, operational writes or
+migrations. Existing development form behavior is preserved.
+
+
+## Notification Management V2 Step 6 - DEVELOPMENT Migration 0006 closure (2026-10-26)
+
+**Step 6 - CLOSED / PASS - October 26, 2026.** Owner-authorized completion
+of Notification Management V2 Step 6 - DEVELOPMENT Migration 0006, recorded
+from accepted evidence without repeating validation or live operations.
+5P: SIMPLE. DIRECT. SUFFICIENT. EFFICIENT. SAFE.
+
+Migration `0006_notification_management` is applied and verified in both
+**TESTING and DEVELOPMENT**. This current closure updates the earlier pending
+Step 6 direction; every historical entry and owner-authored note is preserved.
+
+Accepted artifact and focused validation evidence:
+
+- Artifact correction: **PASS**; exactly two migration integrity files corrected.
+- Focused validation: **209 tests PASS**, accepted prior evidence; not rerun here.
+- Corrected artifact approval: `32144895-ddad-4083-bece-6a2287a0f719`.
+- Manifest SHA256:
+  `dc44f7d95e9f63a498bbb004472de710bcc8d445a0f32280140cf9e53134e212`.
+- Revision 0006 SHA256:
+  `12c5721415d543cced10edf1c54028bbca675bff4db7e8cb8b36994543643801`.
+
+Accepted environment outcomes:
+
+- **TESTING - PASS**, run `3a1e54fb-4bf0-494e-9c0c-f4066eb7ae07`:
+  outcome `verified_noop`; authoritative identity/catalog checks **PASS**;
+  no database mutation; rollback, audit and cleanup confirmed.
+- **DEVELOPMENT - PASS**, transition
+  `0005_confirmation_outbox` -> `0006_notification_management`;
+  run `038d48d8-c5e6-42fd-9c4b-5060451385af`;
+  authorization reference `eef90020-e111-459b-a09d-ce3997f211b7`;
+  outcome `applied_and_verified`; database commit confirmed; postcommit
+  validation, audit publication, lock release and cleanup **PASS**;
+  native exit **0**; first failure **NONE**.
+
+All existing historical audit records, claims, migration evidence, project
+files, Git index and owner changes were preserved in the accepted work.
+This documentation-only closure appends to `docs/WEBSITE_PLAN.md` and
+`docs/WORKFLOW.md`, preserving all prior document bytes and existing Git state.
+No source, test, configuration or migration edits, credential/live database
+access, authorization issuance/consumption, provider/email/service changes,
+GraManna modification or Git staging/commit/push/reset/clean/stash occur here.
+No production deployment or new whole-suite coverage certification is claimed.
+`Invoke-OAFCodex` remains the sole final clipboard delivery, verified read-back
+and visual-alert mechanism; no unobserved final delivery is asserted and no
+reporting machinery is changed.
+
+**ONE next existing roadmap milestone: Step 7 - Final Verification / Git
+Checkpoint - NOT STARTED.** This closure does not start that milestone.
+
+
+## Notification Management V2 Step 7 - final verification and Git readiness (2026-10-26)
+
+**VERIFICATION PASS / GIT READY; Step 7 owner closure and Git delivery pending.**
+One focused final-verification batch, confined to OAF Website. Steps 1-6 remain
+CLOSED / PASS. Earlier staged-diagnostics, source-lock and canonical/coverage
+failure descriptions remain historical; accepted installation and subsequent
+committed repairs are present in current HEAD and are not reopened.
+
+Candidate and preservation:
+
+- Repository: `C:/Users/ovisa/Documents/OAF_App/Development/OAF Website`;
+  branch `main`, HEAD `3f3099df9582065213941c431527fee975b648ab`.
+  Local tracking reference `origin/main` has the same HEAD; no fetch/push.
+- Nine pre-existing unstaged files were inventoried and backed up. All seven
+  non-document changes remain byte-for-byte intact; both documents retain their
+  complete original bytes as prefixes. This batch appends only these two records.
+  No source, test, configuration, migration or owner-note correction was needed.
+- The 138 tracked inputs (136 UTF-8 text files and two exact binary images) were
+  copied into an ignored snapshot. Existing CRLF-to-LF candidate normalization
+  was checked against read-only `git hash-object --path ... --stdin` for every
+  file, without `-w`, staging, object writes or index changes. The snapshot uses
+  the existing website environment and installed shared coverage package read-only.
+- `candidate-before.json` seals the tested inputs; `candidate-final.json` identifies
+  the final documentation-inclusive Git candidate and proves unchanged executable,
+  test, asset and configuration bytes. Final document changes are append-only;
+  the tests do not consume their content. Final UTF-8, Git whitespace/conflict and
+  preservation checks apply to that complete candidate. HEAD/index stay unchanged.
+
+Accepted evidence reused without repeating its historical operations:
+
+- DEVELOPMENT `038d48d8-c5e6-42fd-9c4b-5060451385af`, `applied_and_verified`;
+  TESTING `3a1e54fb-4bf0-494e-9c0c-f4066eb7ae07`, `verified_noop`.
+- Corrected approval `32144895-ddad-4083-bece-6a2287a0f719`; manifest
+  `dc44f7d95e9f63a498bbb004472de710bcc8d445a0f32280140cf9e53134e212`;
+  revision 0006 `12c5721415d543cced10edf1c54028bbca675bff4db7e8cb8b36994543643801`.
+  Current normalized bytes match both accepted hashes.
+- Focused migration integrity **209 PASS**, installed-source browser **60 PASS**,
+  owner Eyes & Clicks **PASS**, accepted repair/installation evidence and prior
+  GitHub Linux CI **GREEN**. The older Linux result is historical, not proof of
+  the current uncommitted candidate. No separate focused/browser/live rerun.
+
+Required final gates actually executed:
+
+- Reused unchanged `ops/ci_pytest.py` and `.github/workflows/linux-tests.yml`:
+  `shard --shard 0`, `shard --shard 1`, then `combine`, on Git-equivalent bytes.
+  Dedicated website Python 3.11, `-u -B`, explicit canonical inventory, early
+  `-p migration_offline`, disabled autoload, empty pytest options/plugins, explicit
+  TESTING and unique short synthetic temporary roots retain existing safeguards.
+- Shard 0: **1,796 PASS**, 192.11 seconds, exit 0. Shard 1: **1,796 PASS**,
+  187.40 seconds, exit 0. Each reports zero unexpected external-access attempts.
+  Each shard's 1,796 deselections are the intentional disjoint partition.
+- Existing combiner: **3,592 tests exactly once**, zero failures/errors/skips/xfails;
+  all 33 application modules, **5,671/5,671 statements and 2,004/2,004 branches,
+  exactly 100%**; zero missing statements/branches; exit 0. No exclusions added.
+  New GitHub execution is not claimed; these are current local candidate results.
+
+One proportional security/autonomy review **PASS**: signed purpose/environment/
+lifecycle/revision/expiry authority, CSRF/origin/HTTPS, authoritative consent,
+verification, atomic idempotence, append-only audit, exact callback correlation,
+suppression, quota/recovery and uncertain-commit rules remain intact. Ordinary
+operations have deterministic server decisions and no AI dependency.
+
+Actual first stop, retained with its resolution: candidate-seal gate started
+`2026-10-26T19:51:38.8343524Z`; `UnicodeDecodeError`, native exit 1, because the
+verification setup tried to decode a PNG as UTF-8. Expected: strict UTF-8 for text
+and exact binary copies. Observed: PNG signature rejected by a blanket decoder.
+The partial ignored snapshot is retained. No application defect or external side
+effect occurred. Tests and coverage were NOT_RUN at that stop; after the single
+setup correction, the seal and every required final gate passed. No test failure
+or remaining dependent NOT_RUN gate blocks readiness. See `first-failure.json`.
+
+Evidence: `.pytest_cache/s7-20261026T195026Z-f4ccc056/` contains the sealed inputs,
+owner backups, security/evidence review, simultaneous `execution.log`, both shard
+logs and `coverage-combine.log`; snapshot `.pytest_cache/ci/` retains manifests,
+coverage arcs and complete coverage report. `verification-final.json` records
+final preservation and Git checks. Existing evidence is never overwritten.
+
+No database/credential access, migration/authority issuance, provider/email/Brevo
+request, service restart/disruption, scheduler change, GraManna modification or
+Git stage/commit/push/reset/clean/stash occurs. Existing `Invoke-OAFCodex` remains
+the sole final clipboard/read-back/visual-alert mechanism, unchanged. No interim
+clipboard write, completion alert or unobserved final delivery is asserted.
+
+**ONE next action:** owner decision on the separate final Git delivery.
+Step 7 remains open for that decision; no Git delivery or closure is declared.
+
+
+## Notification Management V2 Step 7 - final closure and Git delivery (2026-10-26)
+
+**Step 7 - CLOSED / PASS - October 26, 2026.** Steps 1-6 remain CLOSED / PASS.
+The owner accepts final verification and explicitly authorizes the accepted
+candidate plus these two append-only closure records for commit and push.
+This entry supersedes the earlier pending owner-decision wording while retaining
+all prior document content and owner notes.
+
+Accepted baseline: `main`, HEAD `3f3099df9582065213941c431527fee975b648ab`;
+Git-equivalent candidate tree `7e1a430b403d7139f22497d20f98de5053308ec2`;
+candidate SHA256
+`2c3727a1086d07ceeacd0d07f9d6bd5c7868e07c7ed47fd5224d2ea5b1f98708`.
+Evidence: `.pytest_cache/s7-20261026T195026Z-f4ccc056/verification-final.json`.
+Reuse **3,592 tests PASS**, **5,671/5,671 statements**, **2,004/2,004 branches**,
+both shards/combiner exit 0, UTF-8/Git-equivalence and security/autonomy PASS.
+The earlier setup decoder failure and its accepted resolution remain historical.
+Only closure documentation is newly added; every non-document input is unchanged.
+No repeat test campaign is required for this documentation delta.
+
+The approved inventory remains nine files: `assets/notification-management.js`,
+`assets/notifications.js`, `docs/WEBSITE_PLAN.md`, `docs/WORKFLOW.md`,
+`gramanna.html`, `manage-notifications.html`, `migrations/manifest.json`,
+`oaf_website/migration_validation.py` and `styles.css`. Preserve all accepted owner
+work, verify the document prefixes, validate the exact Git-equivalent staged
+candidate and review its complete diff for content, privacy, whitespace and scope.
+Commit with `Close Notification Management V2 Step 7`, then push `main` to the
+existing authorized `origin` without force or history rewrite. Record the actual
+commit SHA, tree SHA, push result and native exits in the final delivery report.
+
+No migration, database operation, provider/email request, service change or
+GraManna repository edit is included. GitHub Actions is checked independently
+by the owner; do not query, poll, wait for or monitor CI. Existing visible logging
+and unchanged `Invoke-OAFCodex` final clipboard/read-back/visual alert remain in
+use, with one consolidated report and no interim delivery. Exit immediately
+after successful push verification and reporting.
+
+5P: SIMPLE. DIRECT. SUFFICIENT. EFFICIENT. SAFE.

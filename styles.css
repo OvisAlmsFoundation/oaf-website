@@ -699,6 +699,7 @@ footer {
 
 .action-message:empty {
   margin: 0;
+  border-width: 0;
 }
 
 .action-message:not(:empty)::before {

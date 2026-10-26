@@ -24,6 +24,7 @@
     const status = document.getElementById('management-status');
     const error = document.getElementById('management-error');
     const title = document.getElementById('management-title');
+    const instructions = document.getElementById('management-instructions');
     const web = document.getElementById('management-web');
     const android = document.getElementById('management-android');
     const ios = document.getElementById('management-ios');
@@ -42,6 +43,7 @@
     function controls(value) {
       busy = value;
       card.setAttribute('aria-busy', String(value));
+      instructions.hidden = !authorized || form.hidden;
       card.querySelectorAll('input, select, button').forEach(item => { item.disabled = value; });
       document.getElementById('management-state-field').hidden = !stateEnabled.checked;
       state.disabled = value || !stateEnabled.checked;
@@ -170,7 +172,7 @@
     function completeWithdrawal(conditionalMessage = null) {
       token = null; legacy = null; action = null; authorized = false; withdrawalOnly = false;
       form.hidden = true; withdrawal.hidden = true; view.hidden = true;
-      document.getElementById('management-instructions').hidden = true;
+      instructions.hidden = true;
       recovery.hidden = !conditionalMessage;
       title.textContent = conditionalMessage ? 'Request processed' : 'Unsubscribed';
       message(conditionalMessage || 'You have unsubscribed from all notifications for this subscription.',

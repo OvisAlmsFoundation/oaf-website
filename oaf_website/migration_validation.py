@@ -35,6 +35,7 @@ FRAMEWORK_FILES = frozenset({
     "oaf_website/state_request_schema.py", "oaf_website/state_request_validation.py",
     "oaf_website/notification_schema.py", "oaf_website/notification_validation.py",
     "oaf_website/notification_delivery_schema.py", "oaf_website/notification_delivery_validation.py",
+    "oaf_website/notification_dispatch.py",
     "oaf_website/notification_management_schema.py",
 })
 REVISION_FILE = f"migrations/versions/{BASELINE}.py"

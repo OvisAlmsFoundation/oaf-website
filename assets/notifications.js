@@ -94,9 +94,6 @@
       csrf = data.csrf_token;
       confirmationEnabled = data.confirmation_enabled === true;
       confirmationForm.hidden = !confirmationEnabled;
-      document.getElementById('subscription-note').textContent = confirmationEnabled ?
-        "We save your email and selected preferences for future announcements. If confirmation is needed and permitted, we'll email a link." :
-        'We save your email and selected preferences for future announcements. Email delivery is not connected yet; no confirmation email will be sent.';
     }).finally(() => { sessionLoading = null; });
     await sessionLoading;
   }
