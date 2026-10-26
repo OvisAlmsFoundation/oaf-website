@@ -46,7 +46,7 @@ def test_verification_request_template_and_provider_acceptance_do_not_verify_mai
     assert token not in repr(model.records)
     assert store.request_confirmation("subscriber1@example.invalid") is None
     assert store.confirm(token)=="verified"
-    assert store.confirm(token)=="verified"
+    assert store.confirm(token)=="already_verified"
     assert not model.rows(deliveries) and not model.rows(attempts)
 
 
@@ -62,7 +62,7 @@ def test_release_uses_approved_event_and_persisted_attempt_then_never_repeats(se
         data=json.loads(body)
         assert data["to"]==[{"email":"subscriber1@example.invalid"}]
         assert payload(platform)["release_url"] in data["textContent"]
-        assert PAGE+"#unsubscribe=" in data["textContent"]
+        assert PAGE.replace('/gramanna.html','/manage-notifications.html')+"#unsubscribe=" in data["textContent"]
         return response()
     transport.side_effect=post
     assert dispatcher.process(EVENT)==d.BatchResult("processed",1)
@@ -110,10 +110,10 @@ def test_eligibility_changes_immediately_before_dispatch_prevent_post(setup,monk
     model,store,transport,dispatcher=setup
     digest=ready(model,store)
     original=getattr(store,when)
-    def intervene(*args):
+    def intervene(*args, **kwargs):
         if change=="withdrawal": SubscriptionStore(model).unsubscribe(digest)
         else: store.suppress("subscriber1@example.invalid","complaint")
-        return original(*args)
+        return original(*args, **kwargs)
     monkeypatch.setattr(store,when,intervene)
     assert dispatcher.process(EVENT)==d.BatchResult("processed",0)
     assert model.rows(deliveries)[0]["status"]=="suppressed"

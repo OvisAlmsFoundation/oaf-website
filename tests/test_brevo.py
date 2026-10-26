@@ -205,8 +205,8 @@ def test_fixed_request_identities_and_platform_templates(template):
         message=messages.release_message(event,"b"*64,UnsubscribeCapabilities(SECRET),PAGE)
         assert event["release_url"] in message.text and event["release_url"] in message.html
         assert ("Android" if template=="android" else "Apple iOS") in message.subject
-        assert PAGE+"#unsubscribe=" in message.text
-        token=message.text.split("#unsubscribe=")[1].strip()
+        assert PAGE.replace('/gramanna.html','/manage-notifications.html')+"#unsubscribe=" in message.text
+        token=message.text.split("#unsubscribe=")[1].split()[0]
         assert UnsubscribeCapabilities(SECRET).read(token)=="b"*64
     assert "a"*64 not in repr(message) and "b"*64 not in repr(message)
     assert b.BrevoAdapter(CONFIG,transport=transport).submit("User@example.invalid",message)==ACCEPTED

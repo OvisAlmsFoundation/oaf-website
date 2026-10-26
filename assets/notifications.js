@@ -9,6 +9,11 @@
     location.replace('confirm-email.html' + openedFragment);
     return;
   }
+  if (openedFragment.startsWith('#unsubscribe=') || openedFragment.startsWith('#manage=')) {
+    history.replaceState(null, '', location.pathname + location.search);
+    location.replace('manage-notifications.html' + openedFragment);
+    return;
+  }
   const form = document.getElementById('notification-form');
   const email = document.getElementById('notification-email');
   const web = document.getElementById('notify-web');
@@ -22,9 +27,6 @@
   const note = document.getElementById('notification-message');
   const receipt = document.getElementById('notification-receipt');
   const link = document.getElementById('notification-unsubscribe-link');
-  const withdrawal = document.getElementById('notification-unsubscribe');
-  const withdrawButton = document.getElementById('notification-unsubscribe-button');
-  const withdrawNote = document.getElementById('notification-unsubscribe-message');
   const confirmationForm = document.getElementById('notification-confirmation-form');
   const confirmationEmail = document.getElementById('confirmation-email');
   const requestButton = document.getElementById('notification-confirmation-button');
@@ -34,10 +36,11 @@
   let sessionLoading;
   let confirmationEnabled = null;
   let submission;
-  let withdrawalToken;
 
-  function message(target, text, error = false) {
+  function message(target, text, error = false, appearance = 'information') {
+    target.dataset.status = error ? 'error' : appearance;
     target.setAttribute('role', error ? 'alert' : 'status');
+    target.setAttribute('aria-live', error ? 'assertive' : 'polite');
     target.textContent = text;
   }
 
@@ -49,10 +52,9 @@
 
   function controls(disabled) {
     busy = disabled;
-    [email, web, android, ios, statePreference, consent, button, withdrawButton, confirmationEmail]
+    [email, web, android, ios, statePreference, consent, button, confirmationEmail]
       .forEach(control => { control.disabled = disabled; });
     updateState();
-    withdrawButton.disabled = disabled || !withdrawalToken;
     requestButton.disabled = disabled || !confirmationEnabled;
     button.disabled = disabled || !(globalThis.crypto && crypto.getRandomValues);
     form.setAttribute('aria-busy', String(disabled));
@@ -106,22 +108,9 @@
   }
 
   function readWithdrawalLink(fragment = location.hash) {
-    if (!fragment.startsWith('#unsubscribe=')) return;
-    const token = fragment.slice('#unsubscribe='.length);
-    // Fragments never reach HTTP/access logs. Remove the capability from the
-    // address bar before any API call; no token is put in a query or path.
+    if (!fragment.startsWith('#unsubscribe=') && !fragment.startsWith('#manage=')) return;
     history.replaceState(null, '', location.pathname + location.search);
-    withdrawal.hidden = false;
-    if (/^[0-9a-f]{64}\.[0-9a-f]{64}$/.test(token)) {
-      withdrawalToken = token;
-      withdrawButton.disabled = busy;
-      message(withdrawNote, 'Select Unsubscribe to withdraw these announcement preferences.');
-    } else {
-      withdrawalToken = null;
-      withdrawButton.disabled = true;
-      message(withdrawNote, 'Use the complete private unsubscribe link saved when subscribing.', true);
-    }
-    document.getElementById('unsubscribe-title').focus();
+    location.replace('manage-notifications.html' + fragment);
   }
 
   form.addEventListener('submit', async event => {
@@ -140,14 +129,14 @@
       submission = { snapshot, token: Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('') };
     }
     controls(true);
-    message(note, 'Saving your notification preferences...');
+    message(note, 'Saving your notification preferences...', false, 'processing');
     try {
       await session();
       const data = await api('/api/notifications', { ...choices, token: submission.token });
       if (typeof data.unsubscribe_token !== 'string' || !/^[0-9a-f]{64}\.[0-9a-f]{64}$/.test(data.unsubscribe_token)) {
         throw new Error('We could not confirm this action. Try again with the same form.');
       }
-      link.href = `${location.pathname}#unsubscribe=${data.unsubscribe_token}`;
+      link.href = `manage-notifications.html#unsubscribe=${data.unsubscribe_token}`;
       receipt.hidden = false;
       message(note, data.message);
       email.value = '';
@@ -158,28 +147,12 @@
     }
   });
 
-  withdrawButton.addEventListener('click', async () => {
-    if (busy || !withdrawalToken) return;
-    controls(true);
-    message(withdrawNote, 'Processing unsubscribe...');
-    try {
-      await session();
-      const data = await api('/api/notifications/unsubscribe', { token: withdrawalToken });
-      message(withdrawNote, data.message);
-      submission = null;
-    } catch (error) {
-      message(withdrawNote, error.message, true);
-    } finally {
-      controls(false);
-    }
-  });
-
   confirmationForm.addEventListener('submit', async event => {
     event.preventDefault();
     if (busy || !confirmationEnabled) return;
     const address = confirmationEmail.value;
     controls(true);
-    message(requestNote, 'Requesting a confirmation link...');
+    message(requestNote, 'Requesting a confirmation link...', false, 'processing');
     try {
       await session();
       if (!confirmationEnabled) throw new Error('Email confirmation is currently unavailable.');

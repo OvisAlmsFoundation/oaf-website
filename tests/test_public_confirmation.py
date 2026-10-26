@@ -60,14 +60,15 @@ def test_new_signup_atomically_reserves_without_sending_or_disclosing(setup, mon
     monkeypatch.setattr(outbox.ConfirmationDispatcher, 'process', forbidden)
     monkeypatch.setattr(outbox.BrevoAdapter, 'submit', forbidden)
     response = signup(setup)
-    assert response.status_code == 200 and 'No email has been sent.' in response.json['message']
+    assert response.status_code == 200 and response.json["message"] == "Your submission was processed. New subscriptions are saved; existing active preferences stay unchanged."
     assert len(model.rows(api.notifications)) == len(model.rows(verification)) == len(model.rows(intents)) == 1
     assert len(model.rows(limits)) == 2
     assert model.rows(intents)[0]['status'] == 'pending'
     assert model.rows(verification)[0]['verified_at'] is None
     secret = token(model, delivery)
     assert secret not in response.text + repr(model.records)
-    assert post(client, csrf, {'token': secret}, CONFIRM).json == dict(status='confirmed', message=api.CONFIRMED)
+    assert post(client, csrf, {'token': secret}, CONFIRM).json == dict(
+        status='confirmed', message=api.CONFIRMED, already_confirmed=False)
     forbidden.assert_not_called()
     assert 'RETURNING oaf_website.notifications.unsubscribe_digest' in '\n'.join(model.statements)
     assert 'SELECT pg_catalog.pg_advisory_xact_lock(67210401)' in model.statements
@@ -144,7 +145,7 @@ def test_valid_request_responses_indistinguishable_and_never_contain_bearer(setu
     assert response.json == dict(status='received', message=api.CONFIRMATION_REQUESTED)
     assert response.headers['Cache-Control'] == 'no-store'
     assert response.headers['Referrer-Policy'] == 'same-origin'
-    assert len(model.rows(intents)) == before + int(condition == 'eligible')
+    assert len(model.rows(intents)) == before  # Eligible pending work is coalesced.
 
 
 @pytest.mark.parametrize('path,data', [(REQUEST, {'email': 'person@example.invalid'}), (CONFIRM, {'token': 'a'*64})])
@@ -183,7 +184,7 @@ def test_method_media_and_size_bounds(setup, path):
     assert not model.statements
 
 
-def test_resend_supersession_limits_confirmation_repeats_and_stable_timestamp(setup):
+def test_pending_resend_coalescing_limits_confirmation_repeats_and_stable_timestamp(setup):
     model, delivery, store, app, client, csrf = setup
     signup(setup)
     first = token(model, delivery)
@@ -192,12 +193,18 @@ def test_resend_supersession_limits_confirmation_repeats_and_stable_timestamp(se
     model.elapse(seconds=60)
     assert post(client, csrf, {'email': choices()['email']}, REQUEST).status_code == 200
     second = token(model, delivery)
-    assert second != first and model.rows(intents)[0]['status'] == 'suppressed'
-    assert post(client, csrf, {'token': first}, CONFIRM).json['message'] == api.LINK_UNAVAILABLE
-    assert post(client, csrf, {'token': second}, CONFIRM).json['message'] == api.CONFIRMED
+    assert second == first and len(model.rows(intents)) == 1
+    assert model.rows(intents)[0]['status'] == 'pending'
+    assert post(client, csrf, {'token': second}, CONFIRM).json == dict(
+        status='confirmed', message=api.CONFIRMED, already_confirmed=False)
     stamp = model.rows(verification)[0]['verified_at']
     model.elapse(seconds=5)
-    assert post(client, csrf, {'token': second}, CONFIRM).json['message'] == api.CONFIRMED
+    before = deepcopy(model.records)
+    # A fresh browser may recognize a repeat only by presenting the same valid capability.
+    _, _, _, repeat_client, repeat_csrf = build(model)
+    assert post(repeat_client, repeat_csrf, {'token': second}, CONFIRM).json == dict(
+        status='confirmed', message='Your email is already confirmed.', already_confirmed=True)
+    assert model.records == before
     assert model.rows(verification)[0]['verified_at'] == stamp
 
 
@@ -270,7 +277,7 @@ def test_default_off_preserves_signup_and_unsubscribe_without_reservations():
     delivery, store, app, client, csrf = build(model, False)
     response = post(client, csrf, choices())
     before = deepcopy(model.records)
-    assert 'No email has been sent.' in response.json['message']
+    assert response.json["message"] == "Your submission was processed. New subscriptions are saved; existing active preferences stay unchanged."
     for path, data in [(REQUEST, {'email': choices()['email']}), (CONFIRM, {'token': 'a'*64})]:
         response = post(client, csrf, data, path)
         assert response.status_code == 503 and response.json['message'] == api.CONFIRMATION_OFF
@@ -325,7 +332,7 @@ def test_turning_off_rejects_previously_valid_tokens_without_mutation(setup):
     assert model.records == before
 
 
-@pytest.mark.parametrize('reason', ['expired', 'withdrawn', 'suppressed'])
+@pytest.mark.parametrize('reason', ['expired', 'future', 'withdrawn', 'suppressed', 'unknown', 'superseded'])
 def test_successful_confirmation_timestamp_survives_later_unavailable_repeat(setup, reason):
     model, delivery, store, app, client, csrf = setup
     signup(setup)
@@ -333,9 +340,16 @@ def test_successful_confirmation_timestamp_survives_later_unavailable_repeat(set
     assert post(client, csrf, {'token': bearer}, CONFIRM).status_code == 200
     stamp = model.rows(verification)[0]['verified_at']
     if reason == 'expired': model.elapse(hours=24)
+    if reason == 'future': model.elapse(seconds=-1)
     if reason == 'withdrawn': withdraw(client, csrf)
     if reason == 'suppressed': delivery.suppress(choices()['email'], 'complaint')
-    assert post(client, csrf, {'token': bearer}, CONFIRM).json['message'] == api.LINK_UNAVAILABLE
+    if reason == 'unknown': bearer = 'f'*64
+    if reason == 'superseded': model.rows(verification)[0]['token_digest'] = delivery._digest('confirmation', 'f'*64)
+    before = deepcopy(model.records)
+    response = post(client, csrf, {'token': bearer}, CONFIRM)
+    assert response.status_code == 400
+    assert response.json == dict(status='error', message=api.LINK_UNAVAILABLE)
+    assert model.records == before
     assert model.rows(verification)[0]['verified_at'] == stamp
     before = deepcopy(model.records)
     assert signup(setup, token='b'*64).status_code == 200

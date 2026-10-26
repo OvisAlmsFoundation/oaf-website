@@ -323,7 +323,7 @@ def test_mobile_combinations_reuse_normalization_consent_and_hashing(setup, andr
     assert record["unsubscribe_digest"] == hashlib.sha256(("b" * 64).encode()).hexdigest()
     assert "b" * 64 not in response.text + repr(record)
     assert notifications.UnsubscribeCapabilities(SECRET).read(response.json["unsubscribe_token"]) == record["unsubscribe_digest"]
-    assert "No email has been sent." in response.json["message"]
+    assert response.json["message"] == "Your submission was processed. New subscriptions are saved; existing active preferences stay unchanged."
 
 
 @pytest.mark.parametrize("change", [dict(android_launch=False), dict(android_launch=1), dict(ios_launch="true"),

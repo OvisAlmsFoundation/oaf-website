@@ -227,7 +227,15 @@ def test_startup_failures_are_private_and_cleanup_is_attempted(startup, phase, c
     target.side_effect = RuntimeError("synthetic-private-key-path-database-password")
     assert host.main(ARGS) == 2
     output = capsys.readouterr()
-    assert "BLOCKED:" in output.out and "synthetic-private" not in output.out and not output.err
+    assert "BLOCKED:" in output.out and "synthetic-private" not in output.out + output.err
+    import json
+    from oaf_website.notification_dispatch import validate_failure
+    record = json.loads(output.err.splitlines()[0].split(": ", 1)[1])
+    first = validate_failure(record["first_failure"])
+    assert first["operation"] == {"tls":"tls_context", "factory":"application_startup",
+        "identity":"database_checkout", "bind":"server_bind", "serve":"server_execution",
+        "close":"dispose", "dispose":"dispose"}[phase]
+    assert first["exception_class"] == "RuntimeError"
     if phase in {"identity", "bind", "serve", "close", "dispose"}:
         startup.engine.dispose.assert_called_once_with()
     if phase == "identity": startup.maker.assert_not_called()

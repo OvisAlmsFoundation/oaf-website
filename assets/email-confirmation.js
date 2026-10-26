@@ -1,6 +1,12 @@
 (() => {
   const prefix = '#confirm-email=';
   if (location.pathname === '/gramanna.html') {
+    if (location.hash.startsWith('#unsubscribe=') || location.hash.startsWith('#manage=')) {
+      const fragment = location.hash;
+      history.replaceState(null, '', location.pathname + location.search);
+      location.replace('manage-notifications.html' + fragment);
+      return;
+    }
     // Capture issued links at head-script entry, before legacy-page API work.
     if (location.hash.startsWith(prefix)) {
       const fragment = location.hash;
@@ -96,13 +102,17 @@
           return;
         }
         const { response, data } = await api('/api/notifications/confirm', { token });
-        if (response.ok && data && data.status === 'confirmed') {
+        if (response.ok && data && data.status === 'confirmed' &&
+            (data.already_confirmed === undefined || typeof data.already_confirmed === 'boolean')) {
+          const alreadyConfirmed = data.already_confirmed === true;
           token = null;
           button.hidden = true;
           help.hidden = true;
           document.getElementById('email-confirmation-check').removeAttribute('hidden');
-          title.textContent = 'Your email is confirmed!';
-          explanation.textContent = "Thank you for confirming your email address. You're now subscribed to the GraManna announcements you selected.";
+          title.textContent = alreadyConfirmed ? 'Your email is already confirmed!' : 'Your email is confirmed!';
+          explanation.textContent = alreadyConfirmed
+            ? 'Your email address has already been verified. No further action is needed.'
+            : "Thank you for confirming your email address. You're now subscribed to the GraManna announcements you selected.";
           status.textContent = 'Email verification complete';
           title.focus();
         } else if (response.status === 400) {

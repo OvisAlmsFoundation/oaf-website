@@ -51,12 +51,12 @@ class SMTPConfig:
                     or any(c in self.password for c in "\r\n\x00")
                     or type(self.from_email) is not str or len(self.from_email) > 254
                     or normalize_email(self.from_email) != self.from_email):
-                raise ValueError
+                raise diagnostic_error(ValueError, "__post_init__", "smtp_config_fields", stage="startup")
         except (ValueError, TypeError):
             pass
         else:
             return
-        raise DeliveryUnavailable() from None
+        raise diagnostic_error(DeliveryUnavailable(), "__post_init__", "smtp_config_valid", stage="startup") from None
 
 
 def load_contact_config(expected_profile, *, local_config_path=CONFIG_PATH,
@@ -71,32 +71,36 @@ def load_contact_config(expected_profile, *, local_config_path=CONFIG_PATH,
         environment = dict(os.environ if environ is None else environ)
         _validate_environment(environment, expected_profile)
         if expected_profile not in {"development", "testing"}:
-            raise ValueError
+            raise diagnostic_error(ValueError, "load_contact_config", "contact_profile", stage="startup")
         for path in (ROOT, ROOT / "config", local_config_path.parent, local_config_path):
             if path.is_symlink() or (path.exists() and getattr(path.lstat(), "st_file_attributes", 0)
                                      & stat.FILE_ATTRIBUTE_REPARSE_POINT):
-                raise ValueError
+                raise diagnostic_error(ValueError, "load_contact_config", "contact_config_location", stage="startup")
         with local_config_path.open("rb") as source:
             contents = source.read(8193)
         if len(contents) > 8192:
-            raise ValueError
+            raise diagnostic_error(ValueError, "load_contact_config", "contact_config_size", stage="startup")
         document = tomllib.loads(contents.decode("utf-8"))
         if (not document or not set(document) <= {"development", "testing"}
                 or expected_profile not in document):
-            raise ValueError
+            raise diagnostic_error(ValueError, "load_contact_config", "contact_config_profiles", stage="startup")
         for settings in document.values():
             if type(settings) is not dict or set(settings) != {"host", "port", "tls_mode", "username", "from_email"}:
-                raise ValueError
+                raise diagnostic_error(ValueError, "load_contact_config", "contact_config_fields", stage="startup")
             SMTPConfig(**settings, password="validation-only")
         settings = document[expected_profile]
         provider = _windows_password if credential_loader is None else credential_loader
         password = provider(f"OAF Website/{expected_profile}/Contact/SMTP",
                             settings["username"], environment, exact_target=True)
         return SMTPConfig(**settings, password=password)
-    except Exception:
+    except Exception as exc:
+        first = safe_failure("startup", "provider_configuration", exc)
         # IO, TOML and provider exceptions can contain secrets; discard them.
         pass
-    raise DeliveryUnavailable() from None
+    failure = DeliveryUnavailable()
+    failure.notification_failure = first
+    report_failure("provider_configuration", failure)
+    raise failure from None
 
 
 def construct_message(config, visitor_email, message):
@@ -122,6 +126,9 @@ class ConfiguredSMTP:
         mail = construct_message(config, visitor_email, message)
         smtp = None
         submitting = False
+        accepted = False
+        first = None
+        operation = "smtp_connect"
         try:
             context = ssl.create_default_context()
             if config.tls_mode == "ssl":
@@ -132,23 +139,36 @@ class ConfiguredSMTP:
             if config.tls_mode == "starttls":
                 smtp.starttls(context=context)
                 smtp.ehlo()
+            operation = "smtp_authenticate"
             smtp.login(config.username, config.password)
+            operation = "smtp_submit"
             submitting = True
             refused = smtp.send_message(mail, from_addr=config.from_email, to_addrs=[RECIPIENT])
             if refused:
                 raise DeliveryUnavailable()
             # Acknowledged DATA acceptance is success, not inbox delivery.
             # Close locally: a failed QUIT must not turn accepted mail into a retry.
+            accepted = True
             return
-        except (smtplib.SMTPRecipientsRefused, smtplib.SMTPDataError, DeliveryUnavailable):
-            raise DeliveryUnavailable() from None
-        except Exception:
-            if submitting:
-                raise DeliveryUncertain() from None
-            raise DeliveryUnavailable() from None
+        except (smtplib.SMTPRecipientsRefused, smtplib.SMTPDataError, DeliveryUnavailable) as exc:
+            first = report_failure(operation, exc, stage="provider", predicate="smtp_rejected", side_effects="submission_not_started")
+            failure = DeliveryUnavailable()
+            failure.notification_failure = first
+            raise failure from None
+        except Exception as exc:
+            first = report_failure(operation, exc, stage="provider", predicate="smtp_unacknowledged" if submitting else "smtp_connection_or_authentication",
+                                   side_effects="submission_possible" if submitting else "submission_not_started")
+            failure = DeliveryUncertain() if submitting else DeliveryUnavailable()
+            failure.notification_failure = first
+            raise failure from None
         finally:
             if smtp is not None:
                 try:
                     smtp.close()
-                except Exception:
-                    pass
+                except Exception as exc:
+                    report_failure("dispose", exc, stage="provider", predicate="smtp_close",
+                        side_effects="acknowledged_outcomes_retained" if accepted else "submission_possible" if submitting else "submission_not_started", first_failure=first)
+
+from .notification_dispatch import safe_failure, report_failure
+
+from .notification_dispatch import diagnostic_error

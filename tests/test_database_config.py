@@ -157,7 +157,14 @@ def test_provider_errors_do_not_leak_secrets(error_type, settings_path, capsys, 
         load("testing", settings_path, Mock(side_effect=error_type(FAKE_PASSWORD)))
     assert FAKE_PASSWORD not in "".join(traceback.format_exception(caught.value))
     assert caught.value.__context__ is None
-    assert capsys.readouterr() == ("", "")
+    captured = capsys.readouterr()
+    import json
+    from oaf_website.notification_dispatch import validate_failure
+    detail = json.loads(captured.err.split(": ", 1)[1])
+    first = validate_failure(detail["first_failure"])
+    assert first["predicate"] == "credential_readable" and first["stage"] == "startup"
+    assert first["side_effects"] == "none" and first["exception_class"] == error_type.__name__
+    assert FAKE_PASSWORD not in captured.out + captured.err
     assert not caplog.records
 
 

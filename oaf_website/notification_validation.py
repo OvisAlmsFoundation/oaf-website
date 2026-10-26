@@ -15,8 +15,15 @@ def normalized_check(value):
     return ''.join(parts)
 
 
-def verify_notifications(connection, identity):
+def verify_notifications(connection, identity, *, management=False):
     from .migration_validation import rows, scalar
+    checks, check_columns = dict(CHECKS), dict(CHECK_COLUMNS)
+    mutable = {"unsubscribed_at"}
+    if management:
+        from .notification_management_schema import NOTIFICATION_MUTABLE
+        checks["notifications_revision_check"] = "preferences_revision >= 0"
+        check_columns["notifications_revision_check"] = [10]
+        mutable = set(NOTIFICATION_MUTABLE)
 
     def require(condition):
         if not condition:
@@ -44,6 +51,9 @@ def verify_notifications(connection, identity):
                     ("web_launch", "boolean"), ("android_launch", "boolean"), ("ios_launch", "boolean"),
                     ("state", "character varying(2)"), ("consent_version", "character varying(40)"),
                     ("created_at", "timestamp with time zone"), ("unsubscribed_at", "timestamp with time zone")], 1)]
+    if management:
+        expected.append(dict(name="preferences_revision", type="integer", required=True, identity="", generated="",
+            dropped=False, position=10, dimensions=0, collation=0, has_default=True, default_expression="0"))
     require(columns == expected)
     constraints = rows(connection, """
         SELECT c.conname AS name, c.contype AS kind, c.convalidated AS validated,
@@ -54,19 +64,19 @@ def verify_notifications(connection, identity):
         FROM pg_catalog.pg_constraint c
         WHERE c.conrelid='oaf_website.notifications'::pg_catalog.regclass ORDER BY c.conname
     """)
-    require(len(constraints) == len(CHECKS) + 1)
+    require(len(constraints) == len(checks) + 1)
     for constraint in constraints:
         name = constraint["name"]
         primary = name == "notifications_pk"
-        require(primary or name in CHECKS)
+        require(primary or name in checks)
         definition = constraint["definition"]
         require(constraint == dict(name=name, kind="p" if primary else "c", validated=True,
-                deferrable=False, deferred=False, keys=[1] if primary else CHECK_COLUMNS[name],
+                deferrable=False, deferred=False, keys=[1] if primary else check_columns[name],
                 no_inherit=primary, local=True, inherited=0, definition=definition))
         if primary:
             require(definition == "PRIMARY KEY (unsubscribe_digest)")
         else:
-            expected_expression = CHECKS[name]
+            expected_expression = checks[name]
             if name == "notifications_state_check":
                 expected_expression = "state IS NULL OR state = ANY (ARRAY[" + ",".join(repr(c) for c in STATE_CODES) + "])"
             require(normalized_check(definition) == normalized_check("CHECK (" + expected_expression + ")"))
@@ -112,8 +122,10 @@ def verify_notifications(connection, identity):
         FROM pg_catalog.pg_attribute c CROSS JOIN LATERAL pg_catalog.aclexplode(c.attacl) a
         WHERE c.attrelid='oaf_website.notifications'::pg_catalog.regclass
     """)
-    require(column_acl == [dict(column="unsubscribed_at", grantee=identity.runtime,
-                               grantor=identity.owner, privilege="UPDATE", grantable=False)])
+    expected_column_acl = [dict(column=c, grantee=identity.runtime, grantor=identity.owner,
+                               privilege="UPDATE", grantable=False) for c in mutable]
+    require(len(column_acl) == len(expected_column_acl) and
+            {tuple(sorted(r.items())) for r in column_acl} == {tuple(sorted(r.items())) for r in expected_column_acl})
     require(not scalar(connection, """
         SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_inherits
           WHERE inhrelid='oaf_website.notifications'::pg_catalog.regclass
@@ -132,7 +144,7 @@ def verify_notifications(connection, identity):
             for column in expected:
                 for privilege in ("SELECT", "INSERT", "UPDATE", "REFERENCES"):
                     allowed = role == identity.owner or (role == identity.runtime and
-                              (privilege in {"SELECT", "INSERT"} or privilege == "UPDATE" and column['name'] == "unsubscribed_at"))
+                              (privilege in {"SELECT", "INSERT"} or privilege == "UPDATE" and column['name'] in mutable))
                     require(scalar(connection, "SELECT pg_catalog.has_column_privilege(:role,'oaf_website.notifications',:column,:privilege)",
                                    role=role, column=column['name'], privilege=privilege) is allowed)
                     if role != identity.owner:

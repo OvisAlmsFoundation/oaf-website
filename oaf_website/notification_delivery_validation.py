@@ -5,7 +5,7 @@ FK-trigger/dependency and effective ACL semantics require separate live approval
 """
 
 import re
-from sqlalchemy import CheckConstraint, ForeignKeyConstraint, PrimaryKeyConstraint, String, Integer
+from sqlalchemy import Boolean, CheckConstraint, ForeignKeyConstraint, PrimaryKeyConstraint, String, Integer
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.schema import AddConstraint, CreateIndex
 from .migration_config import IDENTITIES, Failure, MigrationError
@@ -177,9 +177,9 @@ def verify_foreign_key(connection, table, constraint):
 
 def column_contract(item):
     return [dict(name=c.name, type="character varying(" + str(c.type.length) + ")" if isinstance(c.type, String)
-                 else "integer" if isinstance(c.type, Integer) else "timestamp with time zone",
+                 else "integer" if isinstance(c.type, Integer) else "boolean" if isinstance(c.type, Boolean) else "timestamp with time zone",
                  required=not c.nullable, identity="", generated="", dropped=False, position=n,
-                 dimensions=0, default_collation=isinstance(c.type, String), has_default=False)
+                 dimensions=0, default_collation=isinstance(c.type, String), has_default=c.server_default is not None)
             for n, c in enumerate(item.columns, 1)]
 
 
@@ -214,6 +214,18 @@ def verify_delivery(connection, identity, *, tables=TABLES, mutable=MUTABLE, exp
             FROM pg_catalog.pg_attribute a WHERE a.attrelid=CAST(:table AS pg_catalog.regclass) AND a.attnum>0 ORDER BY a.attnum
         """, table=name)
         require(columns == column_contract(item))
+        if any(c.server_default is not None for c in item.columns):
+            defaults = rows(connection, """
+                SELECT a.attname AS default_column, pg_catalog.pg_get_expr(d.adbin,d.adrelid) AS expression
+                FROM pg_catalog.pg_attribute a JOIN pg_catalog.pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+                WHERE a.attrelid=CAST(:table AS pg_catalog.regclass) ORDER BY a.attnum
+            """, table=name)
+            expected_defaults = {c.name: str(c.server_default.arg) for c in item.columns if c.server_default is not None}
+            require(len(defaults) == len(expected_defaults) and {d["default_column"] for d in defaults} == set(expected_defaults))
+            for default in defaults:
+                expected = expected_defaults[default["default_column"]]
+                require(check_tree("CHECK (" + default["expression"] + " = " + expected + ")", item.columns)
+                        == check_tree("CHECK (" + expected + " = " + expected + ")", item.columns))
         actual = rows(connection, """
             SELECT c.conname AS name, c.contype AS kind, c.convalidated AS validated,
                    c.condeferrable AS deferrable, c.condeferred AS deferred, c.conislocal AS local,

@@ -157,7 +157,13 @@ def test_credential_provider_errors_are_redacted(runtime, permission, capsys, ca
         development.development_app(enable_integrations=True)
     assert PRIVATE_MARKER not in "".join(traceback.format_exception(caught.value))
     assert caught.value.__context__ is None
-    assert capsys.readouterr() == ("", "") and PRIVATE_MARKER not in caplog.text
+    captured = capsys.readouterr()
+    import json
+    from oaf_website.notification_dispatch import validate_failure
+    first = validate_failure(json.loads(captured.err.splitlines()[0].split(": ", 1)[1])["first_failure"])
+    assert first["predicate"] == "integration_credentials"
+    assert first["side_effects"] == "none" and first["stage"] == "startup"
+    assert PRIVATE_MARKER not in captured.out + captured.err + caplog.text
     runtime.recognition.assert_not_called()
     runtime.db_loader.assert_not_called()
 
@@ -349,7 +355,7 @@ def test_requested_activation_failure_never_verifies_or_binds(runtime, monkeypat
     monkeypatch.setattr(development, "make_server", server)
     assert development.main(["--integrations"]) == 2
     output = capsys.readouterr().out
-    assert "BLOCKED: DEVELOPMENT integration metadata is missing or invalid." in output
+    assert "BLOCKED: DEVELOPMENT configuration unavailable." in output
     assert development.READY_LINE not in output
     verify.assert_not_called()
     server.assert_not_called()

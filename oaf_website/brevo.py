@@ -63,7 +63,7 @@ class BrevoConfig:
         if (type(self.environment) is not str or self.environment not in {"development", "testing"}
                 or type(self.api_key) is not str
                 or re.fullmatch(r"[A-Za-z0-9_-]{16,256}", self.api_key, re.ASCII) is None):
-            raise BrevoConfigurationError("Brevo configuration unavailable.")
+            raise diagnostic_error(BrevoConfigurationError("Brevo configuration unavailable."), "provider_configuration", "provider_key_format", stage="startup")
 
 
 def load_brevo_config(expected_profile, *, credential_account, environ=None, credential_loader=None):
@@ -79,20 +79,25 @@ def load_brevo_config(expected_profile, *, credential_account, environ=None, cre
                 or type(credential_account) is not str
                 or re.fullmatch(r"[A-Za-z0-9@._/-]{1,128}", credential_account, re.ASCII) is None
                 or any(name.upper().startswith(("BREVO", "SENDINBLUE")) for name in environment)):
-            raise ValueError
+            raise diagnostic_error(ValueError(), "provider_configuration", "provider_credential_metadata", stage="startup")
         loader = _windows_password if credential_loader is None else credential_loader
         key = loader(f"OAF Website/{expected_profile}/Brevo/ApiKey", credential_account,
                      environment, exact_target=True)
         return BrevoConfig(expected_profile, key)
-    except Exception:
+    except Exception as exc:
+        first = safe_failure("startup", "provider_configuration", exc)
         pass
-    raise BrevoConfigurationError("Brevo configuration unavailable.") from None
+    failure = BrevoConfigurationError("Brevo configuration unavailable.")
+    failure.notification_failure = first
+    report_failure("provider_configuration", failure)
+    raise failure from None
 
 
 @dataclass(frozen=True)
 class ProviderOutcome:
     outcome: str
     message_id: str | None = None
+    first_failure: dict | None = field(default=None, compare=False, repr=False)
 
     def __post_init__(self):
         if (self.outcome not in OUTCOMES or self.message_id is not None and (
@@ -106,6 +111,18 @@ class ProviderResponse:
     status: int
     content_type: str
     body: bytes = field(repr=False)
+
+
+def failed_outcome(outcome, predicate, exc=None, *, http_status=None):
+    failure = safe_failure("provider", "provider_submit", exc, predicate=predicate,
+        side_effects="submission_not_started" if outcome == "not_submitted" else "submission_possible",
+        provider_outcome=outcome)
+    detail = dict(operation="provider_submit", first_failure=failure)
+    if type(http_status) is int and 100 <= http_status <= 599:
+        detail["http_status"] = http_status
+    from .notification_dispatch import _emit
+    _emit(detail)
+    return ProviderOutcome(outcome, first_failure=failure)
 
 
 def classify_response(response, api_key):
@@ -125,19 +142,21 @@ def classify_response(response, api_key):
         if response.status == 201 or set(data) == {"messageId"}:
             if set(data) != {"messageId"} or type(data["messageId"]) is not str or api_key in data["messageId"]:
                 raise ValueError
-            return ProviderOutcome("provider_accepted" if response.status == 201 else "submission_unknown",
-                                   data["messageId"])
+            if response.status != 201:
+                failed = failed_outcome("submission_unknown", "provider_acceptance_status", http_status=response.status)
+                return ProviderOutcome("submission_unknown", data["messageId"], failed.first_failure)
+            return ProviderOutcome("provider_accepted", data["messageId"])
         if (set(data) != {"code", "message"} or type(data["code"]) is not str
                 or re.fullmatch(r"[a-z_]{1,64}", data["code"], re.ASCII) is None
                 or type(data["message"]) is not str or not 1 <= len(data["message"]) <= 2048):
             raise ValueError
         if response.status == 429:
-            return ProviderOutcome("retryable_rejection")
+            return failed_outcome("retryable_rejection", "provider_rate_limit", http_status=response.status)
         if response.status in {400, 401, 402, 403, 404, 405, 406, 409, 410, 413, 415, 422}:
-            return ProviderOutcome("provider_rejected")
-    except Exception:
-        pass
-    return ProviderOutcome("submission_unknown")
+            return failed_outcome("provider_rejected", "provider_http_rejection", http_status=response.status)
+    except Exception as exc:
+        return failed_outcome("submission_unknown", "provider_response_contract", exc, http_status=getattr(response, "status", None))
+    return failed_outcome("submission_unknown", "provider_response_status", http_status=response.status)
 
 
 class BrevoHTTPS:
@@ -150,11 +169,12 @@ class BrevoHTTPS:
     def __call__(self, api_key, body):
         connection = None
         submitting = False
+        outcome = None
         try:
             # Construct explicitly: create_default_context honors SSLKEYLOGFILE.
             # Do not enable ambient TLS session-key logging or custom CA files.
             if any(name in os.environ for name in ("SSL_CERT_FILE", "SSL_CERT_DIR")):
-                return ProviderOutcome("not_submitted")
+                return failed_outcome("not_submitted", "provider_tls_override")
             context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
             context.load_default_certs()
             connection = HTTPSConnection(HOST, 443, timeout=CONNECT_TIMEOUT, context=context)
@@ -167,23 +187,29 @@ class BrevoHTTPS:
             response = connection.getresponse()
             # Reject compressed content rather than expanding an unbounded body.
             if response.getheader("Content-Encoding", "identity").lower() != "identity":
-                return ProviderOutcome("submission_unknown")
-            return classify_response(ProviderResponse(response.status,
+                outcome = failed_outcome("submission_unknown", "provider_response_encoding", http_status=response.status)
+                return outcome
+            outcome = classify_response(ProviderResponse(response.status,
                 response.getheader("Content-Type", ""), response.read(MAX_RESPONSE + 1)), api_key)
-        except Exception:
-            return ProviderOutcome("submission_unknown" if submitting else "not_submitted")
+            return outcome
+        except Exception as exc:
+            outcome = failed_outcome("submission_unknown" if submitting else "not_submitted",
+                "provider_response_unacknowledged" if submitting else "provider_connect", exc)
+            return outcome
         finally:
             if connection is not None:
                 try:
                     connection.close()
-                except Exception:
-                    pass
+                except Exception as exc:
+                    report_failure("dispose", exc, stage="provider", predicate="provider_close",
+                        side_effects="acknowledged_outcomes_retained" if outcome is not None and outcome.outcome == "provider_accepted" else "submission_possible" if submitting else "submission_not_started",
+                        first_failure=outcome.first_failure if outcome is not None else None)
 
 
 class BrevoAdapter:
     def __init__(self, config, *, transport=None, recipient_scope=None):
         if type(config) is not BrevoConfig:
-            raise BrevoConfigurationError("Brevo configuration unavailable.")
+            raise diagnostic_error(BrevoConfigurationError("Brevo configuration unavailable."), "provider_configuration", "provider_key_format", stage="startup")
         self.config = config
         validate_recipient_scope(recipient_scope, config.environment)
         self.recipient_scope = recipient_scope
@@ -205,6 +231,10 @@ class BrevoAdapter:
             if type(outcome) is ProviderOutcome and (outcome.message_id is None
                     or self.config.api_key not in outcome.message_id):
                 return outcome
-        except Exception:
-            pass
-        return ProviderOutcome("submission_unknown")
+        except Exception as exc:
+            return failed_outcome("submission_unknown", "provider_transport_exception", exc)
+        return failed_outcome("submission_unknown", "provider_transport_result")
+
+from .notification_dispatch import safe_failure, report_failure
+
+from .notification_dispatch import diagnostic_error

@@ -18,10 +18,12 @@ from sqlalchemy.sql.dml import Insert, Update
 from sqlalchemy.sql.functions import Function
 from sqlalchemy.sql.selectable import Select, ScalarSelect
 from sqlalchemy.dialects import postgresql
+from sqlalchemy.engine.result import IteratorResult, SimpleResultMetaData
 
 from oaf_website import notification_delivery as service
 from oaf_website.notification_delivery_schema import TABLES, verification, limits, events, deliveries, attempts, suppressions
 from oaf_website.confirmation_outbox_schema import TABLES as OUTBOX_TABLES
+from oaf_website.notification_management_schema import changes
 from oaf_website.notifications import SubscriptionStore, validate_subscription
 from test_notifications import choices
 
@@ -40,7 +42,7 @@ class Result:
 class Model:
     """Serialized transaction/row-lock model; not proof of PostgreSQL semantics."""
     def __init__(self):
-        self.records = {t.name: [] for t in (service.notifications, *TABLES, *OUTBOX_TABLES)}
+        self.records = {t.name: [] for t in (service.notifications, *TABLES, *OUTBOX_TABLES, changes)}
         self.now, self.lock, self.failure = NOW, RLock(), None
         self.statements = []
 
@@ -92,18 +94,25 @@ class Model:
                             rows.sort(key=lambda row: row[column.name])
                         if statement._limit_clause is not None:
                             rows = rows[:statement._limit_clause.value]
-                        return Result(rows)
+                        names = [column.name for column in statement.selected_columns]
+                        return IteratorResult(SimpleResultMetaData(names),
+                            iter(tuple(row[name] for name in names) for row in rows))
                     if isinstance(statement, Insert):
                         item = statement.table
                         values = statement.compile().params
                         if item.name == "notifications":
-                            values.update(created_at=model.now, unsubscribed_at=None)
+                            values.update(created_at=model.now, unsubscribed_at=None, preferences_revision=0)
+                        if item.name == "notification_confirmation_intents":
+                            values.setdefault("purpose", "confirmation")
+                            values.setdefault("management_revision", None)
                         pk = [c.name for c in item.primary_key.columns]
                         duplicate = any(all(r[c] == values[c] for c in pk) for r in pending[item.name])
                         if item.name == "notifications":
                             duplicate |= any(r["email"] == values["email"] and r["unsubscribed_at"] is None for r in pending[item.name])
                         if item.name == "notification_verification":
                             duplicate |= any(r["token_digest"] == values["token_digest"] for r in pending[item.name])
+                        if item.name == "notification_preference_changes":
+                            duplicate |= any(r["subscription"] == values["subscription"] and r["revision"] == values["revision"] for r in pending[item.name])
                         if duplicate and statement._post_values_clause is None:
                             raise RuntimeError("synthetic unique constraint rejection")
                         if not duplicate: pending[item.name].append(deepcopy(values))
@@ -174,7 +183,7 @@ def test_new_and_existing_subscriptions_stay_unverified_and_preferences_immutabl
     assert store.claim(EVENT, digest) is None
 
 
-def test_confirmation_single_purpose_digest_rotation_replay_and_revocation(setup):
+def test_confirmation_single_purpose_pending_coalescing_replay_and_revocation(setup):
     model, store = setup
     digest = subscribe(model)
     token = store.request_confirmation("subscriber1@example.invalid")
@@ -183,8 +192,9 @@ def test_confirmation_single_purpose_digest_rotation_replay_and_revocation(setup
     assert store.request_confirmation("subscriber1@example.invalid") is None
     model.elapse(seconds=60)
     replacement = store.request_confirmation("subscriber1@example.invalid")
-    assert replacement != token and store.confirm(token) == "unavailable"
-    assert store.confirm(replacement) == store.confirm(replacement) == "verified"
+    assert replacement == token and len(model.rows(OUTBOX_TABLES[0])) == 1
+    assert store.confirm(replacement) == "verified"
+    assert store.confirm(replacement) == "already_verified"
     model.elapse(seconds=60)
     assert store.request_confirmation("subscriber1@example.invalid") is None
     SubscriptionStore(model).unsubscribe(digest)
@@ -235,10 +245,11 @@ def test_confirmation_suppression_and_concurrency(setup):
     token = next(t for t in tokens if t)
     assert sum(t is not None for t in tokens) == 1
     with ThreadPoolExecutor(max_workers=8) as pool:
-        assert set(pool.map(lambda _: store.confirm(token), range(8))) == {"verified"}
+        outcomes = list(pool.map(lambda _: store.confirm(token), range(8)))
+    assert outcomes.count("verified") == 1 and outcomes.count("already_verified") == 7
     verified_at = model.rows(verification)[0]["verified_at"]
     model.elapse(seconds=1)
-    assert store.confirm(token) == "verified" and model.rows(verification)[0]["verified_at"] == verified_at
+    assert store.confirm(token) == "already_verified" and model.rows(verification)[0]["verified_at"] == verified_at
     store.suppress("subscriber1@example.invalid", "hard_bounce")
     assert store.confirm(token) == "unavailable"
 

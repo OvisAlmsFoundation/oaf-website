@@ -1,4 +1,4 @@
-"""R41 intercepted Chromium checks; synthetic capabilities, no live services."""
+"""R41-F1 intercepted Chromium checks; synthetic capabilities, no live services."""
 import json
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -12,7 +12,7 @@ GENERIC = "If confirmation is needed and permitted, we'll email a link."
 
 
 def main():
-    evidence_dir = ROOT / '.pytest_cache/r41'
+    evidence_dir = ROOT / '.pytest_cache/notification-management-v2/confirmation-browser'
     evidence_dir.mkdir(parents=True, exist_ok=True)
     files = {'/' + name: (mime, (ROOT / name).read_bytes()) for name, mime in [
         ('confirm-email.html', 'text/html'), ('assets/email-confirmation.js', 'application/javascript'),
@@ -78,7 +78,12 @@ def main():
                         elif outcome == 'server': reply(route, 503, status='error', message='Private diagnostic must not appear')
                         elif outcome == 'wrong_success': reply(route, status='received', message='Private diagnostic must not appear')
                         elif outcome == 'null': route.fulfill(status=200, content_type='application/json', body='null')
+                        elif outcome == 'malformed_repeat': reply(route, status='confirmed', already_confirmed='true')
+                        elif outcome == 'legacy_success': reply(route, status='confirmed', message='Your email is confirmed.')
+                        elif outcome == 'already': reply(route, status='confirmed', already_confirmed=True,
+                                                       message='Your email is already confirmed.')
                         else: reply(route, status='confirmed' if action == 'confirm' else 'received',
+                                    already_confirmed=False,
                                     message=GENERIC if action == 'request' else 'Your email is confirmed.')
                     else:
                         unexpected.append(request.url)
@@ -116,6 +121,8 @@ def main():
                 card = page.locator('#email-confirmation')
                 expect(button).to_be_enabled()
                 expect(title).to_be_focused()
+                assert title.evaluate("element => getComputedStyle(element).position") == 'absolute'
+                assert title.bounding_box()['width'] == 1  # Owner-approved accessible hidden landing heading.
                 assert not calls and page.get_by_role('button').count() == 1
                 assert page.get_by_role('form').count() == 0
                 assert page.evaluate("getComputedStyle(document.querySelector('.button')).transitionDuration") == '0s'
@@ -131,7 +138,7 @@ def main():
                 raw_button.dispatch_event('click')
                 page.wait_for_timeout(50)
                 assert calls == [('confirm', {'token': TOKEN})]
-                reply(held.pop('confirm'), status='confirmed', message='Your email is confirmed.')
+                reply(held.pop('confirm'), status='confirmed', already_confirmed=False, message='Your email is confirmed.')
                 expect(title).to_have_text('Your email is confirmed!')
                 expect(title).to_be_focused()
                 expect(status).to_have_text('Email verification complete')
@@ -147,7 +154,31 @@ def main():
                 page.screenshot(path=str(evidence_dir / f'success-{width}.png'), full_page=True)
                 print(f'PASS: {width}px landing, keyboard, no automatic POST, privacy, busy/duplicate guard and same-page success', flush=True)
 
-                mode['confirm'] = 'normal'
+                mode['confirm'] = 'already'
+                count = len(calls)
+                navigate()  # Reopen the same original link in a fresh document, without stored state.
+                expect(button).to_be_enabled()
+                assert len(calls) == count
+                button.click()
+                expect(title).to_have_text('Your email is already confirmed!')
+                expect(title).to_be_focused()
+                expect(page.locator('#email-confirmation-explanation')).to_have_text(
+                    'Your email address has already been verified. No further action is needed.')
+                expect(status).to_have_text('Email verification complete')
+                expect(page.locator('#email-confirmation-check')).to_be_visible()
+                expect(raw_button).to_be_hidden()
+                expect(raw_button).to_be_disabled()
+                expect(help_link).to_be_hidden()
+                expect(error).to_be_empty()
+                assert page.get_by_role('button').count() == 0
+                raw_button.dispatch_event('click')
+                page.wait_for_timeout(100)
+                assert len(calls) == count + 1
+                private_and_responsive()
+                page.screenshot(path=str(evidence_dir / f'already-confirmed-{width}.png'), full_page=True)
+                print(f'PASS: {width}px same-link repeat follows backend result, terminal wording, focus and no submission loop', flush=True)
+
+                mode['confirm'] = 'legacy_success'
                 count = len(calls)
                 navigate(path='/gramanna.html')
                 expect(button).to_be_enabled()
@@ -178,7 +209,7 @@ def main():
                     private_and_responsive()
                 page.screenshot(path=str(evidence_dir / f'unavailable-{width}.png'), full_page=True)
 
-                for outcome in ('csrf', 'html', 'network', 'server', 'wrong_success', 'null'):
+                for outcome in ('csrf', 'html', 'network', 'server', 'wrong_success', 'null', 'malformed_repeat'):
                     mode['confirm'] = outcome
                     navigate()
                     expect(button).to_be_enabled()

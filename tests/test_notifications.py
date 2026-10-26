@@ -97,7 +97,7 @@ def test_saved_preferences_consent_digest_timestamp_and_private_response(setup):
     response = post(client, csrf, choices(android_launch=True, ios_launch=True, state='CA'))
     assert response.status_code == 200
     assert set(response.json) == {'status', 'message', 'unsubscribe_token'}
-    assert 'No email has been sent.' in response.json['message']
+    assert response.json['message'] == 'Your submission was processed. New subscriptions are saved; existing active preferences stay unchanged.'
     record = next(iter(engine.records.values()))
     assert record['email'] == 'person+updates@example.com'
     assert record['web_launch'] and record['android_launch'] and record['ios_launch'] and record['state'] == 'CA'

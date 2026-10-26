@@ -295,19 +295,16 @@
               <option value="WY">Wyoming</option>
             </select>
           </div>
-          <label class="preference-option"><input type="checkbox" id="notification-consent" required autocomplete="off"> <span>I consent to Ovis Alms Foundation storing my email and preferences and emailing me the announcements I select. I can unsubscribe at any time.</span></label>
-          <p class="interface-note">An existing active subscription keeps its original choices. To change them, use its private link to unsubscribe, then subscribe again.</p>
+          <div class="notification-consent">
+            <h4 class="notification-consent-title">Your consent</h4>
+            <label class="preference-option"><input type="checkbox" id="notification-consent" required autocomplete="off"> <span>I consent to Ovis Alms Foundation storing my email and preferences and emailing me the announcements I select. I can unsubscribe at any time.</span></label>
+          </div>
+          <p class="interface-note">Already subscribed? <a href="manage-notifications.html">Manage your notification preferences or unsubscribe</a> using your private email link. You can request a new link there.</p>
           <noscript><p class="interface-note">Enable JavaScript to subscribe, confirm your email or unsubscribe.</p></noscript>
 
           <button class="button" type="submit" disabled>Subscribe</button>
-          <p id="notification-message" class="interface-note" role="status" aria-live="polite" aria-atomic="true"></p>
+          <p id="notification-message" class="action-message" data-status="information" role="status" aria-live="polite" aria-atomic="true"></p>
           <p id="notification-receipt" class="interface-note" hidden><a id="notification-unsubscribe-link">Save this private unsubscribe link</a>. It controls a subscription created by this submission; a duplicate signup cannot replace an existing subscription's link. Keep it private.</p>
-          <div id="notification-unsubscribe" hidden>
-            <h3 id="unsubscribe-title" tabindex="-1">Unsubscribe from announcements</h3>
-            <p class="interface-note">This private link withdraws all preferences for the subscription it controls. Opening the link makes no change until you select Unsubscribe.</p>
-            <button id="notification-unsubscribe-button" class="button" type="button" disabled>Unsubscribe</button>
-            <p id="notification-unsubscribe-message" class="interface-note" role="status" aria-live="polite" aria-atomic="true"></p>
-          </div>
         </form>
         <form id="notification-confirmation-form" aria-labelledby="confirmation-request-title" hidden>
           <h3 id="confirmation-request-title">Request or resend confirmation</h3>
@@ -315,7 +312,7 @@
           <label class="field-label" for="confirmation-email">Email address for confirmation</label>
           <input class="form-control" id="confirmation-email" name="email" type="email" maxlength="254" autocomplete="email" required>
           <button id="notification-confirmation-button" class="button" type="submit" disabled>Request or resend confirmation</button>
-          <p id="notification-confirmation-message" class="interface-note" role="status" aria-live="polite" aria-atomic="true"></p>
+          <p id="notification-confirmation-message" class="action-message" data-status="information" role="status" aria-live="polite" aria-atomic="true"></p>
         </form>
         </div>
       </div>

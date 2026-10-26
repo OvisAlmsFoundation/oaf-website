@@ -51,6 +51,7 @@ ATTEMPTS = []
 EARLY_REGISTERED = False
 PRODUCTION_IMPORTS = []
 APPROVED_TESTS = frozenset({
+    "tests/test_failure_diagnostics.py",
     "tests/test_database_config.py", "tests/test_migration_config.py",
     "tests/test_migration_artifacts.py", "tests/test_migration_authorization.py",
     "tests/test_migration_catalog.py", "tests/test_migration_runner.py",
@@ -59,8 +60,13 @@ APPROVED_TESTS = frozenset({
     "tests/test_state_requests.py", "tests/test_state_request_migration.py",
     "tests/test_notifications.py", "tests/test_notification_migration.py",
     "tests/test_public_confirmation.py",
+    "tests/test_notification_lifecycle_repair.py", "tests/test_webhook_guard.py",
     "tests/test_confirmation_processor.py",
+    "tests/test_confirmation_schedule.py",
+    "tests/test_notification_management.py", "tests/test_brevo_unsubscribe.py",
+    "tests/test_notification_management_migration.py",
     "tests/test_controlled_confirmation.py", "tests/test_testing_https.py",
+    "tests/test_operational_safeguards.py",
     "tests/test_integrations.py",
     "tests/test_development_integrations.py",
     "tests/test_contact.py",

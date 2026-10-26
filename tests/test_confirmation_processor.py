@@ -322,7 +322,9 @@ def test_lifecycle_recheck_prevents_dispatch(runtime, monkeypatch, when, reason)
         if reason == "expired": runtime.model.elapse(days=1)
         if reason == "superseded":
             runtime.model.elapse(seconds=60)
-            assert store.request_confirmation("subscriber1@example.invalid")
+            # Model a committed newer confirmation, not a pending resend.
+            runtime.model.rows(verification)[0].update(token_digest="f"*64,
+                issued_at=runtime.model.now)
         return original(current, *args)
     monkeypatch.setattr(outbox.ConfirmationOutboxStore, when, change_then_continue)
     assert invoke() == BatchResult("processed", 0)
@@ -349,7 +351,9 @@ def test_dependency_failures_are_sanitized_and_cleanup_is_attempted(runtime, pha
     assert processor.main(["--environment", "testing", "--enable-processing", "--brevo-account",
                            "synthetic-account", "--confirmation-page", PAGE,
                            "--testing-recipient", "subscriber1@example.invalid"]) == 1
-    assert json.loads(capsys.readouterr().out) == {"status": "unavailable", "processed": 0}
+    observed = json.loads(capsys.readouterr().out)
+    assert observed["status"] == "unavailable" and observed["processed"] == 0
+    assert processor.validate_failure(observed["first_failure"])["stage"] == "processor"
     assert secret not in caplog.text
     assert runtime.model.dispose.call_count == int(phase == "listener")
     runtime.transport.assert_not_called()
@@ -370,7 +374,11 @@ def test_cleanup_failure_retains_acknowledged_progress(runtime):
 def test_cli_argument_errors_are_sanitized_nonzero(runtime, capsys, arguments):
     assert processor.main(arguments) == 2
     captured = capsys.readouterr()
-    assert json.loads(captured.out) == {"status": "unavailable", "processed": 0}
+    observed = json.loads(captured.out)
+    first = processor.validate_failure(observed.pop("first_failure"))
+    assert observed == {"status": "unavailable", "processed": 0}
+    assert first["predicate"] == "processor_arguments" and first["stage"] == "processor"
+    assert "synthetic-private" not in captured.out
     assert not captured.err
     assert_no_runtime(runtime)
 
@@ -390,7 +398,9 @@ def test_interrupt_exits_safely_without_exception_or_secret(runtime, monkeypatch
     assert processor.main(["--environment", "testing", "--enable-processing", "--brevo-account",
                            "synthetic-account", "--confirmation-page", PAGE,
                            "--testing-recipient", "subscriber1@example.invalid"]) == 130
-    assert json.loads(capsys.readouterr().out) == {"status": "unavailable", "processed": 0}
+    observed = json.loads(capsys.readouterr().out)
+    assert observed["status"] == "unavailable" and observed["processed"] == 0
+    assert processor.validate_failure(observed["first_failure"])["exception_class"] == "KeyboardInterrupt"
     runtime.model.dispose.assert_called_once()
 
 

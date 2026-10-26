@@ -15,6 +15,7 @@ def main():
         ('gramanna.html','text/html'),('styles.css','text/css'),
         ('assets/state-requests.js','application/javascript'),('assets/notifications.js','application/javascript'),
         ('assets/email-confirmation.js','application/javascript'),
+        ('manage-notifications.html','text/html'),('assets/notification-management.js','application/javascript'),
         ('assets/images/gramanna-logo.png','image/png')] }
     errors,unexpected = [],[]
     with sync_playwright() as playwright:
@@ -59,7 +60,7 @@ def main():
                                 'unsubscribe_token':data['token']+'.'+'0'*64 if not withdrawal else None,
                                 'message':'Try again with the same form.' if failure else
                                     'Any active subscription created with this private link has been unsubscribed.' if withdrawal else
-                                    'Your submission was processed. New subscriptions are saved; existing active preferences stay unchanged. No email has been sent.'}))
+                                    'Your submission was processed. New subscriptions are saved; existing active preferences stay unchanged.'}))
                     else:
                         unexpected.append(request.url)
                         route.abort()
@@ -97,6 +98,8 @@ def main():
                 consent.check()
                 consent.focus()
                 page.keyboard.press('Tab')
+                expect(page.get_by_role('link',name='Manage your notification preferences or unsubscribe')).to_be_focused()
+                page.keyboard.press('Tab')
                 expect(button).to_be_focused()
                 mode['subscribe']='hold'
                 page.keyboard.press('Enter')
@@ -115,31 +118,31 @@ def main():
                 expect(button).to_be_enabled()
                 mode['subscribe']='normal'
                 button.click()
-                expect(note).to_contain_text('No email has been sent.')
+                expect(note).to_have_text('Your submission was processed. New subscriptions are saved; existing active preferences stay unchanged.')
                 assert submissions[-1]['token']==original_token
                 assert note.get_attribute('role')=='status'
                 expect(email).to_have_value('')
                 private_link=page.locator('#notification-unsubscribe-link').get_attribute('href')
                 private_token=original_token+'.'+'0'*64
-                assert private_link=='/gramanna.html#unsubscribe='+private_token
+                assert private_link=='manage-notifications.html#unsubscribe='+private_token
                 assert all(original_token not in url for url in urls)
-                page.goto(ORIGIN+private_link)
-                expect(page.locator('#notification-unsubscribe')).to_be_visible()
+                page.goto(ORIGIN+'/'+private_link)
+                expect(page.locator('#management-withdrawal')).to_be_visible()
                 assert '#unsubscribe=' not in page.url and not withdrawals
-                expect(page.locator('#unsubscribe-title')).to_be_focused()
-                withdraw_button=page.get_by_role('button',name='Unsubscribe',exact=True)
-                withdraw_note=page.locator('#notification-unsubscribe-message')
+                expect(page.locator('#management-form')).to_be_hidden()
+                withdraw_button=page.get_by_role('button',name='Unsubscribe from everything',exact=True)
+                withdraw_note=page.locator('#management-status')
                 mode['withdraw']='failure'
                 withdraw_button.click()
-                expect(withdraw_note).to_have_text('Try again with the same form.')
+                expect(page.locator('#management-error')).to_contain_text('We could not confirm this action.')
                 assert withdrawals[-1]=={'token':private_token}
                 mode['withdraw']='normal'
                 withdraw_button.click()
-                expect(withdraw_note).to_contain_text('has been unsubscribed.')
+                expect(withdraw_note).to_contain_text('unsubscribed from all notifications')
                 assert len(withdrawals)==2
                 page.goto(ORIGIN+'/gramanna.html#unsubscribe=broken')
-                expect(withdraw_button).to_be_disabled()
-                expect(withdraw_note).to_contain_text('complete private unsubscribe link')
+                expect(page.locator('#management-withdrawal')).to_be_hidden()
+                expect(page.locator('#management-error')).to_contain_text('This link is unavailable.')
                 page.goto(ORIGIN+'/gramanna.html')
                 email.fill('visitor@example.com')
                 page.locator('#notify-web').check()

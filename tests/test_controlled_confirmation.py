@@ -170,7 +170,11 @@ def test_authoritative_mailbox_rechecked_at_last_precommit_boundary(runtime, mon
         row = original(connection, table, **keys)
         if table is notifications:
             reads += 1
-            if reads == 3: row["email"] = "other@example.invalid"
+            if reads == 3:
+                from sqlalchemy.engine.result import IteratorResult, SimpleResultMetaData
+                row = next(IteratorResult(SimpleResultMetaData(list(row)), iter([
+                    tuple("other@example.invalid" if key == "email" else row[key] for key in row)
+                ])).mappings())
         return row
     monkeypatch.setattr(store, "_get", authoritative)
     with pytest.raises(ValueError): store.prepare_confirmation(intent, claim, PAGE)
@@ -225,7 +229,9 @@ def test_cli_missing_and_duplicate_scope_are_private_failures(runtime, capsys):
     args = ["--environment", "testing", "--enable-processing", "--brevo-account",
             "synthetic-account", "--confirmation-page", PAGE]
     assert processor.main(args) == 1
-    assert json.loads(capsys.readouterr().out) == {"status": "unavailable", "processed": 0}
+    observed = json.loads(capsys.readouterr().out)
+    assert observed["status"] == "unavailable" and observed["processed"] == 0
+    assert processor.validate_failure(observed["first_failure"])["stage"] == "processor"
     assert processor.main(args + ["--testing-recipient", MAILBOX, "--testing-recipient", MAILBOX]) == 2
     captured = capsys.readouterr()
     assert json.loads(captured.out) == {"status": "unavailable", "processed": 0}

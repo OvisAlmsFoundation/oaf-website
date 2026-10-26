@@ -60,7 +60,7 @@ def test_restart_recovers_original_capability_and_authoritative_recipient(setup,
     assert model.rows(verification)[0]["verified_at"] is None
     assert dispatcher.process() == BatchResult("processed", 0)
     assert store.confirm(token) == "verified"
-    assert store.confirm(token) == "verified"
+    assert store.confirm(token) == "already_verified"
     assert transport.call_count == 1
     assert token not in repr(model.records) and KEY not in repr(model.records)
 
@@ -106,7 +106,7 @@ def test_outbox_insert_failure_rolls_back_reservation_and_quota(setup, monkeypat
 
 
 @pytest.mark.parametrize("state", ["pending", "claimed", "failed", "submitting", "uncertain", "accepted"])
-def test_resend_replaces_version_and_preserves_attempt_evidence(setup, state):
+def test_resend_coalesces_work_and_replaces_only_after_acceptance(setup, state):
     model, store, transport, dispatcher = setup
     subscription, token, old = reserve(model, store)
     claim = None
@@ -118,12 +118,24 @@ def test_resend_replaces_version_and_preserves_attempt_evidence(setup, state):
     evidence = [dict(r) for r in model.rows(confirmation_attempts)]
     model.elapse(seconds=60)
     replacement = store.request_confirmation("subscriber1@example.invalid")
-    assert replacement != token and store.confirm(token) == "unavailable"
-    assert model.rows(intents)[0]["status"] == ("suppressed" if state in {"pending", "claimed", "failed"} else state)
-    if state != "claimed": assert model.rows(confirmation_attempts) == evidence
-    assert store.prepare_confirmation(old, claim, PAGE) is None
+    assert model.rows(verification)[0]["token_digest"] == store._digest("confirmation", token)
+    assert model.rows(intents)[0]["status"] == state
+    assert model.rows(confirmation_attempts) == evidence
+    assert len(model.rows(intents)) == (2 if state == "accepted" else 1)
+    assert (replacement != token) == (state == "accepted")
+    if state in {"submitting", "uncertain"}:
+        assert dispatcher.process().processed == 0
+        transport.assert_not_called()
+        return
+    if state == "claimed":
+        assert store.prepare_confirmation(old, claim, PAGE)
+        assert store.confirmation_outcome(old, claim, "provider_accepted")
+        assert dispatcher.process().processed == 0
+        assert store.confirm(token) == "verified"
+        return
     assert dispatcher.process().processed == 1
     assert replacement in json.loads(transport.call_args.args[1])["textContent"]
+    if state == "accepted": assert store.confirm(token) == "unavailable"
     assert store.confirm(replacement) == "verified"
 
 
@@ -239,7 +251,7 @@ def test_simultaneous_reservations_and_workers_remain_deduplicated(setup):
     assert len(model.rows(confirmation_attempts)) == 1
 
 
-def test_resend_race_after_candidate_selection_cancels_obsolete_intent(setup, monkeypatch):
+def test_resend_race_after_candidate_selection_coalesces_same_intent(setup, monkeypatch):
     model, store, transport, dispatcher = setup
     _, old_token, intent = reserve(model, store)
     original = store.claim_confirmation
@@ -248,10 +260,10 @@ def test_resend_race_after_candidate_selection_cancels_obsolete_intent(setup, mo
         store.request_confirmation("subscriber1@example.invalid")
         return original(identity)
     monkeypatch.setattr(store, "claim_confirmation", race)
-    assert dispatcher.process().processed == 0
-    transport.assert_not_called()
-    assert store.confirm(old_token) == "unavailable"
-    assert model.rows(intents)[0]["status"] == "suppressed"
+    assert dispatcher.process().processed == 1
+    assert transport.call_count == 1 and len(model.rows(intents)) == 1
+    assert store.confirm(old_token) == "verified"
+    assert model.rows(intents)[0]["status"] == "accepted"
 
 
 def test_legacy_irreversible_digest_never_fabricates_recovery(setup):
@@ -264,9 +276,13 @@ def test_legacy_irreversible_digest_never_fabricates_recovery(setup):
     assert dispatcher.process().processed == 0
     transport.assert_not_called()
     assert not model.rows(intents)
+    model.elapse(seconds=60)
     replacement = store.request_confirmation("subscriber1@example.invalid")
-    assert replacement != token and store.confirm(token) == "unavailable"
+    assert replacement != token
+    assert model.rows(verification)[0]["token_digest"] == store._digest("confirmation", token)
     assert dispatcher.process().processed == 1
+    assert store.confirm(token) == "unavailable"
+    assert store.confirm(replacement) == "verified"
 
 
 @pytest.mark.parametrize("secret", [None, b"short", "not-bytes"])
@@ -337,7 +353,10 @@ def test_adapter_exception_is_uncertain_and_failed_outcome_write_does_not_repeat
     assert model.rows(intents)[0]["status"] == "uncertain"
     assert dispatcher.process().processed == 0
     model.elapse(seconds=60)
-    store.request_confirmation("subscriber1@example.invalid")
+    assert store.request_confirmation("subscriber1@example.invalid")
+    assert len(model.rows(intents)) == 1  # Uncertain submission stays held.
+    subscribe(model, 2)
+    store.request_confirmation("subscriber2@example.invalid")
     monkeypatch.setattr(store,"confirmation_outcome",lambda *args:False)
     assert dispatcher.process() == BatchResult("unavailable",0)
 
@@ -385,8 +404,9 @@ def test_provider_identifier_cannot_persist_confirmation_bearer(setup, identifie
 
 def test_random_context_collision_cannot_commit_digest_or_budget_without_new_intent(setup, monkeypatch):
     from copy import deepcopy
-    model, store, _, _ = setup
+    model, store, _, dispatcher = setup
     _, token, intent = reserve(model, store)
+    assert dispatcher.process().processed == 1
     before = deepcopy(model.records)
     model.elapse(seconds=60)
     monkeypatch.setattr(o.secrets,"token_hex",lambda size:intent)
@@ -442,3 +462,174 @@ def test_verification_unique_conflict_cannot_commit_an_orphaned_intent_or_quota(
         store.request_confirmation("subscriber2@example.invalid")
     assert model.records == before
     assert len(model.rows(intents)) == len(model.rows(verification)) == 1
+
+
+def observe_candidate_queries(model, monkeypatch, *, reject=False):
+    """Inspect actual bounded queries without teaching the model SQL joins."""
+    from contextlib import contextmanager
+    from sqlalchemy.exc import SQLAlchemyError
+    from sqlalchemy.sql.selectable import Select
+
+    queries = []
+    original_begin = model.begin
+
+    @contextmanager
+    def begin():
+        with original_begin() as connection:
+            original_execute = connection.execute
+
+            def execute(statement):
+                if isinstance(statement, Select) and statement._limit_clause is not None:
+                    queries.append(statement)
+                    if reject:
+                        raise SQLAlchemyError("synthetic recovery query failure")
+                return original_execute(statement)
+
+            monkeypatch.setattr(connection, "execute", execute)
+            yield connection
+
+    monkeypatch.setattr(model, "begin", begin)
+    return queries
+
+
+@pytest.mark.parametrize("management_enabled", [False, True])
+@pytest.mark.parametrize("scoped", [False, True])
+@pytest.mark.parametrize("limit", [1, 20])
+def test_candidate_queries_bind_scope_to_selected_projection(monkeypatch, management_enabled, scoped, limit):
+    import re
+    import warnings
+    from sqlalchemy import Column
+    from sqlalchemy.dialects import postgresql
+    from sqlalchemy.exc import SAWarning
+    from sqlalchemy.sql import FROM_LINTING, visitors
+    from oaf_website.brevo import TestingRecipientScope
+    from oaf_website.notification_management_schema import intents as managed_intents
+
+    model = Model()
+    scope = TestingRecipientScope("testing", "subscriber1@example.invalid") if scoped else None
+    store = o.ConfirmationOutboxStore(model, SECRET, "testing", recipient_scope=scope,
+                                     management_enabled=management_enabled)
+    queries = observe_candidate_queries(model, monkeypatch)
+    assert store.candidates(limit) == []
+    assert len(queries) == 2
+    recovery_table = managed_intents if management_enabled else intents
+    assert list(queries[0].selected_columns.keys()) == list(recovery_table.c.keys())
+    assert list(queries[1].selected_columns.keys()) == ["intent"]
+
+    for statement, selected_table in zip(queries, (recovery_table, recovery_table)):
+        froms = statement.get_final_froms()
+        assert len(froms) == 1 and froms[0] is selected_table
+        scope_columns = [node for clause in statement._where_criteria
+                         for node in visitors.iterate(clause)
+                         if isinstance(node, Column) and node.name == "subscription"]
+        assert len(scope_columns) == int(scoped)
+        if scoped:
+            assert scope_columns[0].table is selected_table
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", SAWarning)
+            compiled = statement.compile(dialect=postgresql.dialect(), linting=FROM_LINTING)
+        sql = str(compiled)
+        assert sql.count("FROM oaf_website.notification_confirmation_intents") == 1
+        assert len(re.findall(r"\boaf_website\.notification_confirmation_intents\b(?!\.)", sql)) == 1
+        assert ("notifications.email" in sql) is scoped
+        if scoped:
+            assert scope.mailbox in compiled.params.values()
+        assert statement._limit_clause.value == limit
+
+
+def candidate_record(model, subscription, number, *, status="pending", attempts=0,
+                     purpose="confirmation"):
+    return dict(intent=f"{number:064x}", subscription=subscription, token_digest="f" * 64,
+                status=status, attempts=attempts, claim_digest=None, lease_until=None,
+                next_attempt_at=model.now, outcome=None, provider_message_id=None,
+                created_at=model.now, updated_at=model.now, accepted_at=None,
+                purpose=purpose, management_revision=0 if purpose == "management" else None)
+
+
+@pytest.mark.parametrize("management_enabled,purpose", [(False, "confirmation"),
+    (True, "confirmation"), (True, "management")])
+@pytest.mark.parametrize("submitting", [False, True])
+def test_scoped_recovery_preserves_boundaries_and_attempt_evidence(management_enabled, purpose, submitting):
+    from copy import deepcopy
+    from oaf_website.brevo import TestingRecipientScope
+
+    model = Model()
+    target, other = subscribe(model), subscribe(model, 2)
+    store = o.ConfirmationOutboxStore(model, SECRET, "testing", management_enabled=management_enabled,
+        recipient_scope=TestingRecipientScope("testing", "subscriber1@example.invalid"))
+    status = "submitting" if submitting else "claimed"
+    records = [candidate_record(model, subscription, number, status=state, attempts=1, purpose=purpose)
+               for number, subscription, state in ((0, other, status), (1, target, status),
+                   (2, target, status), (3, target, "pending"), (4, target, status))]
+    for record in records:
+        record.update(claim_digest="e" * 64, lease_until=model.now)
+    records[2]["lease_until"] += timedelta(microseconds=1)
+    model.rows(intents).extend(records)
+    model.rows(confirmation_attempts).extend(dict(intent=record["intent"], attempt=1,
+        claimed_at=model.now - timedelta(minutes=5), submitting_at=model.now if submitting else None,
+        finished_at=None, outcome=None, provider_message_id=None) for record in records)
+    before = deepcopy(model.records)
+
+    assert store.candidates(1) == [records[3]["intent"]]
+    recovered = model.rows(intents)[1]
+    assert recovered["status"] == ("uncertain" if submitting else "failed")
+    assert recovered["outcome"] == ("submission_unknown" if submitting else "claim_expired")
+    assert recovered["next_attempt_at"] == (None if submitting else model.now + timedelta(seconds=60))
+    assert recovered["attempts"] == 1
+    assert recovered["claim_digest"] is None and recovered["lease_until"] is None
+    audit = model.rows(confirmation_attempts)[1]
+    assert audit == dict(before[confirmation_attempts.name][1], finished_at=model.now,
+                         outcome=recovered["outcome"])
+    for table, rows in before.items():
+        for index, row in enumerate(rows):
+            if table in {intents.name, confirmation_attempts.name} and index == 1:
+                continue
+            assert model.records[table][index] == row
+
+
+@pytest.mark.parametrize("management_enabled", [False, True])
+def test_scoped_candidate_selection_keeps_due_status_and_attempt_bounds(management_enabled):
+    from oaf_website.brevo import TestingRecipientScope
+
+    model = Model()
+    target, other = subscribe(model), subscribe(model, 2)
+    store = o.ConfirmationOutboxStore(model, SECRET, "testing", management_enabled=management_enabled,
+        recipient_scope=TestingRecipientScope("testing", "subscriber1@example.invalid"))
+    records = [candidate_record(model, other, 0)]
+    for number, status in enumerate(("accepted", "rejected", "suppressed", "uncertain", "claimed", "submitting"), 1):
+        record = candidate_record(model, target, number, status=status)
+        record["lease_until"] = model.now + timedelta(microseconds=1)
+        records.append(record)
+    for number, attempts, due in ((7, 3, model.now), (8, 0, None),
+                                 (9, 0, model.now + timedelta(microseconds=1))):
+        record = candidate_record(model, target, number, status="failed", attempts=attempts)
+        record["next_attempt_at"] = due
+        records.append(record)
+    records.extend((candidate_record(model, target, 10, attempts=0),
+                    candidate_record(model, target, 11, status="failed", attempts=2)))
+    # Deliberately reverse insertion order: selection must use intent ordering.
+    model.rows(intents).extend(reversed(records))
+    assert store.candidates(2) == [f"{number:064x}" for number in (10, 11)]
+
+
+@pytest.mark.parametrize("management_enabled", [False, True])
+@pytest.mark.parametrize("failure", ["query", "commit", "uncertain"])
+def test_scoped_recovery_failure_stays_unavailable_without_submission(setup, monkeypatch, management_enabled, failure):
+    from copy import deepcopy
+    from sqlalchemy.exc import SQLAlchemyError
+    from oaf_website.brevo import TestingRecipientScope
+
+    model, _, transport, _ = setup
+    store = o.ConfirmationOutboxStore(model, SECRET, "testing", management_enabled=management_enabled,
+        recipient_scope=TestingRecipientScope("testing", "subscriber1@example.invalid"))
+    reserve(model, store)
+    before = deepcopy(model.records)
+    queries = observe_candidate_queries(model, monkeypatch, reject=failure == "query")
+    model.failure = None if failure == "query" else failure
+    with pytest.raises(SQLAlchemyError if failure == "query" else RuntimeError):
+        store.candidates(20)
+    assert queries
+    dispatcher = o.ConfirmationDispatcher(store, CONFIG, PAGE, transport=transport)
+    assert dispatcher.process() == BatchResult("unavailable", 0)
+    assert model.records == before
+    transport.assert_not_called()

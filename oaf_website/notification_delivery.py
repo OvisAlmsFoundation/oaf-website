@@ -73,11 +73,14 @@ def release_payload(payload, environment, now):
 
 
 class NotificationDeliveryStore:
-    def __init__(self, engine, secret, environment):
+    def __init__(self, engine, secret, environment, *, management_enabled=False):
         UnsubscribeCapabilities(secret)  # Same persistent protected-key requirement; separate HMAC domains.
         if environment not in ENVIRONMENTS:
             raise ValueError("An explicit matching environment is required.")
         self.engine, self.secret, self.environment = engine, secret, environment
+        if type(management_enabled) is not bool:
+            raise ValueError("Management activation must be an explicit boolean.")
+        self.management_enabled = management_enabled
 
     def _digest(self, domain, value):
         return hmac.new(self.secret, ("oaf-notification-" + domain + "-v1:").encode()
@@ -85,18 +88,49 @@ class NotificationDeliveryStore:
 
     @contextmanager
     def _transaction(self):
-        with self.engine.begin() as connection:
-            # Deliberately coarse bounded subsystem lock, cross-process and rollback-safe.
-            # No worker or infrastructure is introduced. Existing withdrawal also
-            # serializes at the subscriber row lock used before dispatch.
-            connection.execute(text("SELECT pg_catalog.pg_advisory_xact_lock(67210401)"))
-            now = connection.execute(select(func.clock_timestamp())).scalar_one()
-            yield connection, now
+        from .notification_dispatch import safe_failure
+        boundary, origin, failure = "database_begin", None, None
+        try:
+            with self.engine.begin() as connection:
+                try:
+                    # The existing subsystem lock serializes reservations and withdrawal.
+                    boundary = "advisory_lock"
+                    connection.execute(text("SELECT pg_catalog.pg_advisory_xact_lock(67210401)"))
+                    boundary = "database_clock"
+                    now = connection.execute(select(func.clock_timestamp())).scalar_one()
+                    boundary = "transaction_body"
+                    yield connection, now
+                except Exception as exc:
+                    origin = exc
+                    failure = getattr(exc, "notification_failure", None) or safe_failure(
+                        "notifications", boundary, exc)
+                    raise
+                boundary = "transaction_commit"
+            request_transaction_outcome("database_committed")
+        except Exception as exc:
+            if failure is not None:
+                failure["side_effects"] = "database_rolled_back" if exc is origin else "database_rollback_uncertain"
+                if exc is not origin:
+                    exc.notification_rollback_failure = safe_failure("notifications", "transaction_rollback", exc,
+                        side_effects="database_rollback_uncertain")
+            else:
+                failure = safe_failure("notifications", boundary, exc, side_effects=
+                    "database_commit_uncertain" if boundary == "transaction_commit" else "none")
+            exc.notification_failure = failure
+            raise
 
-    @staticmethod
-    def _rows(connection, item, **keys):
+    def _rows(self, connection, item, **keys):
+        if self.management_enabled:
+            from .notification_management_schema import notifications as managed, intents
+            if item.name == notifications.name:
+                item = managed
+            elif item.name == intents.name:
+                item = intents
         statement = select(item).where(*(item.c[key] == value for key, value in keys.items()))
-        if item is not suppressions:
+        # Append-only evidence has SELECT/INSERT grants only. The existing
+        # transaction advisory lock serializes its checks/inserts; FOR UPDATE
+        # would unnecessarily require UPDATE authority on that history.
+        if item.name not in {suppressions.name, "notification_preference_changes"}:
             statement = statement.with_for_update()
         return list(connection.execute(statement).mappings())
 
@@ -139,12 +173,18 @@ class NotificationDeliveryStore:
     def _request_confirmation(self, connection, now, email):
         """Share the caller's locked transaction, including a newly inserted signup."""
         if not self._budget(connection, self._digest("budget", "global"), now, 1000, 0):
+            retain_failure("confirmation_reservation", "confirmation_global_budget")
             return None
         mailbox = self._digest("mailbox", email)
         if not self._budget(connection, mailbox, now, 5, 60):
+            retain_failure("confirmation_reservation", "confirmation_mailbox_budget")
             return None
         subscriber = self._get(connection, notifications, email=email, unsubscribed_at=None)
-        if subscriber is None or self._get(connection, suppressions, mailbox_digest=mailbox):
+        if subscriber is None:
+            retain_failure("confirmation_reservation", "confirmation_active_subscriber")
+            return None
+        if self._get(connection, suppressions, mailbox_digest=mailbox):
+            retain_failure("confirmation_reservation", "confirmation_not_suppressed")
             return None
         key = dict(subscription=subscriber["unsubscribe_digest"])
         record = self._get(connection, verification, **key)
@@ -154,20 +194,32 @@ class NotificationDeliveryStore:
         return reserve_confirmation(self, connection, now, subscriber, record)
 
     def confirm(self, token):
-        """Fixed outcomes, no address disclosure; replay allowed only until original expiry."""
+        """Verified/already_verified/unavailable; valid replay only until original expiry."""
         if type(token) is not str or not HEX.fullmatch(token):
+            retain_failure("confirmation_authority", "confirmation_token_format")
             return "unavailable"
         with self._transaction() as (connection, now):
             record = self._get(connection, verification, token_digest=self._digest("confirmation", token))
             if record is None:
+                retain_failure("confirmation_authority", "confirmation_token_present")
                 return "unavailable"
             subscriber = self._get(connection, notifications, unsubscribe_digest=record["subscription"])
-            if (subscriber["unsubscribed_at"] is not None or now >= record["expires_at"]
-                    or now < record["issued_at"]
-                    or self._get(connection, suppressions, mailbox_digest=self._digest("mailbox", subscriber["email"]))):
+            if subscriber["unsubscribed_at"] is not None:
+                retain_failure("confirmation_authority", "confirmation_lifecycle_active")
                 return "unavailable"
-            if record["verified_at"] is None:
-                self._update(connection, verification, dict(subscription=record["subscription"]), verified_at=now)
+            if now >= record["expires_at"]:
+                retain_failure("confirmation_authority", "confirmation_not_expired")
+                return "unavailable"
+            if now < record["issued_at"]:
+                retain_failure("confirmation_authority", "confirmation_not_future")
+                return "unavailable"
+            if self._get(connection, suppressions, mailbox_digest=self._digest("mailbox", subscriber["email"])):
+                retain_failure("confirmation_authority", "confirmation_not_suppressed")
+                return "unavailable"
+            # Classify only after the same capability, expiry and lifecycle checks.
+            if record["verified_at"] is not None:
+                return "already_verified"
+            self._update(connection, verification, dict(subscription=record["subscription"]), verified_at=now)
             return "verified"
 
     def accept_event(self, payload):
@@ -191,6 +243,16 @@ class NotificationDeliveryStore:
         if (subscriber["unsubscribed_at"] is not None or subscriber["created_at"] > event["audience_cutoff"]
                 or not subscriber[event["platform"] + "_launch"]):
             return False
+        if self.management_enabled:
+            from .notification_management_schema import changes
+            current = self._get(connection, notifications, unsubscribe_digest=subscriber["unsubscribe_digest"])
+            revision = current["preferences_revision"]
+            audit = self._get(connection, changes, subscription=current["unsubscribe_digest"], revision=revision) if revision else None
+            name = event["platform"] + "_launch"
+            granted = audit[name + "_granted_at"] if audit else current["created_at"]
+            if (revision and audit is None or not current[name] or granted is None
+                    or granted > event["audience_cutoff"]):
+                return False
         record = self._get(connection, verification, subscription=subscriber["unsubscribe_digest"])
         return (record is not None and record["verified_at"] is not None
                 and record["verified_at"] <= event["audience_cutoff"]
@@ -273,7 +335,7 @@ class NotificationDeliveryStore:
             self._refresh(connection, event_id, now)
             return token
 
-    def begin_submission(self, event_id, subscription, claim):
+    def begin_submission(self, event_id, subscription, claim, *, prepare=None):
         """One-use dispatch boundary; return authoritative email only to future adapter.
 
         Caller must persist this transition successfully before attempting a send.
@@ -288,11 +350,13 @@ class NotificationDeliveryStore:
             if not self._eligible(connection, subscriber, event):
                 self._finish(connection, record, now, "ineligible", "suppressed")
                 return None
+            # Render lifecycle/revision-bound links under the same final lock.
+            message = prepare(subscriber, now) if prepare is not None else None
             key = dict(event_id=event_id, subscription=subscription)
             self._update(connection, deliveries, key, status="submitting", updated_at=now,
                          lease_until=now + timedelta(minutes=5))
             self._update(connection, attempts, dict(key, attempt=record["attempts"]), submitting_at=now)
-            return subscriber["email"]
+            return (subscriber["email"], message) if prepare is not None else subscriber["email"]
 
     def _owns(self, record, claim, status):
         return (record is not None and record["status"] == status and type(claim) is str
@@ -333,3 +397,5 @@ class NotificationDeliveryStore:
             self._insert(connection, suppressions, dict(mailbox_digest=mailbox, reason=reason, created_at=now))
         # Permanent across lifecycle changes; never rewrite original evidence.
         # Pending/claimed work is stopped by the mandatory dispatch recheck.
+
+from .notification_dispatch import retain_failure, request_transaction_outcome
