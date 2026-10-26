@@ -8,7 +8,7 @@
     "migrations/script.py.mako": "ed31327e01d48ec1ba1e91f5dc5b347fed7e9a8c9733b50d49c8085e86815bdc",
     "oaf_website/__init__.py": "ad4cfd8e9137a2e69abe6fdad18114a9918fccf918cbe59e181a9edd78436eb5",
     "oaf_website/confirmation_outbox_schema.py": "82bf813978acdafe87b6e0d802e0b5d4fca4fa71cac910bd14228cdb298fea47",
-    "oaf_website/database_config.py": "861d56b579682a5ce1d9fa4eb72f84ccad4d4457c043432087a6bca848799415",
+    "oaf_website/database_config.py": "f5901b32c8db06dfa7743623ffff4f350ce88f28b0bfee33c6b6163cabb0119e",
     "oaf_website/migrate.py": "706a6fefaca086f43bd2729c1cafefdb5bfe3bbd2f71e7a404e2e922454ae1e0",
     "oaf_website/migration_authority.py": "8e3878b050855976a406dafa2be787b442cf821a256eb2f4f89191b15158a9dc",
     "oaf_website/migration_config.py": "9c537cceaed6c84b3050f4db0a2510e6588e4259e927b35322e86cab91ab3587",

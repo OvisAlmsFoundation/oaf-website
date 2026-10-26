@@ -32,6 +32,147 @@ PREFERENCES = dict(web_launch=True, android_launch=True, ios_launch=True, state=
 ACTION = "a" * 64
 
 
+@pytest.mark.parametrize('context', ['invalid', 1])
+def test_capability_issue_rejects_invalid_explicit_context(context):
+    with pytest.raises(ValueError):
+        m.ManagementCapabilities(SECRET, 'testing').issue('a'*64, 0, NOW, context=context)
+
+
+def test_session_rejects_invalid_browser_and_diverged_revision():
+    model, store, _, token = managed()
+    with pytest.raises(m.ManagementUnavailable) as caught:
+        store.sessions._browser('invalid')
+    assert caught.value.notification_failure['predicate']=='browser_format'
+    state = store.sessions.issue(token, 'b'*64, model.now)
+    cookie = store.sessions.cookie(state, model.now)['value']
+    model.rows(m.notifications)[0]['preferences_revision']=2
+    with pytest.raises(m.ManagementUnavailable) as caught:
+        store.save_session(cookie, 'b'*64, ACTION, 0)
+    assert caught.value.notification_failure['predicate']=='management_session_revision'
+
+
+@pytest.mark.parametrize('revision',[True,2])
+def test_session_save_rejects_revision_outside_current_or_preceding_authority(revision):
+    model,store,_,token=managed()
+    state=store.sessions.issue(token,'b'*64,model.now)
+    cookie=store.sessions.cookie(state,model.now)['value']
+    before=deepcopy(model.records)
+    with pytest.raises(m.ManagementConflict) as caught:
+        store.save_session(cookie,'b'*64,ACTION,revision)
+    assert caught.value.notification_failure['predicate']=='management_revision_conflict'
+    assert model.records==before
+
+
+def test_save_rejects_revision_different_from_capability():
+    _, store, _, token = managed()
+    with pytest.raises(m.ManagementConflict) as caught:
+        store.save(token, ACTION, 1)
+    assert caught.value.notification_failure['predicate']=='management_revision_required'
+
+
+def test_update_failure_rolls_back_audit_and_preserves_origin(monkeypatch):
+    model, store, _, token = managed()
+    before = deepcopy(model.records)
+    monkeypatch.setattr(store, '_update', Mock(side_effect=RuntimeError('synthetic private SQL')))
+    with pytest.raises(RuntimeError) as caught:
+        store.save(token, ACTION, 0)
+    assert caught.value.notification_failure['operation']=='subscription_update'
+    assert model.records==before
+
+
+def test_recovery_global_budget_denial_does_not_select_subscriber(monkeypatch):
+    model, store, _, _ = managed()
+    before = deepcopy(model.records)
+    select = Mock(side_effect=AssertionError('must not query subscriber after budget denial'))
+    monkeypatch.setattr(store, '_get', select)
+    monkeypatch.setattr(store, '_budget', lambda *a: False)
+    assert store.request_recovery('subscriber1@example.invalid') is None
+    select.assert_not_called()
+    assert model.records==before
+
+
+@pytest.mark.parametrize('error,status', [(m.ManagementUnavailable(), 400),
+    (m.ManagementInputError('Choose valid notification preferences.'), 400), (RuntimeError('private'), 503)])
+def test_management_save_handler_classifies_store_failures(monkeypatch, error, status):
+    model, store, _, token = managed()
+    _, client, csrf = browser(model, store)
+    monkeypatch.setattr(store, 'save', Mock(side_effect=error))
+    reply=post(client, csrf, dict(token=token, action=ACTION, revision=0), '/api/notifications/manage/save')
+    assert reply.status_code==status
+    assert token not in reply.get_data(as_text=True)
+
+
+@pytest.mark.parametrize('endpoint,body', [
+    ('save', {}),
+    ('save', dict(action=ACTION, revision=0, preferences=[])),
+    ('recovery', []), ('recovery', dict(email='invalid')),
+    ('withdrawal-receipt', dict(action=ACTION, revision=0, preferences=[])),
+    ('withdrawal-ack', dict(action=ACTION, revision=0, receipt='invalid', preferences=[])),
+])
+def test_management_payload_rejections_preserve_database(endpoint, body):
+    model, store, _, _ = managed()
+    _, client, csrf = browser(model, store)
+    before=deepcopy(model.records)
+    assert post(client, csrf, body, '/api/notifications/manage/'+endpoint).status_code==400
+    assert model.records==before
+
+
+@pytest.mark.parametrize('endpoint,method,body', [
+    ('recovery', 'request_recovery', dict(email='subscriber1@example.invalid')),
+    ('withdrawal-receipt', 'prepare_withdrawal', dict(action=ACTION, revision=0, token='synthetic')),
+    ('withdrawal-ack', 'acknowledge_withdrawal', dict(action=ACTION, revision=0, receipt='synthetic')),
+])
+def test_management_recovery_and_receipt_internal_failures_are_private(monkeypatch, endpoint, method, body):
+    model, store, _, _ = managed()
+    _, client, csrf = browser(model, store)
+    monkeypatch.setattr(store, method, Mock(side_effect=RuntimeError('synthetic private failure')))
+    reply=post(client, csrf, body, '/api/notifications/manage/'+endpoint)
+    assert reply.status_code==503
+    assert 'synthetic private' not in reply.get_data(as_text=True)
+
+
+@pytest.mark.parametrize('endpoint', ['save', 'recovery', 'withdrawal-receipt', 'withdrawal-ack'])
+def test_management_disabled_endpoints_fail_without_mutation(endpoint):
+    app=runtime._build_app(None, runtime.BrowserRecognition(SECRET), ORIGIN,
+        subscription_store=SubscriptionStore(Model()))
+    client=app.test_client()
+    csrf=client.get('/api/notifications/session',base_url=ORIGIN).json['csrf_token']
+    assert post(client,csrf,{},'/api/notifications/manage/'+endpoint).status_code==503
+
+
+@pytest.mark.parametrize('endpoint', ['recovery', 'withdrawal-receipt'])
+def test_management_malformed_json_returns_payload_failure(endpoint):
+    model,store,_,_=managed()
+    _,client,csrf=browser(model,store)
+    reply=client.post('/api/notifications/manage/'+endpoint,base_url=ORIGIN,data='{',content_type='application/json',
+        headers={'Origin':ORIGIN,'X-CSRF-Token':csrf})
+    assert reply.status_code==400
+
+
+@pytest.mark.parametrize('action,revision', [('invalid',0),(ACTION,-1)])
+def test_management_action_requires_valid_identity_and_revision(action,revision):
+    with pytest.raises(m.ManagementInputError):
+        m.action_payload(action,revision,None)
+
+
+def test_withdrawal_receipt_requires_current_revision():
+    _,store,_,token=managed()
+    with pytest.raises(m.ManagementUnavailable) as caught:
+        store.prepare_withdrawal(None,'b'*64,ACTION,1,token=token)
+    assert caught.value.notification_failure['predicate']=='withdrawal_revision'
+
+
+def test_prior_management_revision_requires_its_audit():
+    model,store,_,token=managed()
+    model.rows(m.notifications)[0]['preferences_revision']=1
+    token=store.capabilities.continuation(token,1)
+    before=deepcopy(model.records)
+    with pytest.raises(m.ManagementUnavailable) as caught:
+        store.save(token,ACTION,1)
+    assert caught.value.notification_failure['predicate']=='management_prior_audit_present'
+    assert model.records==before
+
+
 def diagnostic_view_case(case):
     """Synthetic authority only; never reads the installed subscriber database."""
     model, store, digest, token = managed(verified=case == "verified" or case.startswith("session_"))

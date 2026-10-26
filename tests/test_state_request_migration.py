@@ -187,6 +187,32 @@ def test_exact_feature_catalog_and_metadata_protections(environment):
     assert v.catalog_state(catalog, catalog.i) == v.STATE_REQUESTS
 
 
+@pytest.mark.parametrize('kind', ['table_missing', 'table_grant', 'column_missing', 'type_missing', 'type_grant'])
+def test_effective_feature_privileges_fail_closed(kind):
+    catalog=FeatureCatalog()
+    if kind.startswith('table'):
+        def privilege(p):
+            if p['privilege'].endswith('WITH GRANT OPTION'):
+                return kind=='table_grant'
+            return False if kind=='table_missing' else (p['role']==catalog.i.owner or
+                p['role']==catalog.i.runtime and p['privilege'] in {'SELECT','INSERT'})
+        catalog.feature_changes['has_table_privilege']=privilege
+    elif kind=='column_missing':
+        catalog.feature_changes['has_any_column_privilege']=False
+    else:
+        execute=catalog.execute
+        def type_privilege(sql,parameters=None):
+            if 'has_type_privilege' in str(sql) and parameters['name'] in {
+                    'oaf_website.state_requests','oaf_website._state_requests'}:
+                if 'WITH GRANT OPTION' in str(sql):
+                    return Result(kind=='type_grant')
+                return Result(kind!='type_missing' and parameters['role']==catalog.i.owner)
+            return execute(sql,parameters)
+        catalog.execute=type_privilege
+    with pytest.raises(MigrationError,match=Failure.DRIFT):
+        v.catalog_state(catalog,catalog.i)
+
+
 @pytest.mark.parametrize('case', ['owner', 'type_owner', 'marker', 'column', 'timestamp', 'nullable',
     'pk', 'check', 'extra_constraint', 'runtime_update', 'public', 'grant_option', 'type_public',
     'dependency', 'extension', 'missing_default', 'extra_table', 'triggers', 'runtime_metadata'])

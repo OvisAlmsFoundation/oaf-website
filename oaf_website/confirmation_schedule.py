@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 import re
 import stat
+import sys
 import xml.etree.ElementTree as ET
 
 from . import confirmation_processor as processor
@@ -115,15 +116,23 @@ class _Overlap(Exception):
     pass
 
 
+def _file_lock(lock, *, release=False):
+    if sys.platform == "win32":
+        import msvcrt
+        msvcrt.locking(lock.fileno(), msvcrt.LK_UNLCK if release else msvcrt.LK_NBLCK, 1)
+    else:
+        import fcntl
+        fcntl.flock(lock.fileno(), fcntl.LOCK_UN if release else fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+
 @contextmanager
 def _local_run_lock():
     # This OS-released file lock prevents conflicting local wrapper instances,
     # including differently named tasks/environments. It is NOT outbox authority.
-    import msvcrt
     directory = ROOT / "instance"
     for path in (ROOT, directory, directory / "confirmation-processor.lock",
                  directory / "confirmation-processor.jsonl"):
-        if path.is_symlink() or (path.exists() and path.lstat().st_file_attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT):
+        if path.is_symlink() or (path.exists() and getattr(path.lstat(), "st_file_attributes", 0) & stat.FILE_ATTRIBUTE_REPARSE_POINT):
             raise ValueError("Redirected invocation files are prohibited.")
     directory.mkdir(exist_ok=True)
     with (directory / "confirmation-processor.lock").open("a+b") as lock:
@@ -132,14 +141,14 @@ def _local_run_lock():
             lock.flush()
         lock.seek(0)
         try:
-            msvcrt.locking(lock.fileno(), msvcrt.LK_NBLCK, 1)
+            _file_lock(lock)
         except OSError:
             raise _Overlap from None
         try:
             yield
         finally:
             lock.seek(0)
-            msvcrt.locking(lock.fileno(), msvcrt.LK_UNLCK, 1)
+            _file_lock(lock, release=True)
 
 
 def _append(record):

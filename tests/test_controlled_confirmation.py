@@ -234,6 +234,13 @@ def test_cli_missing_and_duplicate_scope_are_private_failures(runtime, capsys):
     assert processor.validate_failure(observed["first_failure"])["stage"] == "processor"
     assert processor.main(args + ["--testing-recipient", MAILBOX, "--testing-recipient", MAILBOX]) == 2
     captured = capsys.readouterr()
-    assert json.loads(captured.out) == {"status": "unavailable", "processed": 0}
+    observed = json.loads(captured.out)
+    assert set(observed) == {"status", "processed", "first_failure"}
+    assert observed["status"] == "unavailable" and observed["processed"] == 0
+    detail = processor.validate_failure(observed["first_failure"])
+    assert detail["stage"] == "processor" and detail["operation"] == "main"
+    assert detail["predicate"] == "processor_recipient_scope"
+    assert detail["side_effects"] == "none"
+    assert MAILBOX not in captured.out
     assert not captured.err
     assert_no_runtime(runtime)

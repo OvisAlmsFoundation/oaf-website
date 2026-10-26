@@ -22,6 +22,90 @@ ARGS = ["--environment", "testing", "--public-origin", ORIGIN, "--confirmation-p
         "--tls-certificate", "C:/synthetic/certificate.pem", "--tls-private-key", "C:/synthetic/key.pem"]
 
 
+@pytest.mark.parametrize('mode', ['existing', 'new', 'race', 'length', 'protect', 'decrypt', 'read'])
+def test_recognition_key_dpapi_lifecycle_isolated(monkeypatch, tmp_path, mode):
+    import ctypes
+    path = tmp_path / 'recognition.dpapi'
+    monkeypatch.setattr(local, 'SECRET_PATH', path)
+    monkeypatch.setattr(local.sys, 'platform', 'win32')
+    buffers, freed, operations = [], [], []
+    if mode not in {'new', 'race', 'protect'}:
+        path.write_bytes(b'synthetic-encrypted-key')
+    def transform(protect, *args):
+        operations.append(protect)
+        if mode == ('protect' if protect else 'decrypt'):
+            return 0
+        value = b'encrypted' if protect else b's' * (31 if mode == 'length' else 32)
+        buffer = ctypes.create_string_buffer(value)
+        buffers.append(buffer)
+        output = args[-1]._obj
+        output.size = len(value)
+        output.data = ctypes.cast(buffer, ctypes.POINTER(ctypes.c_ubyte))
+        return 1
+    crypt = SimpleNamespace(CryptProtectData=Mock(side_effect=lambda *a: transform(True, *a)),
+                            CryptUnprotectData=Mock(side_effect=lambda *a: transform(False, *a)))
+    kernel = SimpleNamespace(LocalFree=Mock(side_effect=lambda p: freed.append(p)))
+    monkeypatch.setattr(ctypes, 'WinDLL', lambda name, **kw: crypt if name == 'crypt32' else kernel, raising=False)
+    if mode == 'race':
+        original = type(path).open
+        def race(p, *args, **kwargs):
+            if p == path and args == ('xb',):
+                path.write_bytes(b'other-writer-encrypted-key')
+                raise FileExistsError()
+            return original(p, *args, **kwargs)
+        monkeypatch.setattr(type(path), 'open', race)
+    if mode == 'read':
+        original = type(path).read_bytes
+        def unreadable(p):
+            if p == path:
+                raise OSError('synthetic private read')
+            return original(p)
+        monkeypatch.setattr(type(path), 'read_bytes', unreadable)
+    if mode in {'length', 'protect', 'decrypt', 'read'}:
+        with pytest.raises((RuntimeError, OSError)):
+            local.recognition_secret()
+    else:
+        assert local.recognition_secret(require_existing=mode == 'existing') == b's'*32
+        assert len(freed) == len(operations)
+        if mode == 'existing':
+            assert operations == [False]
+        else:
+            assert operations == [True, False]
+
+
+@pytest.mark.parametrize('mode', ['policy', 'platform', 'missing', 'parent', 'redirect'])
+def test_recognition_key_policy_rejects_before_dpapi(monkeypatch, tmp_path, mode):
+    path = tmp_path / 'recognition.dpapi'
+    monkeypatch.setattr(local, 'SECRET_PATH', path)
+    load = Mock(side_effect=AssertionError('DPAPI must not be reached'))
+    monkeypatch.setattr(local.ctypes, 'WinDLL', load, raising=False)
+    monkeypatch.setattr(local.sys, 'platform', 'win32')
+    if mode == 'platform':
+        monkeypatch.setattr(local.sys, 'platform', 'linux')
+    if mode == 'parent':
+        monkeypatch.setattr(local, 'SECRET_PATH', tmp_path / 'missing' / 'recognition.dpapi')
+    if mode == 'redirect':
+        original = type(path).is_symlink
+        monkeypatch.setattr(type(path), 'is_symlink', lambda p: p == path or original(p))
+    with pytest.raises((ValueError, RuntimeError)):
+        local.recognition_secret(require_existing=1 if mode == 'policy' else mode == 'missing')
+    load.assert_not_called()
+
+
+def test_http_testing_factory_uses_explicit_profile_and_public_files(factory):
+    app = local.testing_app(5443)
+    assert app.extensions['state_requests_engine'] is factory.model
+    factory.key.assert_called_once_with()
+    assert app.test_client().get('/').status_code == 200
+
+
+def test_http_testing_factory_rejects_other_profile_before_key(factory,monkeypatch):
+    monkeypatch.setenv('OAF_ENV','development')
+    with pytest.raises(RuntimeError):local.testing_app(5443)
+    factory.key.assert_not_called()
+    factory.loader.assert_not_called()
+
+
 @pytest.fixture
 def factory(monkeypatch):
     model = Model()
@@ -258,3 +342,96 @@ def test_module_import_does_not_start_host_or_load_tls(startup):
     startup.tls.assert_not_called()
     startup.factory.assert_not_called()
     startup.maker.assert_not_called()
+
+
+def test_https_wrong_workspace_and_webhook_without_management_precede_tls(startup,monkeypatch,tmp_path):
+    monkeypatch.setattr(host,'ROOT',tmp_path)
+    assert host.main(ARGS)==2
+    monkeypatch.setattr(host,'ROOT',__import__('pathlib').Path.cwd().resolve())
+    assert host.main(ARGS+['--brevo-webhook-account','synthetic'])==2
+    startup.tls.assert_not_called()
+    startup.factory.assert_not_called()
+
+
+def test_https_management_webhook_configuration_and_interrupt_cleanup(startup,monkeypatch):
+    from oaf_website import brevo_unsubscribe
+    config=brevo_unsubscribe.BrevoWebhookConfig('testing','s'*32)
+    loader=Mock(return_value=config)
+    monkeypatch.setattr(brevo_unsubscribe,'load_brevo_webhook_config',loader)
+    startup.maker.return_value.serve_forever.side_effect=KeyboardInterrupt()
+    assert host.main(ARGS+['--enable-management','--brevo-webhook-account','synthetic'])==0
+    loader.assert_called_once_with('testing',credential_account='synthetic')
+    assert startup.factory.call_args.kwargs['brevo_webhook_config'] is config
+    startup.engine.dispose.assert_called_once_with()
+    startup.maker.return_value.server_close.assert_called_once_with()
+
+
+def test_https_factory_requires_management_for_webhook_before_key(factory):
+    from oaf_website.brevo_unsubscribe import BrevoWebhookConfig
+    with pytest.raises(ValueError):
+        local.testing_https_app(public_origin=ORIGIN,confirmation_page=PAGE,
+            brevo_webhook_config=BrevoWebhookConfig('testing','s'*32))
+    factory.key.assert_not_called()
+
+
+def test_existing_key_rejects_redirect_before_dpapi(monkeypatch,tmp_path):
+    path=tmp_path/'recognition.dpapi'
+    monkeypatch.setattr(local,'SECRET_PATH',path)
+    original=type(path).is_symlink
+    monkeypatch.setattr(type(path),'is_symlink',lambda p:p==path or original(p))
+    with pytest.raises(RuntimeError):
+        local.recognition_secret(require_existing=True)
+
+
+@pytest.mark.parametrize('fault',['none','usage','excess'])
+def test_development_runtime_readonly_privileges(fault):
+    from oaf_website import local_development as development
+    privileges=[(p,p in {'SELECT','INSERT'} or fault=='excess' and p=='UPDATE')
+        for p in ('SELECT','INSERT','UPDATE','DELETE','TRUNCATE','REFERENCES','TRIGGER')]
+    values=iter([(fault!='usage',False),privileges,(False,)*5,0])
+    statements=[]
+    def execute(sql):
+        statements.append(str(sql))
+        value=None if str(sql)=='SET TRANSACTION READ ONLY' else next(values)
+        return SimpleNamespace(one=lambda:value,all=lambda:value,scalar_one=lambda:value)
+    engine=SimpleNamespace(connect=lambda:nullcontext(SimpleNamespace(execute=execute)))
+    app=SimpleNamespace(extensions={'state_requests_engine':engine})
+    if fault=='none':
+        development.verify_runtime(app)
+        assert statements[-1]=='SELECT count(*) FROM oaf_website.state_requests'
+    else:
+        with pytest.raises(RuntimeError):development.verify_runtime(app)
+    assert statements[0]=='SET TRANSACTION READ ONLY'
+
+
+@pytest.mark.parametrize('fault',['workspace','startup','serve','interrupt','close'])
+def test_development_host_failure_and_cleanup_without_services(monkeypatch,tmp_path,fault):
+    from pathlib import Path
+    from oaf_website import local_development as development
+    app=SimpleNamespace(extensions={'state_requests_engine':SimpleNamespace(dispose=Mock())})
+    server=Mock()
+    factory=Mock(return_value=app)
+    monkeypatch.setattr(development,'ROOT',tmp_path if fault=='workspace' else Path.cwd().resolve())
+    monkeypatch.setattr(development,'development_app',factory)
+    monkeypatch.setattr(development,'verify_runtime',Mock())
+    monkeypatch.setattr(development,'make_server',Mock(return_value=server))
+    if fault=='startup':factory.side_effect=OSError('private')
+    if fault=='serve':server.serve_forever.side_effect=OSError('private')
+    if fault=='interrupt':server.serve_forever.side_effect=KeyboardInterrupt()
+    if fault=='close':server.server_close.side_effect=OSError('private')
+    assert development.main([])==(0 if fault=='interrupt' else 2)
+    if fault=='workspace':factory.assert_not_called()
+    if fault in {'serve','interrupt','close'}:
+        server.server_close.assert_called_once_with()
+        app.extensions['state_requests_engine'].dispose.assert_called_once_with()
+
+
+def test_development_factory_missing_public_file_and_quiet_handler(monkeypatch,tmp_path):
+    from oaf_website import local_development as development
+    monkeypatch.setenv('OAF_ENV','development')
+    monkeypatch.setattr(development,'ROOT',tmp_path)
+    monkeypatch.setattr(development,'SECRET_PATH',tmp_path/'key')
+    monkeypatch.setattr(development,'recognition_secret',lambda:b's'*32)
+    monkeypatch.setattr(development,'create_app',Mock())
+    with pytest.raises(RuntimeError):development.development_app()
+    assert development.QuietHandler.log(None,'private') is None

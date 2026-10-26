@@ -24,6 +24,90 @@ def failed(runner, classification=None):
     return caught.value.operational_result
 
 
+def test_unexpected_pre_runner_failure_is_sanitized_and_denial_retained(monkeypatch):
+    denial=Mock(return_value=True)
+    monkeypatch.setattr(m,'_run',Mock(side_effect=RuntimeError(SECRET)))
+    monkeypatch.setattr(m,'record_denial',denial)
+    a=artifacts()
+    with pytest.raises(c.MigrationError,match=c.Failure.INVALID_CONFIGURATION) as caught:
+        m.run(m.Request('verify','testing',a.expected_start,a.target,a.manifest_hash,a.revision_hash))
+    assert caught.value.denial_persisted is True and caught.value.__cause__ is None
+    denial.assert_called_once()
+
+
+def test_authorization_error_without_denial_receipt_does_not_claim_audit_success(runner):
+    runner.authority.authorize.side_effect=c.MigrationError(c.Failure.OPERATIONAL_GATE)
+    result=failed(runner,c.Failure.OPERATIONAL_GATE)
+    assert not result['mutation_started'] and runner.connection.commits==0
+
+
+def test_unimplemented_authority_protocol_cannot_supply_authorizing_sink(runner):
+    # A subclass inheriting the protocol's default method has no audit sink.
+    class Unimplemented(m.OperationalAuthority):
+        pass
+    with pytest.raises(c.MigrationError,match=c.Failure.OPERATIONAL_GATE):
+        m.run(runner.request,authority=Unimplemented())
+    assert runner.connection.commits==0
+
+
+def test_connection_closing_between_identity_check_and_rollback_retains_commit_rejection(runner,monkeypatch):
+    conn=runner.connection
+    state=dict(rejected=False,closed_reads=0)
+    def reject(c):
+        state['rejected']=True
+        raise DriverError('40001')
+    conn.hooks['commit']=reject
+    def closed(c):
+        if state['rejected']:
+            state['closed_reads']+=1
+            if state['closed_reads']>=2:return True
+        return vars(c).get('closed',False)
+    monkeypatch.setattr(type(conn),'closed',property(closed,lambda c,v:vars(c).__setitem__('closed',v)),raising=False)
+    result=failed(runner,c.Failure.SERIALIZATION)
+    assert result['commit_certainty']=='rejected' and not result['database_commit_confirmed']
+    assert result['cleanup']['rollback']=='failed'
+
+
+@pytest.mark.parametrize('fault',['inactive_setup','setup_rollback_active','closed_before_lock','rollback_active','transaction_lost','unlock_result','postcommit_session'])
+def test_session_and_rollback_acknowledgment_boundaries(runner,monkeypatch,fault):
+    conn=runner.connection
+    if fault=='inactive_setup':
+        conn.hooks['acquire']=lambda c:setattr(c.transaction,'is_active',False)
+    elif fault=='setup_rollback_active':
+        monkeypatch.setattr(conn,'in_transaction',lambda:True)
+    elif fault=='closed_before_lock':
+        def close(c):
+            c.closed=True
+            raise DriverError('08006')
+        conn.hooks['identity']=close
+    elif fault=='rollback_active':
+        rollback=conn.rollback
+        calls=0
+        def unacknowledged():
+            nonlocal calls
+            calls+=1
+            if calls==1:rollback()
+        monkeypatch.setattr(conn,'rollback',unacknowledged)
+        conn.hooks['catalog']=DriverError('42501')
+    elif fault=='transaction_lost':
+        def lose(c):
+            c.transaction=None
+            raise DriverError('42501')
+        conn.hooks['catalog']=lose
+    elif fault=='unlock_result':
+        conn.hooks['unlock']=lambda c:'unknown'
+    else:
+        conn.hooks['audit_postcommit']=lambda c:c.replace_physical_session()
+    result=failed(runner)
+    if fault in {'unlock_result','postcommit_session'}:
+        assert result['database_commit_confirmed']
+        assert result['commit_certainty']==('postcommit_verification_failed' if fault=='postcommit_session' else 'confirmed')
+    else:
+        assert conn.commits==0 and not result['mutation_started']
+    if fault in {'closed_before_lock','rollback_active','transaction_lost','postcommit_session'}:
+        assert result['cleanup']['rollback']=='failed'
+
+
 def test_success_one_revision_one_mutating_transaction(runner):
     result = runner.run()
     conn = runner.connection

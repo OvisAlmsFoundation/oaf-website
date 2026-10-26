@@ -21,6 +21,24 @@ import pytest
 
 from migration_offline import SECRET, DriverError, artifacts
 from oaf_website import migrate as m, migration_authority as a, migration_validation as v
+
+
+def test_continuation_rejects_contradictory_historical_failure():
+    event=dict(secondary_failures=[],cleanup={})
+    history=[dict(phase='preflight',failure=Failure.DRIFT)]
+    assert a._continuation_state(event,history) is None
+
+
+def test_issuance_cli_preserves_existing_denial_receipt(monkeypatch,capsys,tmp_path):
+    error=RuntimeError('synthetic private denial')
+    error.denial_persisted=True
+    monkeypatch.setattr(a,'_read',lambda path:({},b''))
+    monkeypatch.setattr(a,'issue_authorization',Mock(side_effect=error))
+    denial=Mock()
+    monkeypatch.setattr(a,'record_denial',denial)
+    assert a.main(['issue','--specification',str(tmp_path/'specification.json'),'--owner-issue'])==1
+    denial.assert_not_called()
+    assert json.loads(capsys.readouterr().out)['outcome']=='denied'
 from oaf_website.migration_config import Failure, MigrationError
 from test_migration_authorization import context_setup
 
@@ -153,7 +171,8 @@ def test_expired_and_future_authorizations_retained(operational, age):
     op.runner.m.load_migration_config.assert_not_called()
 
 
-@pytest.mark.parametrize('authorization_id', [None, '', SECRET, '../outside', str(uuid4())])
+@pytest.mark.parametrize('authorization_id', [None, '', SECRET, '../outside',
+    pytest.param(str(uuid4()), id="unknown-authorization")])
 def test_missing_invalid_authorization_persists_sanitized_denial(operational, authorization_id):
     op = operational
     error = assert_denied(op, authorization_id)

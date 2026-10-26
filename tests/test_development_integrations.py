@@ -81,6 +81,15 @@ def test_ordinary_startup_ignores_integration_configuration(runtime, metadata):
     assert client.post(STATE_PATH, base_url=development.ORIGIN).status_code == 404
 
 
+def test_development_symlink_key_is_rejected_before_runtime(runtime, monkeypatch):
+    original = Path.is_symlink
+    monkeypatch.setattr(Path, "is_symlink", lambda path: path == development.SECRET_PATH or original(path))
+    with pytest.raises(RuntimeError, match="Redirected"):
+        development.development_app()
+    runtime.recognition.assert_not_called()
+    runtime.db_loader.assert_not_called()
+
+
 def test_valid_activation_injects_existing_factory_without_connections(runtime):
     app = development.development_app(enable_integrations=True)
     routes = {rule.rule: rule.methods for rule in app.url_map.iter_rules()
@@ -216,6 +225,7 @@ def test_redirected_configuration_is_rejected(monkeypatch, metadata_path, locati
 
 @pytest.fixture
 def synthetic_vault(monkeypatch):
+    monkeypatch.setattr(database.sys, "platform", "win32")
     entries = {}
     read = Mock(side_effect=lambda target: entries.get(target))
     fallback = Mock(side_effect=AssertionError("Credential fallback is prohibited"))

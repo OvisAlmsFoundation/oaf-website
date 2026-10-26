@@ -211,11 +211,15 @@ def test_confirmation_scope_preserves_final_backend_eligibility(change):
     from oaf_website.notification_delivery_schema import suppressions
     model,manager,store,target=confirmation_scoped_setup()
     claim=store.claim_confirmation(target['intent'])
-    if change=='suppressed':model.rows(suppressions).append(dict(mailbox_digest=store._digest('mailbox',MAILBOX)))
+    if change=='suppressed':model.rows(suppressions).append(dict(mailbox_digest=store._digest('mailbox',MAILBOX), reason='unsubscribe', created_at=model.now))
     if change=='verified':model.rows(verification)[0]['verified_at']=model.now
     if change=='superseded':
-        model.elapse(seconds=60);manager.request_confirmation(MAILBOX)
+        # Recovery now coalesces pending work; model an actual superseded token.
+        model.rows(verification)[0]['token_digest']='e'*64
         with pytest.raises(outbox.ManagementIntentMismatch):store.candidates(1)
+        with pytest.raises(outbox.ManagementIntentMismatch):store.prepare_confirmation(target['intent'],claim,PAGE)
+        assert next(r for r in model.rows(intents) if r['intent']==target['intent'])['status']=='claimed'
+        return
     assert store.prepare_confirmation(target['intent'],claim,PAGE) is None
     assert next(r for r in model.rows(intents) if r['intent']==target['intent'])['status']!='submitting'
 
@@ -270,12 +274,86 @@ def scoped_setup():
         management_enabled=True,intent_scope=constraint)
     return model,manager,store,deepcopy(record)
 
+def legacy_management_intent(model, store, target):
+    """Valid pre-coalescing queue row; preserve cross-intent isolation coverage."""
+    foreign = dict(target, intent='0'*64, status='pending', attempts=0,
+        claim_digest=None, lease_until=None, next_attempt_at=model.now,
+        outcome=None, provider_message_id=None, accepted_at=None,
+        created_at=model.now, updated_at=model.now)
+    foreign['token_digest'] = store._digest('management-recovery', store._management_token(foreign))
+    model.rows(intents).append(foreign)
+    return foreign
+
+
+@pytest.mark.parametrize('rows', [0, 2, 257])
+def test_exact_scope_rejects_missing_ambiguous_or_unbounded_inventory(rows):
+    model, _, store, target = scoped_setup()
+    model.records[intents.name] = [deepcopy(target) for _ in range(rows)]
+    before = deepcopy(model.records)
+    with pytest.raises(outbox.ManagementIntentMismatch):
+        store.candidates(1)
+    assert model.records == before
+
+
+def test_scope_requires_record_exact_filter_and_confirmation_creation_anchor():
+    model, _, store, target = confirmation_scoped_setup()
+    with pytest.raises(outbox.ManagementIntentMismatch):
+        store.intent_scope.require(None, model.now)
+    with pytest.raises(outbox.ManagementIntentMismatch):
+        store._scoped(__import__('sqlalchemy').select(intents))
+    changed = dict(target, created_at=target['created_at']+timedelta(seconds=1))
+    scope = outbox.ConfirmationIntentScope(outbox.intent_fingerprint(changed['intent']),
+        outbox.intent_identity(changed), store.intent_scope.deadline, issued_at=target['created_at'])
+    with pytest.raises(outbox.ManagementIntentMismatch) as caught:
+        scope.require(changed, model.now+timedelta(seconds=1))
+    assert caught.value.predicate == 'intent_lifecycle_binding'
+
+
+@pytest.mark.parametrize('change', ['type', 'recipient', 'activation', 'environment'])
+def test_exceptional_store_requires_all_controlled_activation_inputs(change):
+    model, _, store, _ = scoped_setup()
+    values = dict(recipient_scope=store.recipient_scope, management_enabled=True, intent_scope=store.intent_scope)
+    environment = 'testing'
+    if change == 'type': values['intent_scope'] = object()
+    if change == 'recipient': values['recipient_scope'] = None
+    if change == 'activation': values['management_enabled'] = False
+    if change == 'environment': environment = 'development'
+    with pytest.raises(ValueError):
+        outbox.ConfirmationOutboxStore(model, SECRET, environment, **values)
+
+
+def test_management_intent_cannot_send_with_activation_disabled():
+    model, _, _, target = scoped_setup()
+    store = outbox.ConfirmationOutboxStore(model, SECRET, 'testing')
+    before=len(model.statements)
+    with model.begin() as connection:
+        assert store._eligible_management(connection,target,model.now) is None
+    assert len(model.statements)==before
+    assert store.claim_confirmation(target['intent']) is None
+    assert next(r for r in model.rows(intents) if r['intent']==target['intent'])['status']=='suppressed'
+
+
+def test_scope_lease_expiring_during_render_prevents_submission(monkeypatch):
+    model, _, store, target = confirmation_scoped_setup()
+    claim = store.claim_confirmation(target['intent'])
+    render = outbox.verification_message
+    def delayed(*args, **kwargs):
+        value = render(*args, **kwargs)
+        model.elapse(minutes=6)
+        return value
+    monkeypatch.setattr(outbox, 'verification_message', delayed)
+    with pytest.raises(outbox.ManagementIntentMismatch) as caught:
+        store.prepare_confirmation(target['intent'], claim, PAGE)
+    assert caught.value.notification_failure['predicate']=='intent_deadline'
+    assert model.rows(intents)[0]['status']=='claimed'
+
+
 @pytest.mark.parametrize('late',[False,True])
 def test_other_same_mailbox_intent_is_excluded_even_after_selection(late,monkeypatch):
     model,manager,store,target=scoped_setup()
     def another():
         model.elapse(seconds=60);manager.request_recovery(MAILBOX)
-        return deepcopy(next(row for row in model.rows(intents) if row['purpose']=='management' and row['intent']!=target['intent']))
+        return deepcopy(legacy_management_intent(model,store,target))
     if not late: foreign=another()
     if late:
         select=store.candidates
@@ -295,7 +373,7 @@ def test_other_same_mailbox_intent_is_excluded_even_after_selection(late,monkeyp
 def test_candidate_bypass_cannot_claim_other_intent_same_mailbox(monkeypatch):
     model,manager,store,target=scoped_setup()
     model.elapse(seconds=60);manager.request_recovery(MAILBOX)
-    foreign=next(row for row in model.rows(intents) if row['purpose']=='management' and row['intent']!=target['intent'])
+    foreign=legacy_management_intent(model,store,target)
     before=deepcopy(model.records)
     monkeypatch.setattr(store,'candidates',lambda _: [foreign['intent']])
     send=Mock()
@@ -365,7 +443,7 @@ def test_recovery_does_not_mutate_second_same_mailbox_claim():
     model,manager,store,target=scoped_setup()
     store.claim_confirmation(target['intent'])
     model.elapse(seconds=60);manager.request_recovery(MAILBOX)
-    foreign=next(row for row in model.rows(intents) if row['purpose']=='management' and row['intent']!=target['intent'])
+    foreign=legacy_management_intent(model,store,target)
     ordinary=outbox.ConfirmationOutboxStore(model,SECRET,'testing',management_enabled=True)
     ordinary.claim_confirmation(foreign['intent'])
     before=deepcopy(next(row for row in model.rows(intents) if row['intent']==foreign['intent']))
@@ -374,8 +452,10 @@ def test_recovery_does_not_mutate_second_same_mailbox_claim():
     assert next(row for row in model.rows(intents) if row['intent']==foreign['intent'])==before
 
 def test_existing_recurring_processing_retains_multiple_intents_and_retry_behavior():
-    model,manager,store,_=scoped_setup()
+    model,manager,store,target=scoped_setup()
     model.elapse(seconds=60);manager.request_recovery(MAILBOX)
+    assert sum(r['purpose']=='management' for r in model.rows(intents))==1
+    legacy_management_intent(model,store,target)
     ordinary=outbox.ConfirmationOutboxStore(model,SECRET,'testing',management_enabled=True)
     send=Mock(return_value=response())
     assert outbox.ConfirmationDispatcher(ordinary,CONFIG,PAGE,transport=send).process().processed==2
@@ -521,7 +601,7 @@ def test_actual_readonly_snapshot_is_independent_of_provider_readiness(monkeypat
                     if fault=='privilege':raise OperationalError('private catalog',{},RuntimeError('private'))
                     return Result(True)
                 raise AssertionError('unexpected synthetic SQL')
-            return Result(connection.execute(statement.params(**params) if params else statement).value)
+            return connection.execute(statement.params(**params) if params else statement)
     def rollback():
         lifecycle.append('rollback');error=RuntimeError('synthetic rollback')
         transaction.__exit__(type(error),error,None)
@@ -589,7 +669,7 @@ def test_actual_backend_producer_handoff_retains_acknowledgment_through_reportin
 def test_exceptional_scope_crosses_actual_schedule_and_processor_cli(runtime,monkeypatch,tmp_path,capsys):
     model,manager,store,target=scoped_setup()
     model.elapse(seconds=60);manager.request_recovery(MAILBOX)
-    foreign=deepcopy(next(row for row in model.rows(intents) if row['purpose']=='management' and row['intent']!=target['intent']))
+    foreign=deepcopy(legacy_management_intent(model,store,target))
     runtime.model.records=deepcopy(model.records);runtime.model.now=model.now
     monkeypatch.setattr(schedule,'ROOT',tmp_path)
     assert schedule.run_scheduled(profile='testing',enabled=True,management_enabled=True,

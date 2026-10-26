@@ -15,7 +15,7 @@ from .notification_delivery_schema import events, deliveries, attempts, suppress
 from .confirmation_outbox_schema import intents, confirmation_attempts
 from .notification_management_schema import notifications, changes
 from .notifications import normalize_email
-from .notification_dispatch import safe_failure, log_notification_failure
+from .notification_dispatch import safe_failure, log_notification_failure, log_webhook_processed
 
 WEBHOOK_PATH = "/api/notifications/brevo/unsubscribed"
 ALLOWED_FIELDS = {"event", "email", "message-id", "ts", "ts_event", "id", "date", "subject",
@@ -139,7 +139,7 @@ def event_payload(data):
     return dict(email=email, message_id=identity, event_at=times["event"], original_at=times["original"])
 
 
-def process_unsubscribe(store, event, *, diagnostics=None):
+def process_unsubscribe(store, event, *, diagnostics=None, receipt=None):
     def reject(predicate, outcome="rejected"):
         if diagnostics is not None and not diagnostics:
             diagnostics.append(_failure("webhook_correlation", predicate))
@@ -223,11 +223,16 @@ def process_unsubscribe(store, event, *, diagnostics=None):
             return reject("webhook_recipient_match")
         if event["original_at"].timestamp() < int(submitting_at.timestamp()):
             return reject("webhook_original_after_submission")
-        if event["event_at"].timestamp() < int(submitting_at.timestamp()):
-            return reject("webhook_event_after_submission")
+        # Time order already proves event_at >= original_at >= submission.
         mailbox = store._digest("mailbox", event["email"])
         action = store._digest("brevo-unsubscribed", store.environment + ":" + identity + ":" + mailbox)
+        # Publish identity only after all matching predicates passed. The same
+        # HMAC is the persisted audit action_digest; no payload or capability.
+        if receipt is not None:
+            receipt.update(environment=store.environment, receipt_digest=action)
         if store._get(connection, changes, action_digest=action) is not None:
+            if receipt is not None:
+                receipt["acknowledgement"] = True
             return "processed"
         # Already withdrawn original lifecycles still retain the event receipt and
         # permanent provider block. Never touch a newer lifecycle's consent.
@@ -283,8 +288,9 @@ def register_brevo_unsubscribe(app, store, config, error):
             log_notification_failure(app.logger, "brevo_unsubscribe", failure, http_status=400)
             return error("Invalid event.", 400)
         diagnostics = []
+        receipt = {}
         try:
-            outcome = process_unsubscribe(store, event, diagnostics=diagnostics)
+            outcome = process_unsubscribe(store, event, diagnostics=diagnostics, receipt=receipt)
         except Exception as exc:
             # A later transaction failure must not replace an earlier rejection.
             if diagnostics:
@@ -292,11 +298,14 @@ def register_brevo_unsubscribe(app, store, config, error):
                 first = diagnostics[0].notification_failure
                 if transaction is not None:
                     first["side_effects"] = transaction["side_effects"]
+                    first["dependent_not_run"] = transaction["dependent_not_run"]
                     exc.notification_transaction_failure = transaction
                 else:
                     first["side_effects"] = "database_transaction_unacknowledged"
                 exc.notification_failure = first
-            log_notification_failure(app.logger, "brevo_unsubscribe", exc, http_status=429)
+            receipt.pop("acknowledgement", None)
+            log_notification_failure(app.logger, "brevo_unsubscribe", exc, http_status=429,
+                                     webhook_receipt=receipt)
             return error("Event processing unavailable.", 429)
         if outcome == "retry":
             log_notification_failure(app.logger, "brevo_unsubscribe", diagnostics[0], http_status=429)
@@ -304,6 +313,8 @@ def register_brevo_unsubscribe(app, store, config, error):
         if outcome == "rejected":
             log_notification_failure(app.logger, "brevo_unsubscribe", diagnostics[0], http_status=400)
             return error("Invalid event correlation.", 400)
+        acknowledgement = receipt.pop("acknowledgement", False)
+        log_webhook_processed(app.logger, receipt, acknowledgement=acknowledgement)
         return jsonify(status="processed")
 
 from .notification_dispatch import diagnostic_error, report_failure

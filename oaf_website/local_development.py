@@ -42,7 +42,7 @@ def load_development_integration_config(*, local_config_path=INTEGRATION_PATH,
     environment = dict(os.environ if environ is None else environ)
     _validate_environment(environment, "development")
     for path in (ROOT, ROOT / "config", local_config_path.parent, local_config_path):
-        if path.exists() and path.lstat().st_file_attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT:
+        if path.exists() and getattr(path.lstat(), "st_file_attributes", 0) & stat.FILE_ATTRIBUTE_REPARSE_POINT:
             raise diagnostic_error(IntegrationConfigurationError("Redirected integration configuration locations are prohibited."), "load_development_integration_config", "integration_location", stage="startup")
         if path.is_symlink():
             raise diagnostic_error(IntegrationConfigurationError("Redirected integration configuration locations are prohibited."), "load_development_integration_config", "integration_location", stage="startup")
@@ -86,7 +86,7 @@ def development_app(*, enable_integrations=False):
     # Preserve the existing protected key and explicit public-file allowlist.
     # Importing local_testing does not load its credential or connect to TESTING.
     for path in (ROOT, ROOT / "config", SECRET_PATH.parent, SECRET_PATH):
-        if path.exists() and path.lstat().st_file_attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT:
+        if (path.exists() and getattr(path.lstat(), "st_file_attributes", 0) & stat.FILE_ATTRIBUTE_REPARSE_POINT) or path.is_symlink():
             raise diagnostic_error(RuntimeError("Redirected workspace/configuration/key locations are prohibited."), "development_app", "key_location_not_redirected", stage="startup")
     integration_config = load_development_integration_config() if enable_integrations else None
     app = create_app(expected_profile="development", recognition_secret=recognition_secret(),

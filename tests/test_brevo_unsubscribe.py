@@ -63,6 +63,36 @@ def send(client,data,**kwargs):
                        headers=kwargs.pop('headers',{'Authorization':'Bearer '+BEARER}),**kwargs)
 
 
+def test_event_timestamp_before_submission_is_rejected_without_mutation():
+    model,store,_,_=accepted()
+    _,client=app_client(model,store)
+    before=deepcopy(model.records)
+    assert send(client,event(model,ts_event=int(model.now.timestamp())-1)).status_code==400
+    assert model.records==before
+
+
+def test_direct_rejection_without_diagnostic_collector_preserves_database():
+    model,store,_,_=accepted()
+    before=deepcopy(model.records)
+    data=b.event_payload(event(model,**{'message-id':'unknown@example.invalid'}))
+    assert b.process_unsubscribe(store,data)=='retry'
+    assert model.records==before
+
+
+def test_rejection_then_unclassified_processing_failure_retains_first_cause(monkeypatch,caplog):
+    model,store,_,_=accepted()
+    _,client=app_client(model,store)
+    def fail(store,event,*,diagnostics,receipt):
+        diagnostics.append(b._failure('webhook_correlation','webhook_accepted_message_present'))
+        raise RuntimeError('synthetic private failure')
+    monkeypatch.setattr(b,'process_unsubscribe',fail)
+    assert send(client,event(model)).status_code==429
+    record=json.loads(caplog.records[-1].getMessage().split(': ',1)[1])
+    detail=validate_failure(record['first_failure'])
+    assert detail['predicate']=='webhook_accepted_message_present'
+    assert detail['side_effects']=='database_transaction_unacknowledged'
+
+
 @pytest.mark.parametrize('kind',['confirmation','release'])
 @pytest.mark.parametrize('brackets',[True,False])
 def test_valid_authenticated_event_commits_original_withdrawal_and_suppression(kind,brackets):
@@ -260,6 +290,17 @@ def diagnostic(caplog, predicate, context, status, *, side_effects='none'):
     detail=json.loads(text.split(': ',1)[1])
     assert detail['operation']=='brevo_unsubscribe' and detail['http_status']==status
     first=validate_failure(detail['first_failure'])
+    assert detail['event_outcome'] == ('rejected' if context else 'accepted')
+    if context:
+        assert 'webhook_receipt' not in detail
+        if predicate != 'webhook_allowed_fields':
+            assert first['expected'] == predicate + '_satisfied'
+            assert first['observed'] == predicate + '_failed'
+        if side_effects == 'none':
+            expected = ['database_mutation', 'provider_submission']
+            if context != 'webhook_correlation':
+                expected = ['event_correlation', 'database_transaction'] + expected
+            assert first['dependent_not_run'] == expected
     assert first['stage']=='notifications' and first['context']==context
     assert first['predicate']==predicate and first['side_effects']==side_effects
     assert datetime.fromisoformat(first['timestamp_utc']).utcoffset()==timedelta(0)
@@ -661,3 +702,155 @@ def test_observed_metadata_retains_request_size_and_strict_json_checks(case, sta
     transaction.assert_not_called()
     if predicate is not None: diagnostic(caplog, predicate, 'webhook_json', status)
     assert 'SYNTHETIC-METADATA' not in caplog.text
+
+
+@pytest.mark.parametrize('kind', ['confirmation', 'release'])
+def test_transport_receipt_links_commit_and_idempotent_ack(kind, monkeypatch, tmp_path, caplog):
+    from oaf_website import notification_dispatch as d
+    model, store, subscription, token = accepted(kind)
+    _, client = app_client(model, store)
+    evidence = tmp_path / 'instance/failures.jsonl'
+    monkeypatch.setattr(d, 'EVIDENCE_PATH', evidence)
+    first = send(client, event(model))
+    assert first.status_code == 200 and first.json == {'status': 'processed'}
+    audit = deepcopy(model.rows(m.changes)[0])
+    committed = deepcopy(model.records)
+    second = send(client, event(model, id=999, **{'message-id': ACCEPTED.message_id[1:-1]}))
+    assert second.status_code == 200 and second.json == first.json
+    assert model.records == committed
+    records = [json.loads(line) for line in evidence.read_text().splitlines()]
+    assert len(records) == 2
+    for record, outcome in zip(records, ['processed_withdrawal', 'idempotent_acknowledgement']):
+        assert record['event_outcome'] == outcome
+        assert record['webhook_receipt'] == dict(environment='testing', receipt_digest=audit['action_digest'])
+        assert record['side_effects'] == 'database_committed'
+        assert record['http_status'] == 200 and len(record['evidence_ref']) == 32
+        assert datetime.fromisoformat(record['timestamp_utc']).utcoffset() == timedelta(0)
+        assert 'first_failure' not in record
+    assert records[0]['evidence_ref'] != records[1]['evidence_ref']
+    visible = evidence.read_text() + caplog.text + first.text + second.text
+    for value in [subscription, token, BEARER, SECRET.decode(), ACCEPTED.message_id[1:-1],
+                  'subscriber1@example.invalid', 'SYNTHETIC PRIVATE SUBJECT', 'synthetic-custom',
+                  'https://example.invalid/private-preview']:
+        assert value not in visible
+    assert 'receipt_digest' not in first.text
+
+
+@pytest.mark.parametrize('phase', ['connect', 'execute', 'audit', 'commit', 'uncertain', 'ack_commit'])
+def test_receipt_on_failure_never_claims_committed_processing(phase, monkeypatch, tmp_path, caplog):
+    from oaf_website import notification_dispatch as d
+    model, store, _, _ = accepted()
+    _, client = app_client(model, store)
+    if phase == 'ack_commit':
+        assert send(client, event(model)).status_code == 200
+    evidence = tmp_path / 'instance/failures.jsonl'
+    monkeypatch.setattr(d, 'EVIDENCE_PATH', evidence)
+    caplog.clear()
+    before = deepcopy(model.records)
+    if phase == 'audit':
+        monkeypatch.setattr(store, '_change', Mock(side_effect=RuntimeError('PRIVATE-ERROR')))
+    else:
+        model.failure = 'commit' if phase == 'ack_commit' else phase
+    result = send(client, event(model))
+    assert result.status_code == 429
+    record = json.loads(evidence.read_text())
+    first = validate_failure(record['first_failure'])
+    assert record['event_outcome'] == ('unavailable' if phase in {'connect', 'execute'} else 'accepted')
+    if phase in {'connect', 'execute'}:
+        assert 'webhook_receipt' not in record
+    else:
+        mailbox = store._digest('mailbox', event(model)['email'])
+        expected = store._digest('brevo-unsubscribed', 'testing:' + ACCEPTED.message_id[1:-1] + ':' + mailbox)
+        assert record['webhook_receipt']['receipt_digest'] == expected
+    if phase in {'commit', 'uncertain', 'ack_commit'}:
+        assert first['side_effects'] == 'database_commit_uncertain'
+        assert first['dependent_not_run'] == ['automatic_retry']
+    else:
+        assert first['side_effects'] == ('none' if phase == 'connect' else 'database_rolled_back')
+        if phase in {'connect', 'execute'}:
+            not_run = ['event_correlation', 'database_mutation', 'provider_submission']
+            if phase == 'connect': not_run.insert(1, 'database_transaction')
+            assert first['dependent_not_run'] == not_run
+    assert 'Notification operation completed' not in caplog.text
+    assert 'PRIVATE-ERROR' not in evidence.read_text() + caplog.text
+    assert model.records == before if phase != 'uncertain' else len(model.rows(m.changes)) == 1
+
+
+@pytest.mark.parametrize('fault', ['logger', 'evidence', 'both'])
+def test_committed_receipt_survives_reporting_failure(fault, monkeypatch, tmp_path, capsys):
+    from oaf_website import notification_dispatch as d
+    model, store, _, _ = accepted()
+    app, client = app_client(model, store)
+    evidence = tmp_path / 'instance/failures.jsonl'
+    monkeypatch.setattr(d, 'EVIDENCE_PATH', evidence)
+    if fault in {'logger', 'both'}:
+        monkeypatch.setattr(app.logger, 'warning', Mock(side_effect=OSError('PRIVATE-LOGGER')))
+    if fault in {'evidence', 'both'}:
+        monkeypatch.setattr(d, '_append_failure', Mock(side_effect=OSError('PRIVATE-EVIDENCE')))
+    response = send(client, event(model))
+    assert response.status_code == 200 and response.json == {'status': 'processed'}
+    output = capsys.readouterr().err
+    record = json.loads(output.split('Notification operation completed: ', 1)[1])
+    assert record['event_outcome'] == 'processed_withdrawal'
+    assert record['side_effects'] == 'database_committed'
+    assert record['webhook_receipt']['receipt_digest'] == model.rows(m.changes)[0]['action_digest']
+    if fault in {'logger', 'both'}: assert record['logging_failure']['exception_class'] == 'OSError'
+    if fault in {'evidence', 'both'}: assert record['evidence_failure']['exception_class'] == 'OSError'
+    assert 'PRIVATE-' not in output
+
+
+def test_rejection_then_commit_and_logging_failure_keeps_first_and_not_run(monkeypatch, tmp_path, capsys):
+    from oaf_website import notification_dispatch as d
+    model, store, _, _ = accepted()
+    app, client = app_client(model, store)
+    evidence = tmp_path / 'instance/failures.jsonl'
+    monkeypatch.setattr(d, 'EVIDENCE_PATH', evidence)
+    monkeypatch.setattr(app.logger, 'warning', Mock(side_effect=OSError('PRIVATE-SECONDARY')))
+    model.failure = 'commit'
+    assert send(client, event(model, ts_event=int(model.now.timestamp()) + 301)).status_code == 429
+    record = json.loads(evidence.read_text())
+    first = validate_failure(record['first_failure'])
+    assert first['predicate'] == 'webhook_event_not_future'
+    assert first['dependent_not_run'] == ['automatic_retry']
+    assert record['transaction_failure']['operation'] == 'transaction_commit'
+    assert record['logging_failure']['operation'] == 'terminal_publication'
+    assert 'webhook_receipt' not in record and record['event_outcome'] == 'rejected'
+    fallback = json.loads(capsys.readouterr().err.split('Notification operation failed: ', 1)[1])
+    assert fallback['first_failure']['evidence_ref'] == first['evidence_ref']
+
+
+@pytest.mark.parametrize('value', [None, {}, {'environment': 'testing', 'receipt_digest': 'private'},
+    {'environment': 'production', 'receipt_digest': 'a' * 64},
+    {'environment': 'testing', 'receipt_digest': 'a' * 64, 'email': 'private'}])
+def test_receipt_diagnostic_rejects_unbounded_values(value):
+    from oaf_website import notification_dispatch as d
+    with pytest.raises(ValueError): d._webhook_receipt(value)
+
+
+def test_matched_receipt_retains_first_failure_through_rollback_and_logger_errors(monkeypatch, tmp_path):
+    from oaf_website import notification_dispatch as d
+    model, store, _, _ = accepted()
+    app, client = app_client(model, store)
+    evidence = tmp_path / 'instance/failures.jsonl'
+    monkeypatch.setattr(d, 'EVIDENCE_PATH', evidence)
+    primary = RuntimeError('PRIVATE-AUDIT')
+    primary.notification_failure = d.safe_failure('notifications', 'audit_insert', primary)
+    @contextmanager
+    def fail_rollback():
+        with model.begin() as connection:
+            try: yield connection
+            except RuntimeError: raise OSError('PRIVATE-ROLLBACK') from None
+    store.engine = Mock(begin=fail_rollback)
+    monkeypatch.setattr(store, '_change', Mock(side_effect=primary))
+    monkeypatch.setattr(app.logger, 'warning', Mock(side_effect=OSError('PRIVATE-LOGGER')))
+    assert send(client, event(model)).status_code == 429
+    record = json.loads(evidence.read_text())
+    assert record['first_failure']['evidence_ref'] == primary.notification_failure['evidence_ref']
+    assert record['first_failure']['operation'] == 'audit_insert'
+    assert record['first_failure']['side_effects'] == 'database_rollback_uncertain'
+    assert record['first_failure']['dependent_not_run'] == ['automatic_retry']
+    assert record['rollback_failure']['operation'] == 'transaction_rollback'
+    assert record['logging_failure']['operation'] == 'terminal_publication'
+    assert record['event_outcome'] == 'accepted' and len(record['webhook_receipt']['receipt_digest']) == 64
+    assert not model.rows(m.changes) and not model.rows(suppressions)
+    assert 'PRIVATE-' not in evidence.read_text()

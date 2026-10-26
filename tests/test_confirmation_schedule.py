@@ -7,6 +7,8 @@ from copy import deepcopy
 import importlib
 import json
 from pathlib import Path
+import sys
+from types import SimpleNamespace
 from unittest.mock import Mock
 import xml.etree.ElementTree as ET
 
@@ -50,6 +52,36 @@ def output(capsys):
         assert schedule.validate_failure(result["first_failure"]) == result["first_failure"]
     assert result["timestamp_utc"].endswith("+00:00")
     return result
+
+
+@pytest.mark.parametrize('complete', [False, True])
+def test_legacy_management_scope_is_validated_and_forwarded(scheduled, monkeypatch, capsys, complete):
+    call = Mock(return_value=0)
+    def processed(arguments):
+        print(json.dumps(dict(status='processed', processed=0)))
+        return call(arguments)
+    monkeypatch.setattr(schedule.processor, 'main', processed)
+    options = dict(management_enabled=True, management_intent_fingerprint='a'*64)
+    if complete:
+        options.update(management_identity_fingerprint='b'*64, management_deadline='2026-10-16T12:00:00+00:00')
+    assert run(**options) == (0 if complete else 2)
+    result = output(capsys)
+    if complete:
+        arguments = call.call_args.args[0]
+        assert arguments[-6:] == ['--management-intent-fingerprint', 'a'*64,
+            '--management-identity-fingerprint', 'b'*64, '--management-deadline', options['management_deadline']]
+    else:
+        call.assert_not_called()
+        assert result['first_failure']['operation']=='configuration'
+
+
+@pytest.mark.parametrize('boundary', ['processor', 'initial_append'])
+def test_schedule_interrupt_retains_finite_exit_and_no_retry(scheduled, monkeypatch, capsys, boundary):
+    target = schedule.processor if boundary == 'processor' else schedule
+    monkeypatch.setattr(target, 'main' if boundary == 'processor' else '_append', Mock(side_effect=KeyboardInterrupt()))
+    assert run() == 130
+    result = output(capsys)
+    assert result['status']=='interrupted' and result['processed']==0
 
 
 @pytest.mark.parametrize("profile", ["testing", "development"])
@@ -282,6 +314,57 @@ def test_exception_releases_local_lock(scheduled):
     with pytest.raises(RuntimeError):
         with schedule._local_run_lock():
             raise RuntimeError("synthetic interruption")
+    with schedule._local_run_lock():
+        pass
+
+
+@pytest.fixture(params=["win32", "linux"])
+def lock_backend(request, monkeypatch):
+    # Exercise both dispatch paths with REAL host kernel locks. On the other
+    # platform, adapt only the unavailable API signature; never fake a lock.
+    if sys.platform == "win32" and request.param == "linux":
+        import msvcrt
+        def flock(fd, operation):
+            msvcrt.locking(fd, msvcrt.LK_UNLCK if operation == 0 else msvcrt.LK_NBLCK, 1)
+        monkeypatch.setitem(sys.modules, "fcntl",
+                            SimpleNamespace(flock=flock, LOCK_UN=0, LOCK_EX=2, LOCK_NB=4))
+    elif sys.platform != "win32" and request.param == "win32":
+        import fcntl
+        def locking(fd, operation, length):
+            assert length == 1
+            fcntl.flock(fd, fcntl.LOCK_UN if operation == 0 else fcntl.LOCK_EX | fcntl.LOCK_NB)
+        monkeypatch.setitem(sys.modules, "msvcrt",
+                            SimpleNamespace(locking=locking, LK_UNLCK=0, LK_NBLCK=2))
+    monkeypatch.setattr(schedule, "sys", SimpleNamespace(platform=request.param))
+
+
+def test_kernel_lock_excludes_concurrent_thread_and_releases(scheduled, lock_backend):
+    from concurrent.futures import ThreadPoolExecutor
+    def contender():
+        with pytest.raises(schedule._Overlap):
+            with schedule._local_run_lock():
+                pytest.fail("Concurrent owner entered the locked section")
+    with ThreadPoolExecutor(max_workers=1) as worker:
+        with schedule._local_run_lock():
+            worker.submit(contender).result(timeout=5)
+        with schedule._local_run_lock():
+            pass
+
+
+@pytest.mark.parametrize("boundary", ["acquire", "release"])
+def test_lock_errors_fail_closed_and_file_close_releases(scheduled, lock_backend, monkeypatch, capsys, boundary):
+    original = schedule._file_lock
+    def fail(lock, *, release=False):
+        if release == (boundary == "release"):
+            raise OSError("synthetic lock failure")
+        original(lock, release=release)
+    monkeypatch.setattr(schedule, "_file_lock", fail)
+    assert schedule.run_scheduled(profile="testing") == (2 if boundary == "acquire" else 1)
+    result = output(capsys)
+    assert result["status"] == ("overlap" if boundary == "acquire" else "unavailable")
+    assert_no_runtime(scheduled)
+    # Even a failed explicit unlock must close its handle and release the lock.
+    monkeypatch.setattr(schedule, "_file_lock", original)
     with schedule._local_run_lock():
         pass
 

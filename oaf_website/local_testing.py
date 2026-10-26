@@ -36,7 +36,7 @@ def recognition_secret(*, require_existing=False):
     if require_existing:
         for path in (ROOT, ROOT / "config", SECRET_PATH.parent, SECRET_PATH):
             if (path.is_symlink() or (path.exists() and
-                    path.lstat().st_file_attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT)):
+                    getattr(path.lstat(), "st_file_attributes", 0) & stat.FILE_ATTRIBUTE_REPARSE_POINT)):
                 raise diagnostic_error(RuntimeError("Redirected recognition key locations are prohibited."), "recognition_secret", "key_location_not_redirected", stage="startup")
         if not SECRET_PATH.is_file():
             raise diagnostic_error(RuntimeError("Existing protected recognition key is required."), "recognition_secret", "key_existing", stage="startup")
@@ -113,8 +113,6 @@ def validate_testing_https(*, public_origin, confirmation_page, confirmation_ena
     """Validate all nonsecret HTTPS choices before protected runtime access."""
     from .database_config import _validate_environment
     from .notification_messages import secure_confirmation_page
-    from .notifications import LABEL
-    from urllib.parse import urlsplit
     _validate_environment(dict(os.environ), "testing")
     if type(confirmation_enabled) is not bool:
         raise diagnostic_error(ValueError("Email confirmation activation requires an explicit boolean."), "validate_testing_https", "confirmation_activation_boolean", stage="startup")
@@ -122,10 +120,7 @@ def validate_testing_https(*, public_origin, confirmation_page, confirmation_ena
     if (type(public_origin) is not str or public_origin.endswith("/")
             or secure_confirmation_page(confirmation_page) != public_origin + "/confirm-email.html"):
         raise diagnostic_error(ValueError("HTTPS origin and confirmation page must match."), "validate_testing_https", "https_origin_page_match", stage="startup")
-    parts = urlsplit(public_origin)
-    if (parts.path or parts.query or parts.fragment or len(parts.hostname) > 253
-            or not all(LABEL.fullmatch(label) for label in parts.hostname.split("."))):
-        raise diagnostic_error(ValueError("A configured HTTPS origin is required."), "validate_testing_https", "https_origin_valid", stage="startup")
+    # secure_confirmation_page validates the origin/labels before exact matching.
 
 
 def testing_https_app(*, public_origin, confirmation_page, confirmation_enabled=False,

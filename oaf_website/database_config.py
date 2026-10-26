@@ -217,8 +217,7 @@ def load_database_config(
             return DatabaseConfig(profile, url)
         raise diagnostic_error(DatabaseConfigurationError("The selected database credential is missing."), "load_database_config", "credential_present", stage="startup")
     failure = DatabaseConfigurationError("The selected database credential could not be retrieved.")
-    if first is not None:
-        failure.notification_failure = first
+    failure.notification_failure = first
     raise diagnostic_error(failure, "load_database_config", "credential_readable", stage="startup")
 
 

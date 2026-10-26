@@ -126,6 +126,21 @@ def mobile(**overrides):
                      ios_launch=False, consent=True, token="b" * 64), **overrides)
 
 
+def test_unknown_service_route_is_private_and_does_not_query(setup):
+    reply=service(setup.client,path=api.PREFIX+'/unknown',method='GET')
+    assert reply.status_code==404
+    assert setup.engine.data_queries==0
+
+
+def test_summary_bad_request_is_classified_before_query(setup,monkeypatch):
+    from werkzeug.exceptions import BadRequest
+    from flask import Request
+    monkeypatch.setattr(Request,'get_data',Mock(side_effect=BadRequest()))
+    reply=service(setup.client,path=REPORT_PATH,credential=REPORTING)
+    assert reply.status_code==400
+    assert setup.engine.data_queries==0
+
+
 def test_accepted_duplicate_and_existing_public_totals(setup):
     first = service(setup.client)
     before = deepcopy(setup.states.records)

@@ -100,6 +100,30 @@ class Catalog:
         raise AssertionError("Unknown synthetic catalog query: " + q)
 
 
+def test_authority_rejects_fabricated_identity_before_catalog_access():
+    from dataclasses import replace
+    catalog=Catalog()
+    with pytest.raises(c.MigrationError,match=c.Failure.WRONG_IDENTITY):
+        v.verify_authority(catalog,replace(catalog.i,database='unapproved'))
+    assert not catalog.calls
+
+
+def test_exceptional_incoming_membership_multiple_grantors_terminates():
+    catalog=Catalog()
+    catalog.roles.append(dict(catalog.roles[0],oid=999,rolname='administrator',exceptional=True))
+    edge=dict(member='administrator',parent=catalog.i.owner,inherit_option=False,set_option=True,admin_option=False)
+    catalog.memberships.extend([edge,dict(edge)])
+    v.verify_authority(catalog,catalog.i)
+    assert catalog.calls
+
+
+def test_unknown_default_acl_object_kind_is_drift():
+    catalog=Catalog()
+    catalog.defaults.append(dict(kind='x',namespace=0,schema=None,acl='synthetic-owner-only'))
+    with pytest.raises(c.MigrationError,match=c.Failure.DRIFT):
+        v.catalog_state(catalog,catalog.i)
+
+
 @pytest.mark.parametrize("environment", c.IDENTITIES)
 @pytest.mark.parametrize("target", [False, True])
 def test_approved_catalog_state_and_six_role_isolation(environment, target):

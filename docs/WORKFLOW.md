@@ -3666,3 +3666,92 @@ confirmation/supersession notes above and
 **ONE next roadmap action:** owner-authorize the previously planned temporary
 Cloudflare tunnel/forwarding-guard shutdown checkpoint. No shutdown is performed
 or authorized by this closure; queued UI work and Step 6 are not started.
+
+### Remaining diagnostic improvements — candidate reconciliation (2026-10-25)
+
+Owner scope: finish demonstrated diagnostic gaps before Step 6, existing first,
+one connected source batch, offline validation only, no Git stage/commit/push.
+Baseline remains `main` at `d6def3033570de893100982329de96d094fb7301`.
+The Step 5 acceptance, historical/Foundation preservation, comprehensive failure
+reporting, field-name diagnostics and four-field Brevo compatibility remain closed.
+Their accepted evidence above is reused; no callback or live acceptance is repeated.
+
+**SOURCE/OFFLINE CANDIDATE; NOT INSTALLED.** The single candidate is
+`.pytest_cache/remaining-diagnostics-20261026T004941Z/candidate/`. Both required
+runtime sources have normal Windows sharing locks (`IOException`, `0x80070020`).
+No replacement or service restart was attempted. Original tracked bytes, HEAD,
+index, owner notes, TESTING HTTPS, guard, Cloudflare and Brevo settings remain intact.
+
+The webhook now carries the already-computed keyed `action_digest` as a bounded
+`webhook_receipt.receipt_digest`, with environment and a request/evidence reference.
+It directly selects the existing audit row, which binds the persisted provider
+message and original subscriber lifecycle. No additional table, identity algorithm,
+credential, provider request, launcher or framework is added. Identity is attached
+only after all existing correlation predicates pass. Rejections before matching
+have no fabricated receipt. A matched event with failed processing is `accepted`
+with explicit transaction certainty; `processed_withdrawal` and
+`idempotent_acknowledgement` are emitted only after the transaction acknowledges
+commit. Public HTTP bodies/statuses, matching, uniqueness and mutation order stay
+unchanged. The existing logger, append/flush/fsync sink and sanitized fallback
+retain outcomes and secondary failures. The original first-failure reference is
+preserved through later transaction/reporting errors.
+
+The current improvement register is reconciled here, without a separate register:
+
+| Review category | Disposition and evidence |
+| --- | --- |
+| Direct transport-to-subscriber linkage | **DEMONSTRATED GAP; FIXED IN CANDIDATE.** Exact keyed audit receipt on accepted/processed/duplicate callbacks; deterministic bracket normalization and no pre-match identity. Installation remains pending. |
+| Safe expected/observed rejection facts | **DEMONSTRATED WEBHOOK GAP; FIXED IN CANDIDATE.** Existing webhook predicates now supply condition-specific safe satisfied/failed facts instead of generic operation prose. Installed bounded offending-field facts remain intact. Other reviewed entry points retain accepted evidence. |
+| Configuration/credential first-failure specificity | **ALREADY SATISFIED.** Installed native credential/configuration predicate capture, accepted installation/parent evidence and existing connected failure tests retained. No implementation reopened. |
+| Dependent NOT_RUN | **DEMONSTRATED WEBHOOK GAP; FIXED IN CANDIDATE.** Early rejection/begin/lock/clock failures distinguish correlation, transaction and mutation not reached. Commit/rollback uncertainty retains `automatic_retry` NOT_RUN. Installed offending-field behavior retained. |
+| Cross-boundary failure correlation | **ALREADY SATISFIED** for originating failure references and Python/parent propagation. The distinct webhook receipt gap is covered above. |
+| Operational PowerShell/Python consistency | **ALREADY SATISFIED** within accepted installed interfaces. Reused `step5-install-end-to-end-failure-diagnostics-20261025` installation/reporting receipts and `end-to-end-failure-diagnostics-20261025/parent-validation-02.json` (child exit 2 retained by parent exit 0). No wrapper/launcher change. |
+| Secondary failure preservation | **ALREADY SATISFIED; CONNECTED EXTENSION VERIFIED.** Original first failure plus rollback, transaction, logger and evidence failures retained; a reporting failure cannot change acknowledged withdrawal or invite replay. |
+| First-failure completeness at existing entry points | **ALREADY SATISFIED in reviewed installed paths.** Existing bootstrap, HTTP, processor, scheduler and provider evidence reused. Universal completeness and live verification of the new candidate are **NOT ESTABLISHED**, not invented defects. |
+
+Validation uses the existing website `.venv`, disabled plugin autoload, explicit
+33-file `APPROVED_TESTS` inventory and early `-p migration_offline`; all external
+access guards remain. Final connected validation: **496 PASS**, native exit 0,
+including 18 new receipt/failure cases and strengthened existing rejection checks.
+The final full canonical run on exact intended Git bytes: **3,366 PASS, 39 FAIL,
+zero errors**, native exit 1. The first
+failure is `test_controlled_confirmation.py::test_cli_missing_and_duplicate_scope_are_private_failures`:
+the old expected CLI object omits the installed sanitized `first_failure` field.
+The initial full run (3,344 PASS, 41 FAIL, 20 ERROR) remains preserved. One bounded
+comparison of all its 61 failing/error cases with shorter temporary paths
+produced **39 FAIL, 22 PASS, zero errors on BOTH baseline and candidate** (exit 1
+each). This resolves the 22 Windows path-length artifacts without source changes.
+The remaining baseline failures include outdated diagnostic silence/CLI shape and
+0005-head expectations, plus existing safeguard fixture/observation expectations.
+They are not new webhook defects; no working behavior or unrelated tests were
+altered to make them pass. Candidate-only CRLF-to-LF normalization matched existing
+Git storage; the final full run used those exact bytes and the short temporary
+path. Its failure set exactly matches the 39 reproduced baseline failures. No
+Git objects or index were written. This does not turn the full run into a PASS.
+
+No whole-application 100% command/configuration was found. The existing
+`checkpoint6g2/measure.py` and `report_coverage.py` technique was reused with the
+installed coverage 7.13.2 tool read-only, all 33 `oaf_website` modules, and branch
+measurement. Guarded tests export arcs; a separate metadata-only process reports
+them. All-Python-application result: **95.5084% combined**, statements **96.3511%**,
+branches **93.1275%**, threshold exit 2. There are 207 missing statements and 138
+missing branches; five pre-existing exclusions remain, with none added. The
+recorded older 100% claims were explicitly scoped; no whole-application PASS is
+claimed. Exact test selection, raw evidence and missing-line detail are retained
+in `test-protocol.json`, `full-final.xml`, `failure-reconciliation.json`, `coverage-final.json`
+and logs beside the candidate. `CANDIDATE-SHA256.json` and `candidate.patch` identify
+the complete intended delta; `validated-final-inputs.json` seals tested executable bytes.
+
+Privacy/autonomy: no address, raw message ID, token, payload value or private URL
+is added to application diagnostics. All ordinary authority remains deterministic
+and server-owned. No database/provider connection, unsubscribe, email, replay,
+credential/permission/configuration change, operational authority issuance,
+service action or GraManna write occurred. Abrupt termination before persistence
+and loss of both sinks retain the accepted durability limitations. This cannot
+retroactively correlate the historical Step 5 callback.
+
+**ONE next action:** install this candidate at the next authorized controlled
+shutdown, matching its baseline hashes and using the existing startup-integrity
+procedure. No shutdown is authorized here. Before any later Git push, resolve the
+baseline validation failures and meet the full canonical zero-failure and 100%
+application coverage gates on the exact final Git candidate. Step 6 remains later.

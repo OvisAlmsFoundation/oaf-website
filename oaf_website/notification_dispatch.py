@@ -97,6 +97,9 @@ FAILURE_PREDICATES |= PRECISE_PREDICATES
 PRECISE_PREDICATES |= frozenset({"development_arguments", "guard_arguments"})
 FAILURE_PREDICATES |= PRECISE_PREDICATES
 
+# The existing webhook predicates name the actual rejected condition.
+PRECISE_PREDICATES |= frozenset(p for p in FAILURE_PREDICATES if p.startswith("webhook_"))
+
 # Extends the existing bounded notification record; no alternate logging framework.
 FAILURE_STAGES = frozenset({"processor", "outbox", "schedule", "notifications", "startup", "request", "provider"})
 EVIDENCE_PATH = Path(__file__).resolve().parents[1] / "instance/failures.jsonl"
@@ -110,6 +113,12 @@ def _not_run(stage, side_effects, provider_outcome, operation=None, context=None
         return ["application_initialization", "database_mutation", "provider_submission"]
     if side_effects in {"database_commit_uncertain", "database_rollback_uncertain"}:
         return ["automatic_retry"]
+    if stage == "notifications" and operation == "brevo_unsubscribe":
+        if context in {"webhook_configuration", "webhook_authentication", "webhook_media_type",
+                       "webhook_json", "webhook_event"}:
+            return ["event_correlation", "database_transaction", "database_mutation", "provider_submission"]
+        if context == "webhook_correlation":
+            return ["database_mutation", "provider_submission"]
     if (stage in {"processor", "outbox"} and context != "outcome" and operation in {
             "configuration", "provider_configuration", "database_configuration", "protected_key", "engine",
             "selection_recovery", "claim", "preparation", "database_begin", "advisory_lock", "database_clock"}):
@@ -147,11 +156,11 @@ def _append_failure(detail):
             os.fsync(stream.fileno())
 
 
-def _emit(detail, logger=None):
+def _emit(detail, logger=None, *, message="Notification operation failed"):
     # Secondary failures never replace first_failure or escape into public handlers.
     if logger is not None:
         try:
-            logger.warning("Notification operation failed: %s", json.dumps(detail, sort_keys=True))
+            logger.warning(message + ": %s", json.dumps(detail, sort_keys=True))
         except Exception as exc:
             detail["logging_failure"] = safe_failure("processor", "terminal_publication", exc)
     try:
@@ -160,7 +169,7 @@ def _emit(detail, logger=None):
         detail["evidence_failure"] = safe_failure("processor", "terminal_publication", exc)
     if logger is None or "logging_failure" in detail or "evidence_failure" in detail:
         try:
-            sys.stderr.write("Notification operation failed: " + json.dumps(detail, sort_keys=True) + "\n")
+            sys.stderr.write(message + ": " + json.dumps(detail, sort_keys=True) + "\n")
             sys.stderr.flush()
         except Exception:
             pass  # Both sinks unavailable: cannot safely recurse or change operation certainty.
@@ -319,12 +328,44 @@ def validate_failure(value):
     return value
 
 
-def log_notification_failure(logger, operation, exc, *, http_status=None):
+def _webhook_receipt(value):
+    # This keyed audit identity is neither a mailbox digest nor a capability.
+    if (type(value) is not dict or set(value) != {"environment", "receipt_digest"}
+            or value["environment"] not in {"testing", "development"}
+            or type(value["receipt_digest"]) is not str
+            or re.fullmatch(r"[0-9a-f]{64}", value["receipt_digest"]) is None):
+        raise ValueError("Invalid webhook receipt diagnostic.")
+    return dict(value)
+
+
+def log_webhook_processed(logger, receipt, *, acknowledgement):
+    """Only called after the existing transaction context acknowledges commit."""
+    detail = dict(operation="brevo_unsubscribe", stage="notifications", http_status=200,
+        timestamp_utc=datetime.now(timezone.utc).isoformat(), evidence_ref=uuid4().hex,
+        webhook_receipt=_webhook_receipt(receipt), side_effects="database_committed",
+        event_outcome="idempotent_acknowledgement" if acknowledgement else "processed_withdrawal")
+    _emit(detail, logger, message="Notification operation completed")
+
+
+def log_notification_failure(logger, operation, exc, *, http_status=None, webhook_receipt=None):
     """Request-local evidence; never log exception text, SQL, or capabilities."""
     failure = getattr(exc, "notification_failure", None)
     failure = validate_failure(failure) if failure is not None else safe_failure(
         "notifications", operation, exc, side_effects="database_transaction_unacknowledged")
     detail = dict(operation=operation, first_failure=failure)
+    if operation == "brevo_unsubscribe":
+        if failure["side_effects"] in {"database_commit_uncertain", "database_rollback_uncertain"}:
+            failure["dependent_not_run"] = ["automatic_retry"]
+        elif failure["operation"] in {"database_begin", "advisory_lock", "database_clock"}:
+            failure["dependent_not_run"] = ["event_correlation", "database_mutation", "provider_submission"]
+            if failure["operation"] == "database_begin":
+                failure["dependent_not_run"].insert(1, "database_transaction")
+        detail["event_outcome"] = "rejected" if failure["context"] in {
+            "webhook_configuration", "webhook_authentication", "webhook_media_type",
+            "webhook_json", "webhook_event", "webhook_correlation"} else "unavailable"
+        if webhook_receipt:
+            detail["webhook_receipt"] = _webhook_receipt(webhook_receipt)
+            detail["event_outcome"] = "accepted"
     if "flask" in sys.modules:
         from flask import g, has_request_context
         if has_request_context():

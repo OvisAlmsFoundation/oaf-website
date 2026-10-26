@@ -431,7 +431,8 @@ def test_required_existing_key_is_read_only_and_uses_current_user_dpapi(monkeypa
     crypt = SimpleNamespace(CryptProtectData=Mock(), CryptUnprotectData=Mock(side_effect=decrypt))
     kernel = SimpleNamespace(LocalFree=Mock())
     native = Mock(side_effect=[crypt, kernel])
-    monkeypatch.setattr(local_testing.ctypes, "WinDLL", native)
+    monkeypatch.setattr(local_testing.ctypes, "WinDLL", native, raising=False)
+    monkeypatch.setattr(local_testing.sys, "platform", "win32")
     assert local_testing.recognition_secret(require_existing=True) == b"s" * 32
     crypt.CryptProtectData.assert_not_called()
     assert path.read_bytes() == b"synthetic-protected-file"
@@ -444,7 +445,7 @@ def test_missing_key_and_invalid_policy_never_create_or_access_native_secrets(mo
     monkeypatch.setattr(local_testing, "ROOT", tmp_path)
     monkeypatch.setattr(local_testing, "SECRET_PATH", path)
     native = Mock(side_effect=AssertionError("No native secret access"))
-    monkeypatch.setattr(local_testing.ctypes, "WinDLL", native)
+    monkeypatch.setattr(local_testing.ctypes, "WinDLL", native, raising=False)
     with pytest.raises((RuntimeError, ValueError)):
         local_testing.recognition_secret(require_existing=policy)
     native.assert_not_called()

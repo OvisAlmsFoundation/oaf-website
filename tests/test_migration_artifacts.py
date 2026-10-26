@@ -37,6 +37,22 @@ def write_manifest(root, document):
     (root / "migrations/manifest.json").write_text(json.dumps(document), encoding="utf-8")
 
 
+def test_revision_docstrings_are_optional_without_changing_operations(artifact_copy):
+    import ast
+    document=json.loads((artifact_copy/'migrations/manifest.json').read_bytes())
+    for revision in document['revisions']:
+        path=artifact_copy/'migrations/versions'/(revision['id']+'.py')
+        if revision['id'] not in {v.STATE_REQUESTS,v.NOTIFICATIONS,v.MANAGEMENT}:
+            continue
+        source=path.read_text()
+        first=ast.parse(source).body[0]
+        assert isinstance(first,ast.Expr) and isinstance(first.value,ast.Constant)
+        path.write_text('\n'.join(source.splitlines()[first.end_lineno:])+'\n')
+        revision['sha256']=v.digest(path.read_bytes())
+    write_manifest(artifact_copy,document)
+    assert verify(artifact_copy).target==v.BASELINE
+
+
 def test_authoritative_manifest_and_single_root():
     a = artifacts()
     assert (a.expected_start, a.target) == ("base", "0001_migration_baseline")

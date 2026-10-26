@@ -1210,3 +1210,16 @@ separate historical Step 6G work or invent deployment prerequisites.
 tunnel/forwarding-guard shutdown checkpoint. This documentation closure performs
 no shutdown, UI/runtime/database/test change or Git delivery. Git delivery remains
 subject to separate owner authorization.
+
+### Remaining diagnostics before Step 6 — staged candidate (2026-10-25)
+
+The appended current WORKFLOW reconciliation records one diagnostic-only candidate
+at `.pytest_cache/remaining-diagnostics-20261026T004941Z/candidate/`: direct keyed
+webhook audit-receipt correlation, safe predicate facts and accurate dependent
+NOT_RUN. Accepted Step 5 results and installed improvements remain closed. Runtime
+source locks are preserved; installation awaits a controlled authorized shutdown.
+Connected tests: 496 PASS. Full canonical suite and whole-application 100% coverage
+do not pass; exact results, baseline comparison and source identities are retained
+with the candidate. No Git delivery or live operation occurred. The existing
+shutdown/refinement/Step 6 roadmap remains; WORKFLOW holds the sole improvement
+register and the one next controlled-installation action.

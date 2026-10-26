@@ -3,3 +3,4 @@
 
 # Do not install Playwright here; use the shared environment in docs/WORKFLOW.md.
 pytest==9.0.2
+coverage==7.13.2

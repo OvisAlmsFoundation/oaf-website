@@ -335,8 +335,27 @@ def test_stage5_exact_activated_target_only(stage5_vault, environment, case, cap
             c.load_migration_config(environment=environment, environ={'OAF_ENV': environment})
         assert SECRET not in ''.join(traceback.format_exception(caught.value))
     vault.read.assert_called_once_with(i.credential_service)
-    assert capsys.readouterr() == ('', '')
-    assert SECRET not in caplog.text
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    if case == "valid":
+        assert captured.err == ""
+    else:
+        import json
+        from oaf_website.notification_dispatch import validate_failure
+        prefix = "Notification operation failed: "
+        assert captured.err.startswith(prefix)
+        records = [json.loads(line[len(prefix):]) for line in captured.err.splitlines()
+                   if line.startswith(prefix)]
+        assert len(records) == (2 if case in {"runtime", "administrator", "other_migrator", "target", "type", "persistence"} else 1)
+        predicate = ("credential_readable" if case in {"decode_error", "provider_error"}
+                     else "credential_target_metadata" if case in {"runtime", "administrator", "other_migrator", "target", "type", "persistence"}
+                     else "credential_present")
+        for record in records:
+            detail = validate_failure(record["first_failure"])
+            assert detail["predicate"] == predicate
+            assert detail["stage"] == "startup" and detail["side_effects"] == "none"
+            assert detail["dependent_not_run"] == ["application_initialization", "database_mutation", "provider_submission"]
+    assert SECRET not in captured.out + captured.err + caplog.text
 
 
 @pytest.mark.parametrize('environment', c.IDENTITIES)
