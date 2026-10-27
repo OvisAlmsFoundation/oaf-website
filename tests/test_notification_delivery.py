@@ -511,6 +511,7 @@ def changed_release(model, **overrides):
     ("android", "a" * 151, "https://play.google.com/store/apps/details?id=" + "a" * 151, False),
     ("ios", "123456789", "x" * 301, False),
     ("web", "org.oaf.gramanna", "https://example.invalid", False),
+    ("desktop", "org.oaf.gramanna", "https://play.google.com/store/apps/details?id=org.oaf.gramanna", False),
 ])
 def test_official_reference_compatibility_is_strict(platform, identity, url, valid):
     assert service.official_release_reference(platform, identity, url) is valid
