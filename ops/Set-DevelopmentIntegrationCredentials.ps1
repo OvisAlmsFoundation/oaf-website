@@ -2,7 +2,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet('Provision', 'ActivateReporting', 'ActivateSharedServices')][string]$Operation
+    [ValidateSet('Provision', 'ActivateReporting', 'ActivateSharedServices', 'ProvisionTestingRelease', 'ProvisionDevelopmentRelease')][string]$Operation
 )
 
 function Initialize-OafDevelopmentCredentialApi {
@@ -89,7 +89,7 @@ namespace OafDevelopmentCredentials {
 '@ | Out-Null
 }
 
-function Read-OafDevelopmentClientId([string]$Path, [string]$Python) {
+function Read-OafDevelopmentClientId([string]$Path, [string]$Python, [string]$IntegrationProfile = 'development', [switch]$RequireRelease) {
     # stdlib TOML parser only; -I -S excludes environment, site hooks and packages.
     # No configuration contents or parser exceptions are returned to PowerShell.
     $code = @'
@@ -97,15 +97,22 @@ import re, sys, tomllib
 try:
     with open(sys.argv[1], 'rb') as source:
         doc = tomllib.load(source)
-    section = doc.get('development')
-    assert set(doc) == {'development'} and type(section) is dict
-    assert set(section) == {'client_id'} and type(section['client_id']) is str
+    profile = sys.argv[2]
+    assert profile in {'development', 'testing'}
+    section = doc.get(profile)
+    assert set(doc) == {profile} and type(section) is dict
+    if profile == 'testing' or set(section) != {'client_id'} or sys.argv[3] == 'True':
+        assert section == dict(client_id='gramanna',
+            release_credential_service=f'OAF Website/{profile}/Integrations/Release',
+            release_credential_account='gramanna')
+    else:
+        assert set(section) == {'client_id'} and type(section['client_id']) is str
     assert re.fullmatch(r'[a-z][a-z0-9_-]{0,63}', section['client_id'], re.ASCII)
 except BaseException:
     sys.exit(2)
 print(section['client_id'])
 '@
-    $client = @($code | & $Python -I -S -B - $Path 2>$null)
+    $client = @($code | & $Python -I -S -B - $Path $IntegrationProfile $RequireRelease.IsPresent.ToString() 2>$null)
     if ($LASTEXITCODE -ne 0 -or $client.Count -ne 1 -or $client[0] -cnotmatch '\A[a-z][a-z0-9_-]{0,63}\z') {
         throw 'DEVELOPMENT integration metadata is missing or invalid; nothing replaced.'
     }
@@ -269,21 +276,136 @@ function Invoke-OafDevelopmentCredentialHandoff {
     }
 }
 
+function Invoke-OafReleaseCredentialProvision {
+    # Uses the same exact native store, codec, generator and cooperating lock.
+    # The offline harness injects a synthetic store/factory, never native access.
+    param([string]$Root, [string]$Python, $Store, [scriptblock]$SecretFactory,
+        [ValidateSet('development', 'testing')][string]$IntegrationProfile = 'testing')
+    Set-StrictMode -Version 2.0
+    $ErrorActionPreference = 'Stop'
+    $lock = $secret = $verified = $record = $null
+    $metadataWritten = $writeAttempted = $false
+    $label = $IntegrationProfile.ToUpperInvariant()
+    $prefix = $IntegrationProfile + '_release_'
+    $predicate = $prefix + 'environment'
+    try {
+        Write-Output ('STARTED ' + [DateTime]::UtcNow.ToString('o') + ' ' + $predicate)
+        foreach ($entry in Get-ChildItem Env:) {
+            if (($entry.Name -like 'OAF_*' -and ($entry.Name -cne 'OAF_ENV' -or $entry.Value -cne $IntegrationProfile)) -or
+                ($entry.Name -eq 'PYTHON_KEYRING_BACKEND' -and $entry.Value -cne 'keyring.backends.Windows.WinVaultKeyring') -or
+                $entry.Name -like '*KEYRING_PROPERTY_*') { throw 'Conflicting process configuration.' }
+        }
+        Write-Output ('PASS ' + [DateTime]::UtcNow.ToString('o') + ' ' + $predicate)
+        $predicate = $prefix + 'location'
+        Write-Output ('STARTED ' + [DateTime]::UtcNow.ToString('o') + ' ' + $predicate)
+        $local = Join-Path $Root 'config\local'
+        $fileName = 'integrations.testing.toml'
+        if ($IntegrationProfile -ceq 'development') { $fileName = 'integrations.toml' }
+        $path = Join-Path $local $fileName
+        $lockPath = Join-Path $local 'integrations.operator.lock'
+        foreach ($location in @($Root, (Join-Path $Root 'config'), $local, $path, $lockPath)) {
+            if ((Test-Path -LiteralPath $location) -and
+                ((Get-Item -Force -LiteralPath $location).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+                throw 'Redirected configuration location.'
+            }
+        }
+        if (-not (Test-Path -LiteralPath $Python -PathType Leaf)) { throw 'Existing website Python is required.' }
+        [IO.Directory]::CreateDirectory($local) | Out-Null
+        $lock = [IO.File]::Open($lockPath, [IO.FileMode]::OpenOrCreate, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None)
+        Write-Output ('PASS ' + [DateTime]::UtcNow.ToString('o') + ' ' + $predicate)
+        $predicate = $prefix + 'metadata'
+        Write-Output ('STARTED ' + [DateTime]::UtcNow.ToString('o') + ' ' + $predicate)
+        $hasMetadata = Test-Path -LiteralPath $path -PathType Leaf
+        if ($hasMetadata) { $null = Read-OafDevelopmentClientId $path $Python $IntegrationProfile -RequireRelease }
+        Write-Output ('PASS ' + [DateTime]::UtcNow.ToString('o') + ' ' + $predicate)
+        $target = 'OAF Website/' + $IntegrationProfile + '/Integrations/Release'
+        $account = 'gramanna'
+        $predicate = $prefix + 'existing_record'
+        Write-Output ('STARTED ' + [DateTime]::UtcNow.ToString('o') + ' ' + $predicate)
+        $record = & $Store.Read $target
+        if ($null -ne $record) {
+            if (-not $hasMetadata) { throw 'Existing credential requires matching metadata.' }
+            $secret = Get-OafDevelopmentSecret $record $target $account
+            Write-Output ('PASS ' + [DateTime]::UtcNow.ToString('o') + ' ' + $predicate)
+            Write-Output ('PASS: Existing ' + $label + ' Release credential verified; no replacement or activation.')
+            return
+        }
+        Write-Output ('PASS ' + [DateTime]::UtcNow.ToString('o') + ' ' + $predicate)
+        $predicate = $prefix + 'generation'
+        Write-Output ('STARTED ' + [DateTime]::UtcNow.ToString('o') + ' ' + $predicate)
+        $secret = & $SecretFactory
+        if ($secret -isnot [string] -or $secret -cnotmatch '\A[0-9a-f]{64}\z') { throw 'Invalid generated format.' }
+        Write-Output ('PASS ' + [DateTime]::UtcNow.ToString('o') + ' ' + $predicate)
+        $predicate = $prefix + 'metadata_create'
+        Write-Output ('STARTED ' + [DateTime]::UtcNow.ToString('o') + ' ' + $predicate)
+        if (-not $hasMetadata) {
+            $file = [IO.File]::Open($path, [IO.FileMode]::CreateNew, [IO.FileAccess]::Write, [IO.FileShare]::None)
+            $metadataWritten = $true
+            try {
+                $bytes = [Text.Encoding]::UTF8.GetBytes("[$IntegrationProfile]`nclient_id = `"gramanna`"`nrelease_credential_service = `"$target`"`nrelease_credential_account = `"gramanna`"`n")
+                $file.Write($bytes, 0, $bytes.Length)
+                $file.Flush($true)
+            } finally { $file.Dispose() }
+        }
+        Write-Output ('PASS ' + [DateTime]::UtcNow.ToString('o') + ' ' + $predicate)
+        $predicate = $prefix + 'create'
+        Write-Output ('STARTED ' + [DateTime]::UtcNow.ToString('o') + ' ' + $predicate)
+        $writeAttempted = $true
+        & $Store.Create $target $account $secret | Out-Null
+        Write-Output ('PASS ' + [DateTime]::UtcNow.ToString('o') + ' ' + $predicate)
+        $predicate = $prefix + 'readback'
+        Write-Output ('STARTED ' + [DateTime]::UtcNow.ToString('o') + ' ' + $predicate)
+        $verified = Get-OafDevelopmentSecret (& $Store.Read $target) $target $account
+        if ($verified -cne $secret -or (Read-OafDevelopmentClientId $path $Python $IntegrationProfile -RequireRelease) -cne $account) { throw 'Readback mismatch.' }
+        Write-Output ('PASS ' + [DateTime]::UtcNow.ToString('o') + ' ' + $predicate)
+        Write-Output ('PASS: ' + $label + ' Release credential provisioned and verified; all activation remains OFF.')
+    } catch {
+        # Fixed conditions and exception metadata only; never provider text/values.
+        [ordered]@{ utc=[DateTime]::UtcNow.ToString('o'); status='ERROR'; operation=('Provision' + (Get-Culture).TextInfo.ToTitleCase($IntegrationProfile) + 'Release')
+            predicate=$predicate; expected=('Approved ' + $label + ' metadata and exact Generic Type 1 Persist 2 credential with 64 lowercase hex characters')
+            observed='Predicate rejected or could not complete'; exception_class=$_.Exception.GetType().Name; hresult=$_.Exception.HResult
+            metadata_created=$metadataWritten; credential_write_uncertain=$writeAttempted
+            dependent_not_run='Remaining provisioning/readback checks; activation is outside scope'
+        } | ConvertTo-Json -Compress | Write-Output
+        throw 'Release provisioning incomplete. Stop and reconcile recorded side effects before retrying; nothing replaced or deleted.'
+    } finally {
+        if ($null -ne $lock) { $lock.Dispose() }
+        $secret = $verified = $record = $null
+    }
+}
+
 # The normal script invocation has its own scope. Use & from either repository;
 # process environment changes survive in the invoking PowerShell, locals do not.
+$releaseTranscript = $false
 try {
+    $root = [IO.Path]::GetFullPath((Split-Path -Parent $PSScriptRoot))
+    if ($Operation -cin @('ProvisionTestingRelease', 'ProvisionDevelopmentRelease')) {
+        $profile = 'testing'
+        if ($Operation -ceq 'ProvisionDevelopmentRelease') { $profile = 'development' }
+        $evidence = Join-Path $root ('.pytest_cache\' + $profile + '-release-provision-' + [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssZ') + '-' + [Guid]::NewGuid().ToString('N'))
+        New-Item -ItemType Directory -Path $evidence -ErrorAction Stop | Out-Null
+        Start-Transcript -Path (Join-Path $evidence 'execution.log') -ErrorAction Stop | Out-Null
+        $releaseTranscript = $true
+        Write-Output ('Release provisioning evidence: ' + $evidence)
+    }
     if ($PSVersionTable.PSVersion -lt [Version]'5.1' -or [Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
         throw 'Windows PowerShell 5.1 or later is required.'
     }
     Initialize-OafDevelopmentCredentialApi
-    $root = [IO.Path]::GetFullPath((Split-Path -Parent $PSScriptRoot))
     $store = @{
         Read = { param($target) [OafDevelopmentCredentials.Native]::Read($target) }
         Create = { param($target, $account, $secret) [OafDevelopmentCredentials.Native]::Create($target, $account, $secret) }
     }
-    Invoke-OafDevelopmentCredentialHandoff -Operation $Operation -Root $root -Python (Join-Path $root '.venv\Scripts\python.exe') `
-        -Store $store -SecretFactory { [OafDevelopmentCredentials.Native]::NewSecret() }
+    if ($Operation -cin @('ProvisionTestingRelease', 'ProvisionDevelopmentRelease')) {
+        Invoke-OafReleaseCredentialProvision -Root $root -Python (Join-Path $root '.venv\Scripts\python.exe') `
+            -Store $store -SecretFactory { [OafDevelopmentCredentials.Native]::NewSecret() } -IntegrationProfile $profile
+    } else {
+        Invoke-OafDevelopmentCredentialHandoff -Operation $Operation -Root $root -Python (Join-Path $root '.venv\Scripts\python.exe') `
+            -Store $store -SecretFactory { [OafDevelopmentCredentials.Native]::NewSecret() }
+    }
 } catch {
     # Prevent the original ErrorRecord/InvocationInfo from exposing injected values.
-    throw [InvalidOperationException]::new('DEVELOPMENT credential handoff failed. Check setup/environment; if provisioning began, stop and reconcile possible partial records before retrying.')
+    throw [InvalidOperationException]::new('Credential handoff failed. Check setup/environment; if provisioning began, stop and reconcile possible partial records before retrying.')
+} finally {
+    if ($releaseTranscript) { Stop-Transcript | Out-Null }
 }

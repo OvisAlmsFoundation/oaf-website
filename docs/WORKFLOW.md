@@ -4056,3 +4056,330 @@ use, with one consolidated report and no interim delivery. Exit immediately
 after successful push verification and reporting.
 
 5P: SIMPLE. DIRECT. SUFFICIENT. EFFICIENT. SAFE.
+
+
+## Work Unit 1 - OAF mobile release integration source (2026-10-26)
+
+OAF implementation and focused offline validation are complete. Operational
+activation remains OFF. This entry extends the earlier bounded release handoff
+contract; historical evidence and revision 0001--0006 source remain intact.
+
+The existing authenticated backend integration now supports
+`POST /api/integrations/v1/release-events`. It uses the existing HTTPS origin,
+backend-only headers, strict bounded JSON, rate limit, environment validation,
+constant-time bearer comparison and sanitized first-failure reporting. The optional
+`IntegrationConfig.release_credential` must be a separate protected 32-byte
+credential encoded as lowercase hex, distinct from signup, reporting and the
+persistent recognition key. Existing signup/reporting credentials cannot approve
+releases. No credentials are provisioned or read by the intake. Missing release
+credential or persistence keeps the route disabled.
+
+The explicit application factory flag `releases_enabled=True` injects release
+persistence using the same engine, protected key and environment. It requires
+`management_enabled=True` for current preference grant/cutoff controls. Neither
+startup nor intake constructs a provider adapter, sends or launches processing.
+All default arguments remain OFF; no operational configuration was changed.
+
+Wire approval contract:
+
+- Initial approval takes exactly `event_id`, `source_approval_id`, `environment`,
+  `platform`, `release_id`, `release_url`, `approved_at`, `audience_cutoff`, and
+  `content_version`. Environment is explicit; platform is `android` or `ios`;
+  content version is exactly `mobile-launch-v1`.
+- Event/approval identities accept canonical lowercase UUIDs or their lowercase
+  32-hex spelling at the authenticated boundary; both normalize to the same
+  canonical durable UUID. The sender must reuse its original event and approval
+  identities, timestamps, cutoff and payload on retries. OAF generates no new event
+  identity and accepts no caller-selected recipients, content or email copy.
+- Android `release_id` is its case-sensitive dotted package identity and must
+  exactly match the ID in `https://play.google.com/store/apps/details?id=<id>`.
+  Apple `release_id` is its numeric app ID and must exactly match an App Store URL
+  of the form `https://apps.apple.com/[country/]app/[slug/]id<id>`. Country is two
+  lowercase letters; an optional slug uses lowercase letters, digits and hyphens.
+  No userinfo, port, query, fragment, lookalike host, redirect or arbitrary URL is
+  accepted. These checks validate references; the authenticated official approval
+  source retains responsibility for listing ownership/provenance. No store lookup
+  occurs. Native GraManna release record identity must not be substituted for the
+  package/app identity in `release_id`.
+- Corrections/withdrawals add exactly `action` (`correct` or `withdraw`) and
+  `previous_approval_id`. Keep the original `event_id`, platform and audience
+  cutoff, use a new source approval UUID and a strictly later nonfuture approval
+  timestamp, and reference the current approval UUID. Submit the approved current
+  store reference even on withdrawal. Duplicate identical approvals acknowledge
+  idempotently; identity/payload conflicts and stale/forked authority return 409.
+  The original approved event and cutoff remain immutable. Withdrawal is terminal;
+  later initial-event retries cannot reactivate it.
+- HTTP 200 acknowledges durable acceptance, including a duplicate. A fixed 503
+  leaves acceptance unconfirmed; retry the exact same identity and payload. No
+  provider submission occurs in this request. Authentication/transport/field
+  rejections retain the existing fixed responses and safe diagnostics.
+
+One additive `0007_release_approvals` table is necessary to retain official
+correction/withdrawal history without rewriting original events or widening their
+runtime UPDATE grants. Runtime receives SELECT/INSERT only on this new table;
+there is no UPDATE/DELETE, broad grant or new role. The existing manifest, exact
+revision-shape validator, catalog/ACL/dependency checks and audit revision allowlist
+include the successor. Its artifact status remains `pending_independent_review`.
+Only exact 0006 -> 0007 or a separately authorized exact 0007 no-op is supported.
+No migration is executed. Existing independent artifact approval, single-use
+operational authorization and TESTING-before-DEVELOPMENT gates still apply;
+previous approvals cannot authorize these changed artifacts.
+
+The existing `confirmation_processor` and `confirmation_schedule` accept the
+additional default-off `--enable-releases` flag, requiring `--enable-management`.
+The same finite invocation, engine identity checks, local overlap lock, scheduler
+name, logs and disabled task definition are reused. With releases enabled, each
+invocation allows 10 confirmation submissions and 5 for each of at most two mobile
+launch events; the existing total maximum remains 20. Platform slots prevent a
+confirmation backlog or one mobile platform from consuming the other's budget.
+Persistence selects original received/ready/attention events after restart.
+Existing subscriber consent, verification, preference-grant cutoff, resubscription,
+mailbox suppression, claim, lease, retry and attempt-history rules still apply.
+TESTING remains restricted to its one explicitly approved recipient in selection,
+claim, submission and the Brevo adapter; exceptional one-intent scopes cannot
+silently include releases. Production processing remains deferred by the existing
+runtime policy.
+
+The final locked submission boundary rereads current official approval and renders
+its current URL. A correction before that boundary changes only future unsent
+messages. Withdrawal atomically suppresses pending, failed and claimed work;
+completed attempts, acknowledged outcomes and submitting/uncertain work retain
+original evidence. Already committed submission authority cannot be recalled.
+Lease recovery preserves uncertainty and never treats missing provider evidence as
+permission to resend. The single original official approval therefore drives
+persistence -> recurring existing processing -> eligibility -> ReleaseDispatcher
+-> existing Brevo adapter without a second Send action or routine AI involvement,
+once separately authorized operational prerequisites are in place.
+
+Focused evidence is retained under
+`.pytest_cache/wu1-resume-20261026T213359Z-4b74332a/`. The main guarded run passed
+1,292 cases; targeted follow-ups passed 12, 13, 15 and 2 cases (including intentional
+rechecks). Every run reported zero unexpected external-access attempts. Coverage
+of new/changed application statements and decision branches, plus the new revision,
+is 100%: 266 statements and 176 branches, with no exclusions or lowered thresholds.
+Unchanged code retains its accepted historical validation. Only the prior catalog
+snapshots needed for the materially extended revision dispatch were rerun; no full
+canonical, browser or live migration campaign occurred. The proportionate security
+and deterministic-autonomy review passed. Complete logs, arcs, scoped coverage,
+first-failure details and preservation evidence are retained in that directory.
+
+The first resumed source write succeeded. Two initial synthetic-fixture mistakes
+and a Windows path spelling in the metadata-only coverage reporter were corrected;
+the original failed logs are retained and all required final gates passed. No live
+credentials/database, provider requests, mail, server/process changes, task
+registration/activation, production configuration, GraManna edits or Git delivery
+occurred. `Invoke-OAFCodex` remains the only final clipboard/read-back/visual-alert
+mechanism and is unchanged; no interim delivery or alert was invoked.
+
+The remaining separately authorized GraManna operation must connect its existing
+official administrator approval/correction/withdrawal governance to this strict
+OAF contract, preserving original stable IDs/cutoff and automatically retrying
+unconfirmed delivery. It must map native release record identity to the explicit
+package/app reference, without adding routine administrator or AI involvement.
+No cross-repository inspection was repeated here. Live migration/activation and
+end-to-end provider certification remain later operational gates.
+
+ONE next action: implement the GraManna approval-to-OAF handoff in the separately
+authorized GraManna operation.
+
+## WU1 - TESTING Release credential configuration resumed (2026-10-26)
+
+Credential configuration is complete; provisioning and operational activation
+remain OFF. The interrupted credential attempt recorded inspection only. Its
+24 saved baseline hashes matched at recovery; earlier release implementation,
+validation and accepted migration evidence are retained without rerunning them.
+
+The existing protected integration loader now also exposes
+`oaf_website.local_development.load_testing_integration_config()`. It requires
+`OAF_ENV=testing`, uses only `config/local/integrations.testing.toml`, and injects
+the existing `IntegrationConfig.release_credential`. This ignored nonsecret file
+contains exactly:
+
+```toml
+[testing]
+client_id = "gramanna"
+release_credential_service = "OAF Website/testing/Integrations/Release"
+release_credential_account = "gramanna"
+```
+
+The existing pinned WinVaultKeyring exact-target loader reads the separate
+TESTING Submission, Reporting and Release targets, with Generic Type 1 and
+Persist 2 metadata. Release is required and must be exactly 64 lowercase hex
+characters, separate from Submission/Reporting and the recognition key. No
+DEVELOPMENT, production, compound-target, account or backend fallback is allowed.
+Brevo, webhook, database and recognition credential mechanisms are unchanged.
+Loading configuration alone never enables release intake or processing. Existing
+application activation flags and provider/email operations remain OFF.
+
+ONE owner provisioning procedure, from the OAF Website root in Windows PowerShell:
+
+```powershell
+& .\ops\Set-DevelopmentIntegrationCredentials.ps1 -Operation ProvisionTestingRelease
+```
+
+This new explicit operation reuses the existing native credential API, UTF-16LE
+codec, random generator and operator lock. It creates only the exact TESTING
+Release entry for `gramanna`, verifies target/account/type/persistence/format and
+read-back, and never overwrites an existing record. Matching existing records are
+verified without replacement. Conflicts or uncertain writes stop for owner
+reconciliation, with sanitized UTC/predicate/side-effect evidence. A unique local
+transcript is retained under `.pytest_cache/testing-release-provision-*/`.
+It does not activate features, export a secret, start services or contact GraManna.
+GraManna continues to consume the corresponding environment-specific Release
+credential through its existing contract; no GraManna source change is required
+by this OAF configuration, and its runtime was not inspected or exercised here.
+
+Focused guarded validation passed 108 Python cases and 138 PowerShell cases.
+New/materially changed application logic covered 21/21 statements and 8/8 branches
+(100% each, no exclusions), with zero unexpected external-access attempts. The
+PowerShell harness loads AST function definitions only and replaces native
+credential APIs and operational RNG with hard denials before compilation.
+A fixture closure-scope/output-capture failure was corrected; original failed
+logs remain in the evidence directory. The final procedure SHA256 and exact
+preservation/security/autonomy findings are in the consolidated report under
+`.pytest_cache/wu1-credentials-resume-20261027T023403Z/`.
+
+No live credential read/generation/provisioning, database connection/migration,
+release submission, provider/email request, service/scheduler change, GraManna
+edit or Git delivery occurred. Existing `Invoke-OAFCodex` is unchanged and remains
+the sole final clipboard/read-back/visual-alert mechanism; no interim delivery or
+alert was invoked. The owner provisioning command above is the one next action.
+
+## WU1 - DEVELOPMENT Android/iOS Release integration configuration (2026-10-26)
+
+Implementation and focused offline validation PASS; real provisioning and all
+activation/sending remain OFF. Accepted OAF/GraManna source and migration results
+were reused; no accepted migration or broad validation campaign was repeated.
+
+The existing ignored `config/local/integrations.toml` now binds DEVELOPMENT
+Release to `OAF Website/development/Integrations/Release`, account `gramanna`.
+The existing protected integration loader accepts this exact nonsecret binding,
+loads the separate third permission with the pinned exact-target Windows backend,
+and rejects partial/mismatched bindings or missing Release credentials. Existing
+client-only Submission/Reporting configuration remains compatible. Generic Type
+1, Persist 2, strict 64-character lowercase hexadecimal format and existing
+permission/recognition separation remain enforced. Configuration alone does not
+activate release intake or processing.
+
+`ops/Set-DevelopmentIntegrationCredentials.ps1` adds only the explicit
+`ProvisionDevelopmentRelease` operation, reusing the existing Release provisioner,
+native credential API, encoding, generator and operator lock. The shared TESTING
+operation retains its environment-specific behavior. The one owner procedure and
+confirmed GraManna DEVELOPMENT interface are recorded in
+`docs/DEVELOPMENT_CREDENTIAL_HANDOFF.md`. No GraManna source change is needed.
+
+Focused validation passed 53 Python cases and 51 PowerShell cases. New/materially
+changed application logic covered 11/11 statements and 8/8 branch outcomes (100%
+each, no exclusions). Existing early guards recorded zero unexpected external
+access. The AST-based PowerShell harness disabled native credential APIs and
+operational RNG before compilation, used synthetic stores/secrets, and exercised
+the actual owner parameter/dispatch/transcript text with operational leaves
+replaced. Both DEVELOPMENT and the directly affected TESTING dispatch dependency
+finalized their isolated transcripts. Default-OFF, exact target/account/type/
+persistence/format, redaction, mismatch rejection, readback, no replacement,
+cross-environment isolation and client-only parser compatibility passed.
+
+Evidence: `.pytest_cache/wu1-development-release-20261027T031443Z-4ce848d1/`.
+No validation failure occurred. Initial historical-evidence directory discovery
+encountered pre-existing unrelated ACL denials (OS error 5); the required named
+accepted evidence was readable. No historical evidence or ACL was altered.
+
+No real credential read/generation/provisioning/replacement, database access or
+migration, provider/email request, mobile approval, service start/stop/restart,
+scheduled-task change, GraManna write or Git stage/commit/push/reset/clean/stash
+occurred. The excluded legacy-withdrawal correction remains untouched. Existing
+`Invoke-OAFCodex` remains the sole final clipboard/read-back/visual-alert delivery
+mechanism; no interim clipboard report or completion alert was issued. The one
+next owner action is the documented DEVELOPMENT Release provisioning command.
+
+
+## WU1 - Step 3 final completion and delivery readiness (2026-10-26)
+
+**STEP 3 READINESS PASS; Git delivery and operational activation pending.**
+This append-only reconciliation supersedes the earlier pending WU1 handoff,
+migration and DEVELOPMENT Release provisioning directions. Historical entries,
+owner notes and accepted evidence remain intact. 5P: SIMPLE. DIRECT. SUFFICIENT.
+EFFICIENT. SAFE.
+
+Accepted implementation/operational facts:
+
+- OAF authenticated Android/iOS intake, durable processing and existing scheduler
+  integration: SOURCE/OFFLINE PASS. GraManna approval-to-OAF durable handoff:
+  SOURCE/OFFLINE PASS. Reuse the OAF source evidence in
+  `.pytest_cache/wu1-resume-20261026T213359Z-4b74332a/` and GraManna's existing
+  `logs/mobile_handoff_wu1_20261026/`; no new implementation or independent
+  certification is asserted.
+- OAF `0007_release_approvals`: TESTING and DEVELOPMENT
+  **APPLIED_AND_VERIFIED**, confirmed commit, postcommit validation and cleanup.
+  Accepted TESTING run `abe723ea-654f-4ade-9ee3-af2753447add`, receipt
+  `.pytest_cache/wu1-testing-0007-v1/owner-20261026T233412Z-57aef837cb12450bbf0ea411ed7b4147-completion.json`;
+  DEVELOPMENT run `77d854b3-683b-4d7f-85f8-d6c5f2f118f2`, receipt
+  `.pytest_cache/wu1-development-0007-v1/owner-20261026T234121Z-681224e3bc23405b8b56b1789ff1c20f-completion.json`.
+- GraManna DEVELOPMENT `afmobout01`: APPLIED AND VERIFIED, carried forward from
+  the owner's accepted Step 3 baseline; no live database recheck.
+- DEVELOPMENT Release credential: PROVISIONED AND VERIFIED. Accepted sanitized
+  transcript:
+  `.pytest_cache/development-release-provision-20261027T032650Z-f713faa0ac0d4116bacf6d597e3a399d/execution.log`.
+  No credential value is read or reproduced here.
+
+Autonomy acceptance reuses
+`.pytest_cache/wu1-connected-20261027T033228Z-2573aadb/consolidated-report.txt`
+and its `validation-summary.json`, `connected-run-4.log`, `oaf-worker.log`
+and `evidence-manifest.json`: nine requested areas across five connected
+synthetic scenarios and five guarded worker checks PASS; all child exits 0,
+zero unexpected external access. One official Android or iOS approval durably
+creates the original handoff in its approval transaction. Existing scheduled
+processing retries that original identity/payload, OAF durably accepts it,
+selects eligible subscribers and processes bounded batches. The existing OAF
+invocation reserves 10 confirmations and up to 5 submissions for each platform,
+maximum 20 total. There is no separate administrator Send action or AI runtime
+dependency. Consent, verification, preferences/cutoff, suppression, deduplication,
+correction/withdrawal, retry, restart/lease recovery and uncertainty holds remain
+authoritative; uncertain provider outcomes never imply permission to resend.
+
+These are demonstrated synthetic/source results, not live PostgreSQL connected
+certification, OS scheduler certification, live provider delivery or activation.
+**Notification activation remains OFF.** Genuine deferred live requirements are
+the existing environment-specific runtime/origin and credential injection,
+official listing ownership/provenance, deployed schema/identity/permissions,
+existing scheduler environment/enablement, and separately authorized live
+end-to-end/provider validation. Completed migrations and provisioning need no
+repeat operation. No new framework, service, monitor, routine administrator
+intervention or approval gate is introduced.
+
+The owner's conditional hypothetical legacy-withdrawal/no-prior-handoff finding
+is retained, uncorrected and excluded from implementation. The accepted PASS does
+not establish coverage or repair of that case.
+
+Readiness baseline: OAF `main`, HEAD and local `origin/main`
+`b034c880d003453608b0c8d87e4da5425e0390f6`; empty index; 24 modified tracked
+files and two untracked WU1 source files. All 140 candidate files matched the
+accepted connected evidence before this documentation-only append. Existing
+source, tests, configuration, migrations, assets and owner work are reused
+unchanged. Final inventory, hashes, append-only/preservation and Git whitespace
+checks are recorded under `.pytest_cache/wu1-step3-20261027T034450Z-f135daed/`.
+Existing GitHub canonical requirements remain two disjoint shards, complete test
+inventory and exactly 100% combined statement/branch coverage. No historical
+CI GREEN is attributed to current uncommitted changes; no new whole-candidate
+canonical or hosted CI result is claimed. Unchanged accepted validation is reused.
+The actual staged-diff review belongs to the separately authorized Git delivery
+checkpoint; no staged state or completed staged review is manufactured here.
+
+GraManna read-only follow-up: append a WU1 reconciliation to
+`.notes_cargo_ledger` (existing WU1 completion record) and `CHANGELOG.md`
+("Mobile Android/iOS automatic notification handoff"). Record the accepted
+migration, provisioning/interface and connected evidence, autonomous contract,
+activation OFF, live limits and retained conditional finding. Preserve its
+source-only historical statements, owner notes, concurrent Cargo/diagnostic work
+and independent readiness/delivery boundary. No GraManna file is changed here.
+
+The proportional security/autonomy review reuses accepted authentication,
+environment isolation, transactions, consent, append-only audit, durable outbox,
+scheduling, suppression and recovery evidence. No outstanding Step 3 blocker is
+identified. No credential/database/provider/service/task operation or Git
+stage/commit/push/reset/clean/stash is performed. The existing outer
+`Invoke-OAFCodex` alone owns final clipboard delivery, verified read-back and
+one visual alert; no interim delivery or unobserved helper result is asserted.
+
+**ONE next action:** obtain separate authorization for the OAF Git delivery
+checkpoint, including review of the actual staged candidate. Stop after Step 3.

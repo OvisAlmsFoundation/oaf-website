@@ -24,6 +24,7 @@ from oaf_website import notification_delivery as service
 from oaf_website.notification_delivery_schema import TABLES, verification, limits, events, deliveries, attempts, suppressions
 from oaf_website.confirmation_outbox_schema import TABLES as OUTBOX_TABLES
 from oaf_website.notification_management_schema import changes
+from oaf_website.release_approval_schema import revisions
 from oaf_website.notifications import SubscriptionStore, validate_subscription
 from test_notifications import choices
 
@@ -42,7 +43,7 @@ class Result:
 class Model:
     """Serialized transaction/row-lock model; not proof of PostgreSQL semantics."""
     def __init__(self):
-        self.records = {t.name: [] for t in (service.notifications, *TABLES, *OUTBOX_TABLES, changes)}
+        self.records = {t.name: [] for t in (service.notifications, *TABLES, *OUTBOX_TABLES, changes, revisions)}
         self.now, self.lock, self.failure = NOW, RLock(), None
         self.statements = []
 
@@ -486,3 +487,159 @@ def test_duplicate_claim_cannot_be_completed_by_another_environment(setup):
     other=service.NotificationDeliveryStore(model,SECRET,"development")
     assert other.record_outcome(EVENT,digest,claim,"provider_accepted") is False
     assert model.rows(deliveries)[0]["status"]=="submitting"
+
+
+# Work Unit 1: additive official approval history uses the existing transaction model.
+def changed_release(model, **overrides):
+    return payload(action="correct", previous_approval_id=str(UUID(int=2)),
+        source_approval_id=str(UUID(int=3)), approved_at=model.now.isoformat(),
+        **overrides)
+
+
+@pytest.mark.parametrize("platform,identity,url,valid", [
+    ("android", "org.oaf.GraManna", "https://play.google.com/store/apps/details?id=org.oaf.GraManna", True),
+    ("ios", "123456789", "https://apps.apple.com/us/app/gramanna/id123456789", True),
+    ("ios", "123456789", "https://apps.apple.com/us/app/id123456789", True),
+    ("ios", "123456789", "https://apps.apple.com/app/gramanna/id123456789", True),
+    ("ios", "123456789", "https://apps.apple.com/app/id123456789?ref=bad", False),
+    ("ios", "123456789", "https://apps.apple.com/us/app/gramanna/id987654321", False),
+    ("ios", "123456789", "https://apps.apple.com.evil.invalid/app/id123456789", False),
+    ("ios", "123456789", "https://user@apps.apple.com/app/id123456789", False),
+    ("ios", "123456789", "https://apps.apple.com/app/id123456789#bad", False),
+    ("ios", "0123456789", "https://apps.apple.com/app/id0123456789", False),
+    ("android", "org.oaf.gramanna", "https://play.google.com/store/apps/details?id=org.oaf.other", False),
+    ("android", "a" * 151, "https://play.google.com/store/apps/details?id=" + "a" * 151, False),
+    ("ios", "123456789", "x" * 301, False),
+    ("web", "org.oaf.gramanna", "https://example.invalid", False),
+])
+def test_official_reference_compatibility_is_strict(platform, identity, url, valid):
+    assert service.official_release_reference(platform, identity, url) is valid
+
+
+def test_correction_keeps_original_event_cutoff_audience_and_attempts(setup):
+    model, _ = setup
+    store = service.NotificationDeliveryStore(model, SECRET, "testing", releases_enabled=True)
+    digest = ready(model, store)
+    original = deepcopy(model.rows(events))
+    claim = store.claim(EVENT, digest)
+    model.elapse(seconds=1)
+    correction = changed_release(model)
+    correction.update(release_id="org.oaf.corrected", release_url="https://play.google.com/store/apps/details?id=org.oaf.corrected")
+    assert store.accept_release_change(correction) == EVENT
+    assert store.accept_release_change(correction) == EVENT
+    seen = []
+    assert store.begin_submission(EVENT, digest, claim, prepare=lambda sub, now, event: seen.append(event))[0] == "subscriber1@example.invalid"
+    assert seen[0]["release_url"] == correction["release_url"]
+    assert seen[0]["audience_cutoff"] == NOW
+    assert model.rows(events)[0]["payload_digest"] == original[0]["payload_digest"]
+    assert len(model.rows(revisions)) == len(model.rows(attempts)) == 1
+    assert store.record_outcome(EVENT, digest, claim, "provider_accepted")
+    history = deepcopy(model.rows(attempts))
+    model.elapse(seconds=1)
+    withdrawal = dict(correction, action="withdraw", previous_approval_id=str(UUID(int=3)),
+        source_approval_id=str(UUID(int=4)), approved_at=model.now.isoformat())
+    assert store.accept_release_change(withdrawal) == EVENT
+    assert model.rows(attempts) == history
+    assert store.accept_event(payload()) == EVENT
+    assert store.prepare_event(EVENT) == "completed"
+
+
+@pytest.mark.parametrize("state", ["received", "pending", "claimed", "failed", "submitting", "accepted", "uncertain"])
+def test_withdrawal_stops_unsent_work_and_preserves_provider_evidence(setup, state):
+    model, _ = setup
+    store = service.NotificationDeliveryStore(model, SECRET, "testing", releases_enabled=True)
+    if state == "received":
+        store.accept_event(payload())
+    else:
+        digest = ready(model, store)
+        if state != "pending":
+            claim = store.claim(EVENT, digest)
+            if state != "claimed":
+                store.begin_submission(EVENT, digest, claim)
+                if state != "submitting":
+                    store.record_outcome(EVENT, digest, claim, {"failed":"not_submitted", "accepted":"provider_accepted", "uncertain":"submission_unknown"}[state])
+    before = deepcopy(model.rows(attempts))
+    model.elapse(seconds=1)
+    withdrawal = changed_release(model)
+    withdrawal["action"] = "withdraw"
+    store.accept_release_change(withdrawal)
+    store.accept_release_change(withdrawal)
+    store.accept_event(payload())
+    store.prepare_event(EVENT)
+    if state == "received":
+        assert not model.rows(deliveries)
+    elif state in {"pending", "claimed", "failed"}:
+        assert model.rows(deliveries)[0]["status"] == "suppressed"
+        assert store.claim(EVENT, digest) is None
+        if state != "claimed":
+            assert model.rows(attempts) == before
+    else:
+        assert model.rows(deliveries)[0]["status"] == state
+        assert model.rows(attempts) == before
+        if state == "submitting":
+            model.elapse(minutes=6)
+            assert store.recover_event(EVENT) == "attention"
+            assert model.rows(deliveries)[0]["status"] == "uncertain"
+
+
+@pytest.mark.parametrize("override", [dict(action="send"), dict(previous_approval_id="bad"),
+    dict(previous_approval_id=str(UUID(int=88))), dict(source_approval_id=str(UUID(int=2))),
+    dict(platform="ios", release_id="123456789", release_url="https://apps.apple.com/app/id123456789"),
+    dict(audience_cutoff=(NOW-timedelta(seconds=1)).isoformat()), dict(approved_at=NOW.isoformat())])
+def test_release_change_rejects_invalid_stale_or_enlarged_authority(setup, override):
+    model, _ = setup
+    store = service.NotificationDeliveryStore(model, SECRET, "testing", releases_enabled=True)
+    store.accept_event(payload())
+    model.elapse(seconds=1)
+    values = changed_release(model)
+    values.update(override)
+    before = deepcopy(model.records)
+    with pytest.raises(ValueError): store.accept_release_change(values)
+    assert model.records == before
+
+
+def test_release_change_missing_withdrawn_conflicting_and_failed_transactions(setup):
+    model, disabled = setup
+    store = service.NotificationDeliveryStore(model, SECRET, "testing", releases_enabled=True)
+    model.elapse(seconds=1)
+    values = changed_release(model)
+    with pytest.raises(ValueError): disabled.accept_release_change(values)
+    with pytest.raises(ValueError): store.accept_release_change(None)
+    with pytest.raises(service.EventConflict): store.accept_release_change(values)
+    store.accept_event(payload())
+    model.failure = "commit"
+    with pytest.raises(RuntimeError): store.accept_release_change(values)
+    assert not model.rows(revisions)
+    model.failure = None
+    store.accept_release_change(values)
+    with pytest.raises(service.EventConflict): store.accept_release_change(dict(values, action="withdraw"))
+    model.elapse(seconds=1)
+    withdrawal = dict(values, action="withdraw", previous_approval_id=str(UUID(int=3)),
+        source_approval_id=str(UUID(int=4)), approved_at=model.now.isoformat())
+    store.accept_release_change(withdrawal)
+    with pytest.raises(service.EventConflict): store.accept_release_change(dict(withdrawal,
+        action="correct", previous_approval_id=str(UUID(int=4)), source_approval_id=str(UUID(int=5))))
+    assert store.pending_release_events() == []
+
+
+
+@pytest.mark.parametrize("previous", [5, "00000000000000000000000000000002"])
+def test_release_change_requires_canonical_internal_predecessor_identity(setup, previous):
+    model,_=setup
+    store=service.NotificationDeliveryStore(model,SECRET,"testing",releases_enabled=True)
+    values=changed_release(model)
+    values["previous_approval_id"]=previous
+    with pytest.raises(ValueError): store.accept_release_change(values)
+    assert not model.rows(revisions)
+
+
+def test_release_activation_requires_a_boolean_and_cross_environment_selection_is_bound(setup):
+    model,_=setup
+    with pytest.raises(ValueError): service.NotificationDeliveryStore(model,SECRET,"testing",releases_enabled=1)
+    testing=service.NotificationDeliveryStore(model,SECRET,"testing",releases_enabled=True)
+    development=service.NotificationDeliveryStore(model,SECRET,"development",releases_enabled=True)
+    testing.accept_event(payload())
+    other=str(UUID(int=9))
+    development.accept_event(payload(event_id=other,environment="development"))
+    assert testing.pending_release_events()==[EVENT]
+    assert development.pending_release_events()==[other]

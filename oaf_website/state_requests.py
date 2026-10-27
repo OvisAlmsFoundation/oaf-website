@@ -111,7 +111,7 @@ def _origin(value):
 
 def _build_app(store, recognition, public_origin, *, allow_insecure_localhost=False,
                subscription_store=None, integration_config=None, reporting_store=None,
-               environment=None, contact_sender=None, brevo_webhook_config=None):
+               environment=None, contact_sender=None, brevo_webhook_config=None, release_store=None):
     trusted = _origin(public_origin)
     parts = urlsplit(public_origin)
     if (trusted is None or parts.path not in {"", "/"} or parts.query
@@ -263,13 +263,13 @@ def _build_app(store, recognition, public_origin, *, allow_insecure_localhost=Fa
     if integration_config is not None:
         from .integrations import register_integrations
         register_integrations(app, integration_config, environment, recognition, trusted,
-                              allow_insecure_localhost, store, subscription_store, reporting_store)
+                              allow_insecure_localhost, store, subscription_store, reporting_store, release_store)
     return app
 
 
 def create_app(*, expected_profile, recognition_secret, public_origin,
                allow_insecure_localhost=False, integration_config=None, confirmation_enabled=False,
-               management_enabled=False, brevo_webhook_config=None):
+               management_enabled=False, brevo_webhook_config=None, releases_enabled=False):
     """Explicit runtime factory. No schema creation, migration or secret fallback.
 
     Supply one persistent, protected recognition secret to every API worker.
@@ -288,6 +288,10 @@ def create_app(*, expected_profile, recognition_secret, public_origin,
             raise ValueError("Email confirmation activation must be an explicit boolean.")
         if type(management_enabled) is not bool:
             raise ValueError("Notification management activation must be an explicit boolean.")
+        if type(releases_enabled) is not bool:
+            raise ValueError("Release activation must be an explicit boolean.")
+        if releases_enabled and (not management_enabled or integration_config is None or integration_config.release_credential is None):
+            raise ValueError("Release intake requires separate protected approval authorization.")
         if brevo_webhook_config is not None:
             from .brevo_unsubscribe import validate_webhook_config
             validate_webhook_config(brevo_webhook_config, expected_profile)
@@ -325,6 +329,11 @@ def create_app(*, expected_profile, recognition_secret, public_origin,
         if management_enabled:
             from .notification_management import NotificationManagementStore
             management = NotificationManagementStore(engine, recognition.secret, config.profile)
+        release = None
+        if releases_enabled:
+            from .notification_delivery import NotificationDeliveryStore
+            release = NotificationDeliveryStore(engine, recognition.secret, config.profile,
+                management_enabled=management_enabled, releases_enabled=True)
         operation = "application_startup"
         app = _build_app(RequestStore(engine), recognition, public_origin,
                          allow_insecure_localhost=allow_insecure_localhost,
@@ -333,7 +342,8 @@ def create_app(*, expected_profile, recognition_secret, public_origin,
                          integration_config=integration_config, environment=config.profile,
                          reporting_store=InterestSummaryStore(engine, config.profile)
                          if integration_config is not None else None,
-                         contact_sender=ConfiguredSMTP(config.profile), brevo_webhook_config=brevo_webhook_config)
+                         contact_sender=ConfiguredSMTP(config.profile), brevo_webhook_config=brevo_webhook_config,
+                         release_store=release)
         app.extensions["state_requests_engine"] = engine
         return app
     except Exception as exc:

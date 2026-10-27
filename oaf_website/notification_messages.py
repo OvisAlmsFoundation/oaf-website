@@ -5,7 +5,7 @@ from html import escape
 import re
 from urllib.parse import urlsplit
 
-from .notification_delivery import CONTENT_VERSION, HEX
+from .notification_delivery import CONTENT_VERSION, HEX, official_release_reference
 from .notifications import LABEL
 
 
@@ -111,16 +111,12 @@ def release_message(event, subscription, capabilities, notification_page, *, man
             or type(url) is not str or len(release_id) > 150):
         raise diagnostic_error(ValueError("Invalid approved release template."), "release_message", "release_template_platform", stage="request")
     if platform == "android":
-        valid = (re.fullmatch(r"[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+", release_id)
-                 and url == "https://play.google.com/store/apps/details?id=" + release_id)
         name = "Android"
     elif platform == "ios":
-        valid = (re.fullmatch(r"[1-9][0-9]{5,19}", release_id)
-                 and url == "https://apps.apple.com/app/id" + release_id)
         name = "Apple iOS"
     else:
         raise diagnostic_error(ValueError("Invalid approved release template."), "release_message", "release_template_url", stage="request")
-    if not valid or type(subscription) is not str or HEX.fullmatch(subscription) is None:
+    if not official_release_reference(platform, release_id, url) or type(subscription) is not str or HEX.fullmatch(subscription) is None:
         raise diagnostic_error(ValueError("Invalid approved release template."), "release_message", "release_template_url", stage="request")
     message = _message(f"GraManna is available for {name}",
         f"GraManna is now available for {name}. You requested this platform launch announcement.",

@@ -28,9 +28,10 @@ TASK_NAME = "OAF Website Confirmation Processor"
 TASK_NAMESPACE = "http://schemas.microsoft.com/windows/2004/02/mit/task"
 
 
-def _arguments(profile, enabled, account, page, recipient, management_enabled=False):
+def _arguments(profile, enabled, account, page, recipient, management_enabled=False, releases_enabled=False):
     _validate_environment({"OAF_ENV": profile}, profile)
-    if profile == "production" or type(enabled) is not bool or type(management_enabled) is not bool:
+    if (profile == "production" or type(enabled) is not bool or type(management_enabled) is not bool
+            or type(releases_enabled) is not bool or releases_enabled and not management_enabled):
         raise diagnostic_error(ValueError("Unsupported scheduling configuration."), "arguments", "schedule_configuration", stage="schedule")
     arguments = ["--environment", profile]
     if enabled:
@@ -46,17 +47,20 @@ def _arguments(profile, enabled, account, page, recipient, management_enabled=Fa
             arguments += ["--testing-recipient", recipient]
         if management_enabled:
             arguments += ["--enable-management"]
+        if releases_enabled:
+            arguments += ["--enable-releases"]
     return arguments
 
 
-def task_xml(*, profile, windows_user, enabled=False, account=None, page=None, recipient=None, management_enabled=False):
+def task_xml(*, profile, windows_user, enabled=False, account=None, page=None, recipient=None,
+             management_enabled=False, releases_enabled=False):
     """Return a deterministic DISABLED definition; never contact Task Scheduler.
 
     One canonical task across both environments. InteractiveToken deliberately
     requires the approved credential/DPAPI account to be logged on; no password
     registration or changed credential arrangement is implied.
     """
-    arguments = _arguments(profile, enabled, account, page, recipient, management_enabled)
+    arguments = _arguments(profile, enabled, account, page, recipient, management_enabled, releases_enabled)
     if type(windows_user) is not str or re.fullmatch(r"S-1-5-21(?:-[0-9]{1,10}){4}", windows_user) is None:
         raise ValueError("An explicit approved local account SID is required.")
     quote = lambda value: "'" + str(value).replace("'", "''") + "'"
@@ -158,7 +162,7 @@ def _append(record):
         os.fsync(log.fileno())
 
 
-def run_scheduled(*, profile, enabled=False, account=None, page=None, recipient=None, management_enabled=False,
+def run_scheduled(*, profile, enabled=False, account=None, page=None, recipient=None, management_enabled=False, releases_enabled=False,
                   management_intent_fingerprint=None, management_identity_fingerprint=None, management_deadline=None):
     """Call the existing one-shot CLI once. No catch-up loop or wrapper retry."""
     record = {"timestamp_utc": datetime.now(timezone.utc).isoformat(),
@@ -175,10 +179,11 @@ def run_scheduled(*, profile, enabled=False, account=None, page=None, recipient=
             else:
                 try:
                     _validate_environment(dict(os.environ), profile)
-                    arguments = _arguments(profile, enabled, account, page, recipient, management_enabled)
+                    arguments = _arguments(profile, enabled, account, page, recipient, management_enabled, releases_enabled)
                     scope = (management_intent_fingerprint, management_identity_fingerprint, management_deadline)
                     if any(value is not None for value in scope):
-                        if not all(type(value) is str for value in scope) or profile != "testing" or not enabled or not management_enabled:
+                        if (not all(type(value) is str for value in scope) or profile != "testing" or not enabled
+                                or not management_enabled or releases_enabled):
                             raise ValueError("Complete controlled intent scope required.")
                         for name, value in zip(("management-intent-fingerprint", "management-identity-fingerprint", "management-deadline"), scope):
                             arguments += ["--" + name, value]
@@ -246,6 +251,7 @@ def main(argv=None):
         command.add_argument("--environment", dest="profile", required=True, action=_Once)
         command.add_argument("--enable-processing", dest="enabled", action="store_true")
         command.add_argument("--enable-management", dest="management_enabled", action="store_true")
+        command.add_argument("--enable-releases", dest="releases_enabled", action="store_true")
         command.add_argument("--brevo-account", dest="account", action=_Once)
         command.add_argument("--confirmation-page", dest="page", action=_Once)
         command.add_argument("--testing-recipient", dest="recipient", action=_Once)

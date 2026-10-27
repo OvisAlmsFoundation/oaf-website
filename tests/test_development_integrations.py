@@ -380,3 +380,299 @@ def test_malformed_direct_activation_is_rejected(runtime, activation):
     runtime.loader.assert_not_called()
     runtime.recognition.assert_not_called()
     runtime.db_loader.assert_not_called()
+
+
+TESTING_METADATA = '''[testing]
+client_id = "gramanna"
+release_credential_service = "OAF Website/testing/Integrations/Release"
+release_credential_account = "gramanna"
+'''
+TESTING_TARGETS = (
+    "OAF Website/testing/Integrations/Submission",
+    "OAF Website/testing/Integrations/Reporting",
+    "OAF Website/testing/Integrations/Release",
+)
+RELEASE = "3" * 64
+
+
+@pytest.fixture
+def testing_metadata(tmp_path):
+    path = tmp_path / "integrations.testing.toml"
+    path.write_text(TESTING_METADATA, encoding="utf-8")
+    return path
+
+
+@pytest.fixture
+def testing_vault(synthetic_vault):
+    record = type(next(iter(synthetic_vault.entries.values())))
+    for target, value in zip(TESTING_TARGETS, (SUBMISSION, REPORTING, RELEASE)):
+        synthetic_vault.entries[target] = record(target, value)
+    return synthetic_vault
+
+
+@pytest.mark.parametrize("injected", [False, True])
+def test_testing_release_exact_loader_contract(testing_metadata, testing_vault, monkeypatch, injected):
+    monkeypatch.setattr(development.os, "environ", {"OAF_ENV": "testing"})
+    provider = Mock(side_effect=[SUBMISSION, REPORTING, RELEASE]) if injected else None
+    config = development.load_testing_integration_config(local_config_path=testing_metadata,
+                                                         credential_loader=provider)
+    assert config == integrations.IntegrationConfig("testing", "gramanna", SUBMISSION, REPORTING, RELEASE)
+    if injected:
+        assert provider.call_args_list == [call(target, "gramanna", {"OAF_ENV": "testing"}, exact_target=True)
+                                           for target in TESTING_TARGETS]
+        testing_vault.read.assert_not_called()
+    else:
+        assert testing_vault.read.call_args_list == [call(target) for target in TESTING_TARGETS]
+    testing_vault.fallback.assert_not_called()
+    assert not any(value in repr(config) for value in (SUBMISSION, REPORTING, RELEASE))
+
+
+@pytest.mark.parametrize("metadata", [None, "", "[testing", "testing = 'invalid'", "[testing]\nclient_id=1",
+    TESTING_METADATA.replace('"gramanna"', '"other"', 1),
+    TESTING_METADATA.replace('account = "gramanna"', 'account = "GraManna"'),
+    TESTING_METADATA.replace('/testing/', '/development/'),
+    TESTING_METADATA.replace('/testing/', '/production/'),
+    TESTING_METADATA.replace('/Release', '/Submission'),
+    TESTING_METADATA.replace('/Release', '/Reporting'),
+    TESTING_METADATA.replace('service = "OAF Website/testing/Integrations/Release"', 'service = 1'),
+    TESTING_METADATA.replace('[testing]', '[development]'),
+    TESTING_METADATA.replace('[testing]', '[production]'),
+    TESTING_METADATA + METADATA,
+    TESTING_METADATA + 'password = "' + PRIVATE_MARKER + '"',
+    TESTING_METADATA.replace('client_id = "gramanna"', 'client_id = "INVALID"'),
+    TESTING_METADATA.replace('client_id = "gramanna"', 'client_id = 1'),
+    TESTING_METADATA.replace('[testing]', 'testing = "invalid"'),
+])
+def test_testing_release_metadata_rejects_before_credentials(testing_metadata, metadata, capsys, caplog):
+    if metadata is None:
+        testing_metadata.unlink()
+    else:
+        testing_metadata.write_text(metadata, encoding="utf-8")
+    provider = Mock()
+    with pytest.raises(integrations.IntegrationConfigurationError) as caught:
+        development.load_testing_integration_config(local_config_path=testing_metadata,
+            environ={"OAF_ENV": "testing"}, credential_loader=provider)
+    provider.assert_not_called()
+    captured = capsys.readouterr()
+    diagnostic = "".join(traceback.format_exception(caught.value)) + captured.out + captured.err + caplog.text
+    assert PRIVATE_MARKER not in diagnostic and caught.value.__context__ is None
+
+
+@pytest.mark.parametrize("environment", [{}, {"OAF_ENV": "development"}, {"OAF_ENV": "production"},
+    {"OAF_ENV": "Testing"}, {"OAF_ENV": "testing", "OAF_RELEASE_CREDENTIAL": PRIVATE_MARKER},
+    {"OAF_ENV": "testing", "DATABASE_URL": PRIVATE_MARKER}])
+def test_testing_release_environment_is_explicit(testing_metadata, environment):
+    provider = Mock()
+    with pytest.raises(database.DatabaseConfigurationError):
+        development.load_testing_integration_config(local_config_path=testing_metadata,
+            environ=environment, credential_loader=provider)
+    provider.assert_not_called()
+
+
+def test_testing_release_production_loader_cannot_be_selected(testing_metadata):
+    provider = Mock()
+    with pytest.raises(integrations.IntegrationConfigurationError):
+        development.load_development_integration_config(local_config_path=testing_metadata,
+            expected_profile="production", environ={"OAF_ENV": "production"}, credential_loader=provider)
+    provider.assert_not_called()
+
+
+@pytest.mark.parametrize("invalid", ["missing", "account", "target", "type", "persistence", "provider"])
+def test_testing_release_exact_vault_metadata_and_no_fallback(testing_metadata, testing_vault, invalid, capsys, caplog):
+    target = TESTING_TARGETS[2]
+    record = testing_vault.entries[target]
+    testing_vault.entries["gramanna@" + target] = record
+    if invalid == "missing":
+        del testing_vault.entries[target]
+    elif invalid == "provider":
+        testing_vault.read.side_effect = [testing_vault.entries[TESTING_TARGETS[0]],
+            testing_vault.entries[TESTING_TARGETS[1]], RuntimeError(PRIVATE_MARKER)]
+    else:
+        field, value = {"account": ("UserName", "Gramanna"), "target": ("TargetName", target.replace("testing", "development")),
+                        "type": ("Type", 2), "persistence": ("Persist", 3)}[invalid]
+        record[field] = value
+    with pytest.raises(integrations.IntegrationConfigurationError) as caught:
+        development.load_testing_integration_config(local_config_path=testing_metadata, environ={"OAF_ENV": "testing"})
+    assert testing_vault.read.call_args_list == [call(name) for name in TESTING_TARGETS]
+    testing_vault.fallback.assert_not_called()
+    captured = capsys.readouterr()
+    diagnostic = "".join(traceback.format_exception(caught.value)) + captured.out + captured.err + caplog.text
+    assert PRIVATE_MARKER not in diagnostic and RELEASE not in diagnostic
+    assert caught.value.__context__ is None
+
+
+@pytest.mark.parametrize("value", [None, "", "short", b"3" * 64, "A" * 64, "g" * 64,
+    "3" * 63, "3" * 65, RELEASE + "\n", RELEASE + "\x00", "\ufeff" + RELEASE, "３" * 64, SUBMISSION, REPORTING])
+def test_testing_release_strict_format_and_permission_separation(testing_metadata, value, capsys, caplog):
+    provider = Mock(side_effect=[SUBMISSION, REPORTING, value])
+    with pytest.raises(integrations.IntegrationConfigurationError) as caught:
+        development.load_testing_integration_config(local_config_path=testing_metadata,
+            environ={"OAF_ENV": "testing"}, credential_loader=provider)
+    captured = capsys.readouterr()
+    diagnostic = "".join(traceback.format_exception(caught.value)) + captured.out + captured.err + caplog.text
+    assert all(key not in diagnostic for key in (SUBMISSION, REPORTING, RELEASE))
+
+
+def test_testing_release_recognition_separation_and_default_off(testing_metadata, monkeypatch):
+    from oaf_website import brevo
+    provider = Mock(side_effect=[SUBMISSION, REPORTING, SECRET.hex(), SUBMISSION, REPORTING, RELEASE])
+    load = lambda: development.load_testing_integration_config(local_config_path=testing_metadata,
+        environ={"OAF_ENV": "testing"}, credential_loader=provider)
+    with pytest.raises(integrations.IntegrationConfigurationError):
+        integrations.validate_configuration(load(), "testing", SECRET)
+    adapter = Mock(side_effect=AssertionError("No provider construction"))
+    monkeypatch.setattr(brevo, "BrevoAdapter", adapter)
+    config = load()
+    app = state_requests._build_app(None, state_requests.BrowserRecognition(SECRET),
+        "https://testing.example.invalid", integration_config=config, environment="testing")
+    response = app.test_client().post(integrations.PREFIX + "/release-events", base_url="https://testing.example.invalid",
+                                     headers={"Authorization": "Bearer " + RELEASE})
+    assert response.status_code == 503 and response.json["code"] == "service_disabled"
+    adapter.assert_not_called()
+
+
+DEVELOPMENT_RELEASE_METADATA = TESTING_METADATA.replace("testing", "development")
+DEVELOPMENT_RELEASE_TARGETS = (*development.INTEGRATION_SERVICES,
+                               "OAF Website/development/Integrations/Release")
+
+
+@pytest.fixture
+def development_release_metadata(metadata_path):
+    metadata_path.write_text(DEVELOPMENT_RELEASE_METADATA, encoding="utf-8")
+    return metadata_path
+
+
+@pytest.fixture
+def development_release_vault(synthetic_vault):
+    record = type(next(iter(synthetic_vault.entries.values())))
+    target = DEVELOPMENT_RELEASE_TARGETS[2]
+    synthetic_vault.entries[target] = record(target, RELEASE)
+    # Alternate environments and compound targets must never rescue the binding.
+    synthetic_vault.entries[TESTING_TARGETS[2]] = record(TESTING_TARGETS[2], "4" * 64)
+    synthetic_vault.entries["gramanna@" + target] = record(target, "5" * 64)
+    return synthetic_vault
+
+
+@pytest.mark.parametrize("injected", [False, True])
+def test_development_release_exact_loader_contract(development_release_metadata,
+                                                  development_release_vault, injected):
+    provider = Mock(side_effect=[SUBMISSION, REPORTING, RELEASE]) if injected else None
+    config = development.load_development_integration_config(local_config_path=development_release_metadata,
+        environ={"OAF_ENV": "development"}, credential_loader=provider)
+    assert config == integrations.IntegrationConfig("development", "gramanna", SUBMISSION, REPORTING, RELEASE)
+    if injected:
+        assert provider.call_args_list == [call(target, "gramanna", {"OAF_ENV": "development"}, exact_target=True)
+                                           for target in DEVELOPMENT_RELEASE_TARGETS]
+        development_release_vault.read.assert_not_called()
+    else:
+        assert development_release_vault.read.call_args_list == [call(target) for target in DEVELOPMENT_RELEASE_TARGETS]
+    development_release_vault.fallback.assert_not_called()
+    assert all(value not in repr(config) for value in (SUBMISSION, REPORTING, RELEASE))
+
+
+@pytest.mark.parametrize("metadata", [None, "", "[development", "development = 'invalid'",
+    "[development]\nclient_id=1", DEVELOPMENT_RELEASE_METADATA.replace('"gramanna"', '"other"', 1),
+    DEVELOPMENT_RELEASE_METADATA.replace('account = "gramanna"', 'account = "GraManna"'),
+    DEVELOPMENT_RELEASE_METADATA.replace('/development/', '/testing/'),
+    DEVELOPMENT_RELEASE_METADATA.replace('/development/', '/production/'),
+    DEVELOPMENT_RELEASE_METADATA.replace('/Release', '/Submission'),
+    DEVELOPMENT_RELEASE_METADATA.replace('/Release', '/Reporting'),
+    DEVELOPMENT_RELEASE_METADATA.replace('/Release', '/Brevo'),
+    DEVELOPMENT_RELEASE_METADATA.replace('service = "OAF Website/development/Integrations/Release"', 'service = 1'),
+    DEVELOPMENT_RELEASE_METADATA.replace('[development]', '[testing]'),
+    DEVELOPMENT_RELEASE_METADATA + TESTING_METADATA,
+    DEVELOPMENT_RELEASE_METADATA + 'password = "' + PRIVATE_MARKER + '"',
+    METADATA + 'release_credential_account = "gramanna"',
+    METADATA + 'release_credential_service = "OAF Website/development/Integrations/Release"',
+])
+def test_development_release_metadata_rejects_before_credentials(development_release_metadata, metadata, capsys, caplog):
+    if metadata is None:
+        development_release_metadata.unlink()
+    else:
+        development_release_metadata.write_text(metadata, encoding="utf-8")
+    provider = Mock()
+    with pytest.raises(integrations.IntegrationConfigurationError) as caught:
+        development.load_development_integration_config(local_config_path=development_release_metadata,
+            environ={"OAF_ENV": "development"}, credential_loader=provider)
+    provider.assert_not_called()
+    captured = capsys.readouterr()
+    diagnostic = "".join(traceback.format_exception(caught.value)) + captured.out + captured.err + caplog.text
+    assert PRIVATE_MARKER not in diagnostic and caught.value.__context__ is None
+
+
+@pytest.mark.parametrize("environment", [{}, {"OAF_ENV": "testing"}, {"OAF_ENV": "production"},
+    {"OAF_ENV": "Development"}, {"OAF_ENV": "development", "OAF_RELEASE_CREDENTIAL": PRIVATE_MARKER}])
+def test_development_release_environment_is_explicit(development_release_metadata, environment):
+    provider = Mock()
+    with pytest.raises(database.DatabaseConfigurationError):
+        development.load_development_integration_config(local_config_path=development_release_metadata,
+            environ=environment, credential_loader=provider)
+    provider.assert_not_called()
+
+
+@pytest.mark.parametrize("invalid", ["missing", "account", "target", "type", "persistence", "provider"])
+def test_development_release_vault_rejects_without_fallback(development_release_metadata,
+                                                          development_release_vault, invalid, capsys, caplog):
+    vault = development_release_vault
+    target = DEVELOPMENT_RELEASE_TARGETS[2]
+    if invalid == "missing":
+        del vault.entries[target]
+    elif invalid == "provider":
+        vault.read.side_effect = [vault.entries[name] for name in DEVELOPMENT_RELEASE_TARGETS[:2]] + [RuntimeError(PRIVATE_MARKER)]
+    else:
+        field, value = {"account": ("UserName", "Gramanna"), "target": ("TargetName", TESTING_TARGETS[2]),
+                        "type": ("Type", 2), "persistence": ("Persist", 3)}[invalid]
+        vault.entries[target][field] = value
+    with pytest.raises(integrations.IntegrationConfigurationError) as caught:
+        development.load_development_integration_config(local_config_path=development_release_metadata,
+                                                        environ={"OAF_ENV": "development"})
+    assert vault.read.call_args_list == [call(name) for name in DEVELOPMENT_RELEASE_TARGETS]
+    vault.fallback.assert_not_called()
+    captured = capsys.readouterr()
+    diagnostic = "".join(traceback.format_exception(caught.value)) + captured.out + captured.err + caplog.text
+    assert all(value not in diagnostic for value in (PRIVATE_MARKER, SUBMISSION, REPORTING, RELEASE))
+    assert caught.value.__context__ is None
+
+
+@pytest.mark.parametrize("value", [None, "", "short", b"3" * 64, "A" * 64, "g" * 64,
+    "3" * 63, "3" * 65, RELEASE + "\n", RELEASE + "\x00", "\ufeff" + RELEASE, "３" * 64, SUBMISSION, REPORTING])
+def test_development_release_strict_format_and_permission_separation(development_release_metadata, value, capsys, caplog):
+    provider = Mock(side_effect=[SUBMISSION, REPORTING, value])
+    with pytest.raises(integrations.IntegrationConfigurationError):
+        development.load_development_integration_config(local_config_path=development_release_metadata,
+            environ={"OAF_ENV": "development"}, credential_loader=provider)
+    captured = capsys.readouterr()
+    assert all(key not in captured.out + captured.err + caplog.text for key in (SUBMISSION, REPORTING, RELEASE))
+
+
+def test_development_release_factory_default_off_and_recognition_separation(runtime, monkeypatch):
+    from oaf_website import brevo
+    runtime.path.write_text(DEVELOPMENT_RELEASE_METADATA, encoding="utf-8")
+    runtime.provider.side_effect = [SUBMISSION, REPORTING, SECRET.hex(), SUBMISSION, REPORTING, RELEASE]
+    with pytest.raises(integrations.IntegrationConfigurationError):
+        development.development_app(enable_integrations=True)
+    runtime.db_loader.assert_not_called()
+    adapter = Mock(side_effect=AssertionError("No provider construction"))
+    monkeypatch.setattr(brevo, "BrevoAdapter", adapter)
+    app = development.development_app(enable_integrations=True)
+    response = app.test_client().post(integrations.PREFIX + "/release-events", base_url=development.ORIGIN,
+                                     headers={"Authorization": "Bearer " + RELEASE})
+    assert response.status_code == 503 and response.json["code"] == "service_disabled"
+    adapter.assert_not_called()
+
+
+def test_development_release_missing_blocks_before_key_or_database(runtime):
+    runtime.path.write_text(DEVELOPMENT_RELEASE_METADATA, encoding="utf-8")
+    runtime.provider.side_effect = [SUBMISSION, REPORTING, None]
+    with pytest.raises(integrations.IntegrationConfigurationError):
+        development.development_app(enable_integrations=True)
+    runtime.recognition.assert_not_called()
+    runtime.db_loader.assert_not_called()
+
+
+def test_development_release_ordinary_startup_does_not_read_binding_or_credentials(runtime):
+    runtime.path.write_text(DEVELOPMENT_RELEASE_METADATA, encoding="utf-8")
+    app = development.development_app()
+    runtime.loader.assert_not_called()
+    runtime.provider.assert_not_called()
+    assert not any(rule.rule.startswith(integrations.PREFIX) for rule in app.url_map.iter_rules())

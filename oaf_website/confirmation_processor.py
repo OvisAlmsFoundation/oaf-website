@@ -1,4 +1,4 @@
-"""Explicit, default-off one-shot confirmation processing; never runs on import."""
+"""Explicit, default-off finite notification processing; never runs on import."""
 
 from .notification_dispatch import diagnostic_error
 
@@ -22,7 +22,8 @@ from .state_requests import _verify_checkout
 
 
 def process_confirmations(*, expected_profile, enabled=False, credential_account=None,
-                          confirmation_page=None, testing_recipient=None, environ=None, management_enabled=False, intent_scope=None):
+                          confirmation_page=None, testing_recipient=None, environ=None, management_enabled=False,
+                          intent_scope=None, releases_enabled=False):
     """Run exactly one existing batch, then dispose its runtime engine.
 
     Call only after operational authorization. Tests replace the existing loaders,
@@ -34,8 +35,10 @@ def process_confirmations(*, expected_profile, enabled=False, credential_account
     result = BatchResult("unavailable")
     operation = "configuration"
     try:
-        if type(enabled) is not bool or type(management_enabled) is not bool:
+        if type(enabled) is not bool or type(management_enabled) is not bool or type(releases_enabled) is not bool:
             raise diagnostic_error(ValueError("Processing activation requires an explicit boolean."), "process_confirmations", "processing_activation_boolean", stage="processor")
+        if releases_enabled and not management_enabled:
+            raise ValueError("Release processing requires current preference lifecycle controls.")
         environment = dict(os.environ if environ is None else environ)
         profile = _validate_environment(environment, expected_profile)
         if profile == "production":
@@ -51,7 +54,7 @@ def process_confirmations(*, expected_profile, enabled=False, credential_account
         else:
             scope = None
         if intent_scope is not None and (type(intent_scope) not in (ManagementIntentScope, ConfirmationIntentScope) or
-                profile != "testing" or scope is None or not management_enabled):
+                profile != "testing" or scope is None or not management_enabled or releases_enabled):
             raise diagnostic_error(ValueError("Exceptional scope requires controlled TESTING management."), "process_confirmations", "processing_intent_scope", stage="processor")
         page = secure_confirmation_page(confirmation_page)
         operation = "provider_configuration"
@@ -82,7 +85,19 @@ def process_confirmations(*, expected_profile, enabled=False, credential_account
             store_options["intent_scope"] = intent_scope
         store = ConfirmationOutboxStore(engine, secret, profile, **store_options)
         operation = "dispatcher"
-        result = ConfirmationDispatcher(store, provider, page).process(limit=20)
+        result = ConfirmationDispatcher(store, provider, page).process(limit=10 if releases_enabled else 20)
+        if releases_enabled and result.status == "processed":
+            from .notification_delivery import NotificationDeliveryStore
+            from .notification_dispatch import ReleaseDispatcher
+            release_store = NotificationDeliveryStore(engine, secret, profile, management_enabled=management_enabled,
+                releases_enabled=True, recipient_scope=scope)
+            dispatcher = ReleaseDispatcher(release_store, provider, page.rsplit("/", 1)[0] + "/manage-notifications.html")
+            for event_id in release_store.pending_release_events():
+                batch = dispatcher.process(event_id, limit=5)
+                result = BatchResult(batch.status, result.processed + batch.processed,
+                                     result.first_failure or batch.first_failure)
+                if batch.status != "processed":
+                    break
     except Exception as exc:
         # Never serialize driver/provider/configuration exceptions or retry here.
         result = BatchResult("unavailable", result.processed, result.first_failure or safe_failure("processor", operation, exc))
@@ -114,6 +129,8 @@ def main(argv=None):
                         help="Explicit operational activation; omitted means OFF.")
     parser.add_argument("--enable-management", action="store_true",
                         help="Enable V2 outbox purposes only after migration 0006 and owner activation.")
+    parser.add_argument("--enable-releases", action="store_true",
+                        help="Include mobile announcements only after migration 0007 and owner activation.")
     parser.add_argument("--brevo-account", help="Existing protected credential account metadata.")
     parser.add_argument("--confirmation-page", help="Approved HTTPS /confirm-email.html page (legacy /gramanna.html accepted).")
     parser.add_argument("--testing-recipient", action="append",
@@ -148,6 +165,8 @@ def main(argv=None):
         return 2
     try:
         management_options = {"management_enabled": True} if options.enable_management else {}
+        if options.enable_releases:
+            management_options["releases_enabled"] = True
         if intent_scope is not None:
             management_options["intent_scope"] = intent_scope
         result = process_confirmations(

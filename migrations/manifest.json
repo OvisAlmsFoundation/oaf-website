@@ -10,15 +10,16 @@
     "oaf_website/confirmation_outbox_schema.py": "82bf813978acdafe87b6e0d802e0b5d4fca4fa71cac910bd14228cdb298fea47",
     "oaf_website/database_config.py": "f5901b32c8db06dfa7743623ffff4f350ce88f28b0bfee33c6b6163cabb0119e",
     "oaf_website/migrate.py": "706a6fefaca086f43bd2729c1cafefdb5bfe3bbd2f71e7a404e2e922454ae1e0",
-    "oaf_website/migration_authority.py": "8e3878b050855976a406dafa2be787b442cf821a256eb2f4f89191b15158a9dc",
+    "oaf_website/migration_authority.py": "a73ddf70fbecbc74103dba92320d7aa2b361c28da8fb32a61f10cb40004c04c2",
     "oaf_website/migration_config.py": "9c537cceaed6c84b3050f4db0a2510e6588e4259e927b35322e86cab91ab3587",
-    "oaf_website/migration_validation.py": "13f60c4f53b93e9378124a911f5c0a41bd603fd3502700116a023479d2d46a53",
+    "oaf_website/migration_validation.py": "94b8dbe831174e1d853e691629d385dbd534c2d5a5a8328ab315ec85f45f950b",
     "oaf_website/notification_delivery_schema.py": "e9ade89429338037648922a06e96da77418556285a94ac4fb7e12c91b0928c92",
     "oaf_website/notification_delivery_validation.py": "11998e7345129fb97fb0ded10fec5a0eac2280e123e752f4414356e006db33f1",
-    "oaf_website/notification_dispatch.py": "a0afe2d39ebdbd6ce5af879374d0ab1201181eeca947a780a98cac25528066fd",
+    "oaf_website/notification_dispatch.py": "ac0fb97aeec2b60b33c817f69c78270142d84d46b19c65fba9f53c26a6929625",
     "oaf_website/notification_management_schema.py": "74de2a323ae9575e1d5546a12805578ca6db53f40796ab70660a54dd560d2b9f",
     "oaf_website/notification_schema.py": "8609e44436663db7d7a99ec7964ebaec4658b0491412d366b17f4d7850bd77e4",
     "oaf_website/notification_validation.py": "26dea44c3369c879af545478477fc99e4c29f780e6fe70f39305ed4a305a0638",
+    "oaf_website/release_approval_schema.py": "94a2ac546c4f1cd19c368eb6829f72b1166d6af0ab9fb9bf1015e3ef9afae27b",
     "oaf_website/state_request_schema.py": "440924c43651c6b7d1e5c8745de705dd0ceeb589eb10422e805131ede51f9647",
     "oaf_website/state_request_validation.py": "a04e8a50bf353dd1de03a3f310445adb9392a33d0ae8c441ebd877d03d32db5d",
     "requirements-migrations.txt": "3154eef6a20748636332276d9a39e13b1d03585df55ab681b706362d294de33e",
@@ -502,6 +503,25 @@
         },
         {
           "object": "oaf_website.notification_preference_changes",
+          "role": "matching_runtime",
+          "privileges": [
+            "SELECT",
+            "INSERT"
+          ],
+          "grant_option": false
+        }
+      ]
+    },
+    {
+      "id": "0007_release_approvals",
+      "parent": "0006_notification_management",
+      "file": "migrations/versions/0007_release_approvals.py",
+      "sha256": "6b58dd04488d9863e3180142c082d0e7655cfb5ce6b2291400bb826d982289c6",
+      "starting_state": "0006_notification_management",
+      "target_state": "0007_release_approvals",
+      "grants": [
+        {
+          "object": "oaf_website.notification_release_approvals",
           "role": "matching_runtime",
           "privileges": [
             "SELECT",
@@ -2090,6 +2110,611 @@
           "name": "notification_confirmation_intents.purpose"
         }
       ]
+    },
+    "0007_release_approvals": {
+      "revision": "0007_release_approvals",
+      "managed_objects": [
+        {
+          "kind": "table",
+          "name": "alembic_version"
+        },
+        {
+          "kind": "index",
+          "name": "alembic_version_pkc"
+        },
+        {
+          "kind": "row_type",
+          "name": "alembic_version"
+        },
+        {
+          "kind": "array_type",
+          "name": "_alembic_version"
+        },
+        {
+          "kind": "primary_key",
+          "name": "alembic_version_pkc"
+        },
+        {
+          "kind": "table",
+          "name": "state_requests"
+        },
+        {
+          "kind": "index",
+          "name": "state_requests_pk"
+        },
+        {
+          "kind": "row_type",
+          "name": "state_requests"
+        },
+        {
+          "kind": "array_type",
+          "name": "_state_requests"
+        },
+        {
+          "kind": "primary_key",
+          "name": "state_requests_pk"
+        },
+        {
+          "kind": "check",
+          "name": "state_requests_state_check"
+        },
+        {
+          "kind": "default",
+          "name": "state_requests.created_at"
+        },
+        {
+          "kind": "table",
+          "name": "notifications"
+        },
+        {
+          "kind": "index",
+          "name": "notifications_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notifications_active_email"
+        },
+        {
+          "kind": "row_type",
+          "name": "notifications"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notifications"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notifications_pk"
+        },
+        {
+          "kind": "check",
+          "name": "notifications_token_check"
+        },
+        {
+          "kind": "check",
+          "name": "notifications_email_check"
+        },
+        {
+          "kind": "check",
+          "name": "notifications_preferences_check"
+        },
+        {
+          "kind": "check",
+          "name": "notifications_state_check"
+        },
+        {
+          "kind": "check",
+          "name": "notifications_consent_check"
+        },
+        {
+          "kind": "check",
+          "name": "notifications_lifecycle_check"
+        },
+        {
+          "kind": "default",
+          "name": "notifications.created_at"
+        },
+        {
+          "kind": "table",
+          "name": "notification_verification"
+        },
+        {
+          "kind": "row_type",
+          "name": "notification_verification"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notification_verification"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notification_verification_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notification_verification_pk"
+        },
+        {
+          "kind": "foreign_key",
+          "name": "notification_verification_subscription_fk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_verification_time_check"
+        },
+        {
+          "kind": "unique",
+          "name": "notification_verification_token"
+        },
+        {
+          "kind": "index",
+          "name": "notification_verification_token"
+        },
+        {
+          "kind": "check",
+          "name": "notification_verification_token_check"
+        },
+        {
+          "kind": "table",
+          "name": "notification_confirmation_limits"
+        },
+        {
+          "kind": "row_type",
+          "name": "notification_confirmation_limits"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notification_confirmation_limits"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_limits_bucket_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_limits_count_check"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notification_confirmation_limits_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notification_confirmation_limits_pk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_limits_time_check"
+        },
+        {
+          "kind": "table",
+          "name": "notification_release_events"
+        },
+        {
+          "kind": "row_type",
+          "name": "notification_release_events"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notification_release_events"
+        },
+        {
+          "kind": "check",
+          "name": "notification_release_events_content_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_release_events_digest_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_release_events_environment_check"
+        },
+        {
+          "kind": "unique",
+          "name": "notification_release_events_launch"
+        },
+        {
+          "kind": "index",
+          "name": "notification_release_events_launch"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notification_release_events_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notification_release_events_pk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_release_events_platform_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_release_events_status_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_release_events_time_check"
+        },
+        {
+          "kind": "table",
+          "name": "notification_deliveries"
+        },
+        {
+          "kind": "row_type",
+          "name": "notification_deliveries"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notification_deliveries"
+        },
+        {
+          "kind": "check",
+          "name": "notification_deliveries_accepted_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_deliveries_attempts_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_deliveries_claim_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_deliveries_digest_check"
+        },
+        {
+          "kind": "foreign_key",
+          "name": "notification_deliveries_event_fk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_deliveries_outcome_check"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notification_deliveries_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notification_deliveries_pk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_deliveries_retry_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_deliveries_status_check"
+        },
+        {
+          "kind": "foreign_key",
+          "name": "notification_deliveries_subscription_fk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_deliveries_time_check"
+        },
+        {
+          "kind": "index",
+          "name": "notification_deliveries_lease"
+        },
+        {
+          "kind": "index",
+          "name": "notification_deliveries_retry"
+        },
+        {
+          "kind": "table",
+          "name": "notification_delivery_attempts"
+        },
+        {
+          "kind": "row_type",
+          "name": "notification_delivery_attempts"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notification_delivery_attempts"
+        },
+        {
+          "kind": "check",
+          "name": "notification_delivery_attempts_attempt_check"
+        },
+        {
+          "kind": "foreign_key",
+          "name": "notification_delivery_attempts_delivery_fk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_delivery_attempts_outcome_check"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notification_delivery_attempts_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notification_delivery_attempts_pk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_delivery_attempts_time_check"
+        },
+        {
+          "kind": "table",
+          "name": "notification_suppressions"
+        },
+        {
+          "kind": "row_type",
+          "name": "notification_suppressions"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notification_suppressions"
+        },
+        {
+          "kind": "check",
+          "name": "notification_suppressions_digest_check"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notification_suppressions_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notification_suppressions_pk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_suppressions_reason_check"
+        },
+        {
+          "kind": "table",
+          "name": "notification_confirmation_intents"
+        },
+        {
+          "kind": "row_type",
+          "name": "notification_confirmation_intents"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notification_confirmation_intents"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_intents_accepted_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_intents_attempts_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_intents_claim_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_intents_context_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_intents_digest_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_intents_outcome_check"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notification_confirmation_intents_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notification_confirmation_intents_pk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_intents_retry_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_intents_status_check"
+        },
+        {
+          "kind": "foreign_key",
+          "name": "notification_confirmation_intents_subscription_fk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_intents_time_check"
+        },
+        {
+          "kind": "index",
+          "name": "notification_confirmation_intents_lease"
+        },
+        {
+          "kind": "index",
+          "name": "notification_confirmation_intents_retry"
+        },
+        {
+          "kind": "index",
+          "name": "notification_confirmation_intents_subscription"
+        },
+        {
+          "kind": "table",
+          "name": "notification_confirmation_attempts"
+        },
+        {
+          "kind": "row_type",
+          "name": "notification_confirmation_attempts"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notification_confirmation_attempts"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_attempts_attempt_check"
+        },
+        {
+          "kind": "foreign_key",
+          "name": "notification_confirmation_attempts_intent_fk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_attempts_outcome_check"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notification_confirmation_attempts_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notification_confirmation_attempts_pk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_attempts_time_check"
+        },
+        {
+          "kind": "table",
+          "name": "notification_preference_changes"
+        },
+        {
+          "kind": "row_type",
+          "name": "notification_preference_changes"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notification_preference_changes"
+        },
+        {
+          "kind": "check",
+          "name": "notification_preference_changes_after_state_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_preference_changes_android_launch_time_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_preference_changes_before_state_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_preference_changes_consent_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_preference_changes_digest_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_preference_changes_ios_launch_time_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_preference_changes_outcome_check"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notification_preference_changes_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notification_preference_changes_pk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_preference_changes_provider_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_preference_changes_revision_check"
+        },
+        {
+          "kind": "unique",
+          "name": "notification_preference_changes_revision_key"
+        },
+        {
+          "kind": "index",
+          "name": "notification_preference_changes_revision_key"
+        },
+        {
+          "kind": "check",
+          "name": "notification_preference_changes_state_time_check"
+        },
+        {
+          "kind": "foreign_key",
+          "name": "notification_preference_changes_subscription_fk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_preference_changes_web_launch_time_check"
+        },
+        {
+          "kind": "check",
+          "name": "notifications_revision_check"
+        },
+        {
+          "kind": "default",
+          "name": "notifications.preferences_revision"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_intents_purpose_check"
+        },
+        {
+          "kind": "default",
+          "name": "notification_confirmation_intents.purpose"
+        },
+        {
+          "kind": "table",
+          "name": "notification_release_approvals"
+        },
+        {
+          "kind": "row_type",
+          "name": "notification_release_approvals"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notification_release_approvals"
+        },
+        {
+          "kind": "check",
+          "name": "notification_release_approvals_action"
+        },
+        {
+          "kind": "check",
+          "name": "notification_release_approvals_digest"
+        },
+        {
+          "kind": "foreign_key",
+          "name": "notification_release_approvals_event_fk"
+        },
+        {
+          "kind": "unique",
+          "name": "notification_release_approvals_parent"
+        },
+        {
+          "kind": "index",
+          "name": "notification_release_approvals_parent"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notification_release_approvals_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notification_release_approvals_pk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_release_approvals_time"
+        }
+      ]
     }
   },
   "security": {
@@ -2522,6 +3147,15 @@
       },
       {
         "object": "oaf_website.notification_preference_changes",
+        "role": "matching_runtime",
+        "privileges": [
+          "SELECT",
+          "INSERT"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_release_approvals",
         "role": "matching_runtime",
         "privileges": [
           "SELECT",
@@ -4897,6 +5531,169 @@
           15,
           "n"
         ]
+      ],
+      "release_approval_edges": [
+        [
+          "delivery_table_notification_release_approvals",
+          0,
+          "schema",
+          0,
+          "n"
+        ],
+        [
+          "delivery_type_notification_release_approvals",
+          0,
+          "delivery_table_notification_release_approvals",
+          0,
+          "i"
+        ],
+        [
+          "delivery_type__notification_release_approvals",
+          0,
+          "delivery_type_notification_release_approvals",
+          0,
+          "i"
+        ],
+        [
+          "delivery_constraint_notification_release_approvals_action",
+          0,
+          "delivery_table_notification_release_approvals",
+          4,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_release_approvals_action",
+          0,
+          "delivery_table_notification_release_approvals",
+          4,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_release_approvals_digest",
+          0,
+          "delivery_table_notification_release_approvals",
+          8,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_release_approvals_digest",
+          0,
+          "delivery_table_notification_release_approvals",
+          8,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_release_approvals_event_fk",
+          0,
+          "delivery_table_notification_release_approvals",
+          2,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_release_approvals_event_fk",
+          0,
+          "delivery_index_notification_release_events_pk",
+          0,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_release_approvals_event_fk",
+          0,
+          "delivery_table_notification_release_events",
+          1,
+          "n"
+        ],
+        [
+          "delivery_trigger_notification_release_approvals_event_fk_notification_release_events_9",
+          0,
+          "delivery_constraint_notification_release_approvals_event_fk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_trigger_notification_release_approvals_event_fk_notification_release_events_17",
+          0,
+          "delivery_constraint_notification_release_approvals_event_fk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_trigger_notification_release_approvals_event_fk_notification_release_approvals_5",
+          0,
+          "delivery_constraint_notification_release_approvals_event_fk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_trigger_notification_release_approvals_event_fk_notification_release_approvals_17",
+          0,
+          "delivery_constraint_notification_release_approvals_event_fk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_constraint_notification_release_approvals_parent",
+          0,
+          "delivery_table_notification_release_approvals",
+          2,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_release_approvals_parent",
+          0,
+          "delivery_table_notification_release_approvals",
+          3,
+          "a"
+        ],
+        [
+          "delivery_index_notification_release_approvals_parent",
+          0,
+          "delivery_constraint_notification_release_approvals_parent",
+          0,
+          "i"
+        ],
+        [
+          "delivery_constraint_notification_release_approvals_pk",
+          0,
+          "delivery_table_notification_release_approvals",
+          1,
+          "a"
+        ],
+        [
+          "delivery_index_notification_release_approvals_pk",
+          0,
+          "delivery_constraint_notification_release_approvals_pk",
+          0,
+          "i"
+        ],
+        [
+          "delivery_constraint_notification_release_approvals_time",
+          0,
+          "delivery_table_notification_release_approvals",
+          7,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_release_approvals_time",
+          0,
+          "delivery_table_notification_release_approvals",
+          7,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_release_approvals_time",
+          0,
+          "delivery_table_notification_release_approvals",
+          9,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_release_approvals_time",
+          0,
+          "delivery_table_notification_release_approvals",
+          9,
+          "n"
+        ]
       ]
     },
     "version_table": "oaf_website.alembic_version",
@@ -4920,7 +5717,9 @@
       "exact_confirmation_outbox_definition",
       "exact_confirmation_outbox_runtime_grants",
       "exact_notification_management_definition",
-      "exact_notification_management_runtime_grants"
+      "exact_notification_management_runtime_grants",
+      "exact_release_approval_definition",
+      "exact_release_approval_runtime_grants"
     ],
     "state_request_types": "private_row_type_array_uses_element_acl_no_public_or_runtime_usage",
     "notification_types": "private_row_type_array_uses_element_acl_no_public_or_runtime_usage"

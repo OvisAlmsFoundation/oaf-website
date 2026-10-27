@@ -263,3 +263,46 @@ def test_previously_consumed_claim_never_posts(setup,monkeypatch):
     monkeypatch.setattr(store,"claim",consume)
     assert dispatcher.process(EVENT).processed==0
     transport.assert_not_called()
+
+
+
+@pytest.mark.parametrize("action", ["correct", "withdraw"])
+def test_official_change_between_candidate_selection_and_submission_is_authoritative(setup, monkeypatch, action):
+    from test_notification_delivery import changed_release
+    from oaf_website.release_approval_schema import revisions
+    model,store,transport,dispatcher=setup
+    store.releases_enabled=True
+    ready(model,store)
+    original=store.begin_submission
+    def intervene(*args,**kwargs):
+        model.elapse(seconds=1)
+        values=changed_release(model)
+        values.update(action=action,release_id="org.oaf.corrected",release_url="https://play.google.com/store/apps/details?id=org.oaf.corrected")
+        store.accept_release_change(values)
+        return original(*args,**kwargs)
+    monkeypatch.setattr(store,"begin_submission",intervene)
+    result=dispatcher.process(EVENT)
+    assert result.processed == int(action=="correct")
+    assert transport.call_count == int(action=="correct")
+    if action=="correct":
+        assert "id=org.oaf.corrected" in json.loads(transport.call_args.args[1])["textContent"]
+    assert len(model.rows(revisions))==1
+
+
+def test_release_recipient_scope_prevents_claim_and_submission_for_other_mailbox(setup):
+    model,store,transport,dispatcher=setup
+    first=verified(model,store)
+    second=verified(model,store,2)
+    store.accept_event(payload())
+    store.prepare_event(EVENT)
+    claim=store.claim(EVENT,second)
+    store.recipient_scope=b.TestingRecipientScope("testing","subscriber1@example.invalid")
+    with pytest.raises(b.BrevoConfigurationError): store.begin_submission(EVENT,second,claim)
+    model.elapse(minutes=6)
+    store.recover_event(EVENT)
+    model.elapse(seconds=60)
+    with pytest.raises(b.BrevoConfigurationError): store.claim(EVENT,second)
+    scoped=d.ReleaseDispatcher(store,CONFIG,PAGE,transport=transport)
+    assert scoped.process(EVENT).processed==1
+    assert transport.call_count==1
+    assert next(r for r in model.rows(deliveries) if r["subscription"]==first)["status"]=="accepted"

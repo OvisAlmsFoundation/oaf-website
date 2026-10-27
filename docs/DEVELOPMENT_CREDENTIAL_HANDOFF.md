@@ -1,5 +1,60 @@
 # DEVELOPMENT integration credential handoff
 
+## Android/iOS Release binding (WU1, 2026-10-26)
+
+The existing ignored `config/local/integrations.toml` now declares:
+
+```toml
+[development]
+client_id = "gramanna"
+release_credential_service = "OAF Website/development/Integrations/Release"
+release_credential_account = "gramanna"
+```
+
+The existing protected loader requires the exact DEVELOPMENT Release record
+when this binding is present. Partial or conflicting bindings fail before any
+credential access. Client-only configurations remain compatible with existing
+Submission/Reporting operations. Loading the binding does not enable release
+intake, processing or provider sending.
+
+ONE owner provisioning procedure, from the OAF Website root in a separate
+Windows PowerShell terminal under the existing application Windows user:
+
+```powershell
+& .\ops\Set-DevelopmentIntegrationCredentials.ps1 -Operation ProvisionDevelopmentRelease
+```
+
+Use a terminal without GraManna activation settings; `OAF_ENV` may be absent or
+exactly `development`. This explicit operation creates only the DEVELOPMENT
+Release credential for account `gramanna`: Generic Type 1, Persist 2, exactly
+64 lowercase hexadecimal characters, canonical UTF-16LE with no BOM or NUL.
+It generates a fresh independent 32-byte value internally, accepts no supplied
+secret, verifies readback and never exports or prints the value. TESTING,
+Submission, Reporting, Brevo, database, webhook and recognition credentials
+are not read or modified by this operation. Matching existing Release records
+are verified without replacement. A conflicting or uncertain result requires
+owner reconciliation before retrying; the existing operator lock and native
+create-only recheck are reused. Existing metadata is preserved byte for byte.
+The unique sanitized transcript is retained in
+`.pytest_cache/development-release-provision-*/execution.log`.
+
+GraManna's accepted source/offline PASS is recorded in its `CHANGELOG.md`
+under “Mobile Android/iOS automatic notification handoff” (2026-10-26).
+Its existing `app/config.py`, `oaf_interest_service._configuration` and
+`mobile_release_handoff._configuration` already define the DEVELOPMENT
+interface: `OAF_INTEGRATION_ENVIRONMENT=development`,
+`OAF_DEVELOPMENT_ORIGIN=http://127.0.0.1:5055`, and protected process injection
+of the corresponding credential as `OAF_DEVELOPMENT_RELEASE_CREDENTIAL`.
+Both `OAF_INTEGRATION_ENABLED` and `OAF_RELEASE_HANDOFF_ENABLED` require the
+explicit value `1` for a future separately authorized activation. Both remain
+OFF here. GraManna must run through its existing trusted DEVELOPMENT launcher
+to accept this loopback origin. No GraManna source change is required; no
+GraManna runtime/configuration or activation setting is changed by this task.
+
+Provisioning does not inject process credentials, start either application,
+approve a mobile release or enable any sender. The older activation procedures
+below retain their separately authorized scope.
+
 `ops/Set-DevelopmentIntegrationCredentials.ps1` is an operator helper for Windows
 PowerShell 5.1 or later. Run it with `&`, in the terminal that needs the process
 settings. It resolves the website paths from its own location, so the current
@@ -146,3 +201,22 @@ and diagnostics containing no synthetic secret/provider markers.
 
 No live operation, application startup, database connection, Credential Manager
 access or GraManna repository change is part of the offline validation above.
+
+
+## WU1 Step 3 provisioning reconciliation (2026-10-26)
+
+DEVELOPMENT Release provisioning is **COMPLETED AND VERIFIED**; the earlier
+provisioning command is retained as historical procedure, not a pending next
+action. Accepted sanitized evidence:
+`.pytest_cache/development-release-provision-20261027T032650Z-f713faa0ac0d4116bacf6d597e3a399d/execution.log`.
+No credential read, replacement, rotation or repeat provisioning is authorized
+by this reconciliation.
+
+GraManna's accepted DEVELOPMENT interface above remains the handoff contract.
+The connected synthetic PASS is recorded in
+`.pytest_cache/wu1-connected-20261027T033228Z-2573aadb/consolidated-report.txt`;
+it does not establish process credential injection, live provider delivery,
+scheduler certification or operational activation. **Activation remains OFF.**
+Future runtime injection/activation and live certification require their existing
+separate operational authorization. See WORKFLOW's WU1 Step 3 record for the
+completed migrations, autonomous contract and retained conditional legacy finding.

@@ -1361,3 +1361,77 @@ existing `origin` remote and `main` without force or history rewrite. Actual
 commit/tree identities, native exits and push outcome belong in the final
 consolidated delivery report. The owner independently checks GitHub CI;
 this delivery does not query or monitor it. Exit after successful push/report.
+
+
+### Work Unit 1 - Android/iOS notifications: OAF source complete (2026-10-26)
+
+The OAF side now accepts official mobile approvals through the existing protected
+backend integration at `POST /api/integrations/v1/release-events`, using separate
+release authorization, strict environment/identity/store-reference validation and
+existing durable event acceptance. Existing confirmation processing/scheduling
+also drives the ReleaseDispatcher behind default-off `--enable-releases` and
+current preference controls. There is no new worker, queue or administrator Send
+action. Android/iOS budgets and audience lifecycles remain independent.
+
+Original IDs, audience cutoffs, deduplication and attempt history stay intact.
+The final locked submission reads corrections; official withdrawal suppresses
+unsent work and preserves acknowledged/submitting/uncertain outcomes. A minimal
+append-only approval-history successor, `0007_release_approvals`, is prepared under
+the existing pending-independent-review artifact contract. No migration is run.
+
+Focused guarded validation passed 1,292 cases plus 12/13/15/2 targeted follow-up
+executions; no external-access attempts occurred. New/changed application logic
+and the new revision have 100% coverage: 266 statements and 176 branches. Security
+and deterministic autonomy review passed. Full logs and scoped evidence are in
+`.pytest_cache/wu1-resume-20261026T213359Z-4b74332a/`; the precise protocol,
+correction/withdrawal semantics and preserved operational gates are appended to
+WORKFLOW. Historical source/evidence and owner work are preserved.
+
+All real activation remains OFF. No live credentials, databases, providers, emails,
+servers, tasks, production configuration, GraManna source or Git delivery was
+accessed or changed. Existing Invoke-OAFCodex final reporting remains unchanged.
+
+ONE next action: implement the GraManna approval-to-OAF handoff in its separately
+authorized operation. Independent migration review/execution and operational
+activation remain later gates; no live end-to-end readiness is claimed.
+
+
+### WU1 - Step 3 final completion and delivery readiness (2026-10-26)
+
+**STEP 3 READINESS PASS; Git delivery and live activation are not completed.**
+This current append supersedes earlier WU1 pending implementation, migration and
+DEVELOPMENT provisioning directions while preserving all historical owner notes.
+
+OAF and GraManna source/offline implementation PASS; OAF migration
+`0007_release_approvals` is APPLIED_AND_VERIFIED in TESTING and DEVELOPMENT;
+GraManna DEVELOPMENT `afmobout01` is APPLIED AND VERIFIED; DEVELOPMENT Release
+credential is PROVISIONED AND VERIFIED. Exact accepted receipts and source
+references are in WORKFLOW's matching Step 3 record.
+
+Accepted evidence:
+`.pytest_cache/wu1-connected-20261027T033228Z-2573aadb/consolidated-report.txt`
+and `validation-summary.json`: nine areas/five synthetic scenarios plus five
+guarded worker checks PASS. One official mobile approval durably creates the
+original handoff; existing scheduled processing, eligible-subscriber selection,
+bounded OAF batches, deduplication, consent/verification, suppression, retry and
+uncertainty holds progress without a separate Send action or AI dependency.
+All 140 OAF files matched that accepted evidence before these append-only
+documentation changes; validation is reused, not rerun.
+
+**Notification activation remains OFF.** Live runtime/origin/credential injection,
+listing provenance, deployed environment and scheduler certification, and provider
+delivery remain separately authorized operational work. Completed migrations and
+provisioning are not pending. The owner's hypothetical legacy-withdrawal/
+no-prior-handoff finding remains excluded, uncorrected and outside accepted proof.
+
+This batch changes only the three necessary OAF documentation records.
+GraManna's `.notes_cargo_ledger` and `CHANGELOG.md` require a separate append-only
+WU1 reconciliation; its owner/Cargo work and delivery boundary remain untouched.
+Final candidate inventory/hashes, consistency, preservation and whitespace
+evidence: `.pytest_cache/wu1-step3-20261027T034450Z-f135daed/`. Historical CI GREEN does not
+certify this uncommitted candidate. Actual staged-diff review remains at the
+separately authorized delivery checkpoint; nothing is staged here.
+
+**ONE next action:** obtain separate authorization for the OAF Git delivery
+checkpoint. Step 3 PASS establishes readiness only; stop without delivery or
+activation.

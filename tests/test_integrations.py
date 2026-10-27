@@ -687,3 +687,169 @@ def test_disabled_integration_and_preserved_public_cookie_csrf_and_origin(setup)
     assert public_request(public, csrf, "NY", headers={"Origin": "https://evil.example", "X-CSRF-Token": csrf}).status_code == 403
     assert setup.app.config["MAX_CONTENT_LENGTH"] == 1024
     assert len(setup.states.records) == 1 and len(setup.subscriptions.records) == 1
+
+
+RELEASE_PATH = api.PREFIX + "/release-events"
+RELEASE_KEY = "4" * 64
+
+
+@pytest.fixture
+def release_api():
+    from test_notification_delivery import Model
+    from oaf_website.notification_delivery import NotificationDeliveryStore
+    model = Model()
+    store = NotificationDeliveryStore(model, SECRET, "testing", releases_enabled=True, management_enabled=True)
+    config = replace(CONFIG, release_credential=RELEASE_KEY)
+    app = state_requests._build_app(None, state_requests.BrowserRecognition(SECRET), ORIGIN,
+        integration_config=config, environment="testing", release_store=store)
+    return SimpleNamespace(model=model, store=store, config=config, app=app, client=app.test_client(use_cookies=False))
+
+
+@pytest.mark.parametrize("platform", ["android", "ios"])
+@pytest.mark.parametrize("compact", [False, True])
+def test_authenticated_release_acceptance_persists_once_with_stable_wire_identity(release_api, platform, compact):
+    from test_notification_delivery import payload
+    from oaf_website.notification_delivery_schema import events
+    values = payload(platform)
+    if compact:
+        for name in ("event_id", "source_approval_id"): values[name] = values[name].replace("-", "")
+    first = service(release_api.client, RELEASE_PATH, credential=RELEASE_KEY, data=values)
+    second = service(release_api.client, RELEASE_PATH, credential=RELEASE_KEY, data=values)
+    assert first.status_code == second.status_code == 200
+    assert first.json == second.json == dict(status="accepted", event_id=payload()["event_id"])
+    assert len(release_api.model.rows(events)) == 1
+    assert not any("brevo" in sql.lower() for sql in release_api.model.statements)
+
+
+@pytest.mark.parametrize("credential", [None, SUBMISSION, REPORTING, "5" * 64])
+def test_signup_and_reporting_permissions_cannot_approve_a_release(release_api, credential):
+    from test_notification_delivery import payload
+    assert service(release_api.client, RELEASE_PATH, credential=credential, data=payload()).status_code == 401
+    assert not release_api.model.statements
+
+
+@pytest.mark.parametrize("changes,status", [
+    (dict(headers={"Origin": ORIGIN}), 403), (dict(origin="https://wrong.invalid"), 403),
+    (dict(origin=ORIGIN.replace("https:", "http:")), 403), (dict(method="GET"), 405),
+    (dict(headers={"Content-Encoding":"gzip"}), 415), (dict(query_string="x=1"), 400),
+])
+def test_release_intake_reuses_backend_transport_and_request_guards(release_api, changes, status):
+    from test_notification_delivery import payload
+    assert service(release_api.client, RELEASE_PATH, credential=RELEASE_KEY, data=payload(), **changes).status_code == status
+    assert not release_api.model.statements
+
+
+@pytest.mark.parametrize("override", [dict(event_id="bad"), dict(source_approval_id=3),
+    dict(environment="development"), dict(recipients=["private@example.invalid"]), dict(action="send"),
+    dict(action="withdraw", previous_approval_id="bad"), dict(release_url="https://evil.invalid/")])
+def test_release_fields_and_identity_fail_before_database_access(release_api, override):
+    from test_notification_delivery import payload
+    assert service(release_api.client, RELEASE_PATH, credential=RELEASE_KEY, data=payload(**override)).status_code == 400
+    assert not release_api.model.statements
+
+
+@pytest.mark.parametrize("body,media,status", [('{}', 'text/plain', 415),
+    ('{"event_id":"a","event_id":"b"}', 'application/json', 400),
+    ('x' * 1025, 'application/json', 413), ('[]', 'application/json', 400)])
+def test_release_body_remains_strict_and_bounded(release_api, body, media, status):
+    reply = release_api.client.post(RELEASE_PATH, base_url=ORIGIN, headers={"Authorization":"Bearer " + RELEASE_KEY}, data=body, content_type=media)
+    assert reply.status_code == status
+    assert not release_api.model.statements
+
+
+def test_release_conflict_and_transaction_failure_are_safe_and_no_provider_is_constructed(release_api, caplog):
+    from test_notification_delivery import payload
+    from oaf_website.notification_delivery_schema import events
+    assert service(release_api.client, RELEASE_PATH, credential=RELEASE_KEY, data=payload()).status_code == 200
+    conflict = payload(release_id="org.oaf.other", release_url="https://play.google.com/store/apps/details?id=org.oaf.other")
+    assert service(release_api.client, RELEASE_PATH, credential=RELEASE_KEY, data=conflict).status_code == 409
+    release_api.model.failure = "connect"
+    reply = service(release_api.client, RELEASE_PATH, credential=RELEASE_KEY, data=payload())
+    assert reply.status_code == 503 and reply.json["code"] == "acceptance_unconfirmed"
+    assert len(release_api.model.rows(events)) == 1
+    assert RELEASE_KEY not in caplog.text + reply.get_data(as_text=True)
+    assert "synthetic private" not in caplog.text + reply.get_data(as_text=True)
+
+
+def test_release_intake_is_off_by_default(setup):
+    from test_notification_delivery import payload
+    assert service(setup.client, RELEASE_PATH, credential=RELEASE_KEY, data=payload()).status_code == 503
+
+
+@pytest.mark.parametrize("value", ["bad", 4, SUBMISSION, REPORTING])
+def test_separate_release_credential_validation(value):
+    with pytest.raises(api.IntegrationConfigurationError): replace(CONFIG, release_credential=value)
+
+
+def test_release_credential_cannot_reuse_the_persistent_key():
+    persistent = bytes.fromhex("ab" * 32)
+    config = replace(CONFIG, release_credential=persistent.hex())
+    with pytest.raises(api.IntegrationConfigurationError): api.validate_configuration(config, "testing", persistent)
+
+
+@pytest.mark.parametrize("mismatch", ["environment", "secret", "disabled", "management", "credential", "type"])
+def test_release_store_binding_rejects_cross_environment_and_wrong_authority(release_api, mismatch):
+    store, config = release_api.store, release_api.config
+    if mismatch == "environment": store.environment = "development"
+    if mismatch == "secret": store.secret = b"different-protected-secret-12345678"
+    if mismatch == "disabled": store.releases_enabled = False
+    if mismatch == "management": store.management_enabled = False
+    if mismatch == "credential": config = CONFIG
+    if mismatch == "type": store = object()
+    with pytest.raises(api.IntegrationConfigurationError):
+        state_requests._build_app(None, state_requests.BrowserRecognition(SECRET), ORIGIN,
+            integration_config=config, environment="testing", release_store=store)
+
+
+def test_http_release_correction_and_withdrawal_are_idempotent(release_api):
+    from test_notification_delivery import payload, changed_release
+    from oaf_website.release_approval_schema import revisions
+    service(release_api.client, RELEASE_PATH, credential=RELEASE_KEY, data=payload())
+    release_api.model.elapse(seconds=1)
+    values = changed_release(release_api.model)
+    for _ in range(2):
+        assert service(release_api.client, RELEASE_PATH, credential=RELEASE_KEY, data=values).status_code == 200
+    assert len(release_api.model.rows(revisions)) == 1
+
+
+
+@pytest.mark.parametrize("options", [dict(releases_enabled=1), dict(releases_enabled=True),
+    dict(releases_enabled=True, management_enabled=True),
+    dict(releases_enabled=True, management_enabled=True, integration_config=CONFIG)])
+def test_release_factory_rejects_invalid_activation_before_runtime(monkeypatch, options):
+    forbidden = Mock(side_effect=AssertionError("No runtime configuration access"))
+    monkeypatch.setattr(state_requests, "load_testing_database_config", forbidden)
+    with pytest.raises(ValueError):
+        state_requests.create_app(expected_profile="testing", recognition_secret=SECRET, public_origin=ORIGIN, **options)
+    forbidden.assert_not_called()
+
+
+def test_release_factory_injects_matching_persistence_and_never_starts_a_sender(monkeypatch):
+    from test_notification_delivery import Model, payload
+    from oaf_website.notification_dispatch import ReleaseDispatcher
+    model = Model()
+    monkeypatch.setattr(state_requests, "load_testing_database_config", lambda:SimpleNamespace(profile="testing",url="synthetic"))
+    monkeypatch.setattr(state_requests, "create_engine", lambda *a,**kw:model)
+    monkeypatch.setattr(state_requests.event, "listen", lambda *a:None)
+    forbidden = Mock(side_effect=AssertionError("No send on intake or startup"))
+    monkeypatch.setattr(ReleaseDispatcher, "process", forbidden)
+    app = state_requests.create_app(expected_profile="testing", recognition_secret=SECRET, public_origin=ORIGIN,
+        integration_config=replace(CONFIG, release_credential=RELEASE_KEY), management_enabled=True, releases_enabled=True)
+    assert not model.statements
+    assert service(app.test_client(use_cookies=False), RELEASE_PATH, credential=RELEASE_KEY, data=payload()).status_code == 200
+    forbidden.assert_not_called()
+
+
+def test_direct_wire_contract_rejects_non_object_and_unknown_action():
+    from test_notification_delivery import payload
+    for value in (None, [], dict(payload(), action="send", previous_approval_id="0"*32)):
+        with pytest.raises(ValueError): api.release_request(value,"testing")
+
+
+
+@pytest.mark.parametrize("timestamp", ["0001-01-01T00:00:00+14:00", "9999-12-31T23:59:59-14:00"])
+def test_release_timestamp_overflow_is_a_fixed_rejection_before_persistence(release_api, timestamp):
+    from test_notification_delivery import payload
+    reply=service(release_api.client,RELEASE_PATH,credential=RELEASE_KEY,data=payload(approved_at=timestamp))
+    assert reply.status_code==400
+    assert not release_api.model.statements

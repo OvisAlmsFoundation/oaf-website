@@ -97,6 +97,9 @@ FAILURE_PREDICATES |= PRECISE_PREDICATES
 PRECISE_PREDICATES |= frozenset({"development_arguments", "guard_arguments"})
 FAILURE_PREDICATES |= PRECISE_PREDICATES
 
+PRECISE_PREDICATES |= frozenset({"release_enabled", "release_payload", "release_event_conflict", "release_acceptance"})
+FAILURE_PREDICATES |= PRECISE_PREDICATES
+
 # The existing webhook predicates name the actual rejected condition.
 PRECISE_PREDICATES |= frozenset(p for p in FAILURE_PREDICATES if p.startswith("webhook_"))
 
@@ -398,7 +401,7 @@ class ReleaseDispatcher:
         self.store = store
         self.page = secure_page(notification_page)
         self.capabilities = UnsubscribeCapabilities(store.secret)
-        self.adapter = BrevoAdapter(config, transport=transport)
+        self.adapter = BrevoAdapter(config, transport=transport, recipient_scope=store.recipient_scope)
 
     def process(self, event_id, *, limit=20):
         from .brevo import ProviderOutcome
@@ -422,13 +425,13 @@ class ReleaseDispatcher:
                 if claim is None:
                     continue
                 # Commit and recheck immediately before the only possible HTTP call.
-                def render(subscriber, now):
+                def render(subscriber, now, current_event):
                     token = None
                     if self.store.management_enabled:
                         from .notification_management import ManagementCapabilities
                         token = ManagementCapabilities(self.store.secret, self.store.environment).issue(
                             subscription, subscriber["preferences_revision"], now)
-                    return release_message(event, subscription, self.capabilities, self.page, management_token=token)
+                    return release_message(current_event, subscription, self.capabilities, self.page, management_token=token)
                 operation = "preparation"
                 prepared = self.store.begin_submission(event_id, subscription, claim, prepare=render)
                 if prepared is None:

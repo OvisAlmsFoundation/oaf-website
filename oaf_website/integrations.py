@@ -1,6 +1,7 @@
 """Bounded backend-only GraManna interfaces. Configuration is explicitly injected."""
 
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 import hashlib
 import hmac
 import json
@@ -22,6 +23,7 @@ MAX_BODY_BYTES = 1024
 HEX_TOKEN = re.compile(r"[0-9a-f]{64}", re.ASCII)
 ROUTES = {PREFIX + "/state-requests": ("POST", "submission"),
           PREFIX + "/notifications": ("POST", "submission"),
+          PREFIX + "/release-events": ("POST", "release"),
           PREFIX + "/interest-summary": ("GET", "reporting")}
 
 
@@ -42,6 +44,7 @@ class IntegrationConfig:
     client_id: str
     submission_credential: str = field(repr=False)
     reporting_credential: str = field(repr=False)
+    release_credential: str | None = field(default=None, repr=False)
 
     def __post_init__(self):
         if (type(self.environment) is not str or self.environment not in ENVIRONMENTS
@@ -52,13 +55,19 @@ class IntegrationConfig:
             raise diagnostic_error(IntegrationConfigurationError("Invalid protected integration configuration."), "configuration", "integration_config_fields", stage="startup")
         if hmac.compare_digest(self.submission_credential, self.reporting_credential):
             raise diagnostic_error(IntegrationConfigurationError("Integration permissions require distinct credentials."), "configuration", "integration_credentials_distinct", stage="startup")
+        if self.release_credential is not None and (
+                type(self.release_credential) is not str or HEX_TOKEN.fullmatch(self.release_credential) is None
+                or any(hmac.compare_digest(self.release_credential, value) for value in (
+                    self.submission_credential, self.reporting_credential))):
+            raise diagnostic_error(IntegrationConfigurationError("Invalid separate release authorization."), "configuration", "integration_credentials_distinct", stage="startup")
 
 
 def validate_configuration(config, environment, recognition_secret):
     if type(config) is not IntegrationConfig or config.environment != environment:
         raise diagnostic_error(IntegrationConfigurationError("Integration configuration must match the runtime environment."), "configuration", "integration_environment_match", stage="startup")
     if any(hmac.compare_digest(bytes.fromhex(value), recognition_secret)
-           for value in (config.submission_credential, config.reporting_credential)):
+           for value in (config.submission_credential, config.reporting_credential, config.release_credential)
+           if value is not None):
         raise diagnostic_error(IntegrationConfigurationError("Service credentials must be separate from the persistent key."), "configuration", "integration_key_separation", stage="startup")
 
 
@@ -102,9 +111,37 @@ def _invalid_constant(_value):
     raise ValueError("Invalid JSON constant.")
 
 
+def release_request(data, environment):
+    """Normalize UUID wire spelling only; stable identities never get regenerated."""
+    from .notification_delivery import EVENT_FIELDS, release_payload
+    if type(data) is not dict or set(data) not in (
+            EVENT_FIELDS, EVENT_FIELDS | {"action", "previous_approval_id"}):
+        raise ValueError("Invalid release fields.")
+    values = dict(data)
+    names = ["event_id", "source_approval_id"]
+    if "action" in values:
+        if values["action"] not in ("correct", "withdraw"):
+            raise ValueError("Invalid release action.")
+        names.append("previous_approval_id")
+    for name in names:
+        value = values[name]
+        if type(value) is not str or re.fullmatch(r"[0-9a-f]{32}|[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}", value) is None:
+            raise ValueError("Invalid release identity.")
+        values[name] = str(UUID(value))
+    release_payload({k: values[k] for k in EVENT_FIELDS}, environment, datetime.now(timezone.utc))
+    return values
+
+
 def register_integrations(app, config, environment, recognition, trusted, allow_local,
-                          request_store, subscription_store, reporting_store):
+                          request_store, subscription_store, reporting_store, release_store=None):
     validate_configuration(config, environment, recognition.secret)
+    if release_store is not None:
+        from .notification_delivery import NotificationDeliveryStore
+        if (type(release_store) is not NotificationDeliveryStore or release_store.environment != environment
+                or not release_store.releases_enabled or not release_store.management_enabled
+                or not hmac.compare_digest(release_store.secret, recognition.secret)
+                or config.release_credential is None):
+            raise IntegrationConfigurationError("Release persistence must match the authorized runtime.")
     capabilities = UnsubscribeCapabilities(recognition.secret)
     limits = ServiceLimits()
 
@@ -125,6 +162,8 @@ def register_integrations(app, config, environment, recognition, trusted, allow_
         if route is None:
             return failure("not_found", "Service endpoint unavailable.", 404, predicate="service_route")
         method, permission = route
+        if permission == "release" and (config.release_credential is None or release_store is None):
+            return failure("service_disabled", "Release intake is disabled.", 503, predicate="release_enabled")
         if request.method != method:
             return failure("method_not_allowed", "Unsupported service method.", 405, predicate="service_method")
         # Never trust caller-supplied forwarded headers. The deployment must
@@ -141,8 +180,8 @@ def register_integrations(app, config, environment, recognition, trusted, allow_
         authorization = request.headers.get("Authorization", "")
         match = re.fullmatch(r"Bearer ([0-9a-f]{64})", authorization, re.ASCII)
         supplied = match.group(1) if match else "0" * 64
-        expected = (config.submission_credential if permission == "submission"
-                    else config.reporting_credential)
+        expected = {"submission": config.submission_credential,
+                    "reporting": config.reporting_credential, "release": config.release_credential}[permission]
         authenticated = hmac.compare_digest(supplied, expected)
         if match is None or not authenticated:
             return failure("unauthorized", "Valid service authorization is required.", 401, predicate="service_bearer")
@@ -239,6 +278,26 @@ def register_integrations(app, config, environment, recognition, trusted, allow_
         except Exception as exc:
             log_notification_failure(app.logger, "interest_summary", exc, http_status=503)
             return failure("service_unavailable", "Interest reporting is temporarily unavailable.", 503, predicate="interest_summary")
+
+    @app.post(PREFIX + "/release-events")
+    def integration_release_event():
+        from .notification_delivery import EventConflict
+        data, invalid = payload()
+        if invalid is not None:
+            return invalid
+        try:
+            data = release_request(data, environment)
+        except (ValueError, OverflowError):
+            return failure("invalid_request", "Supply valid official release approval fields.", 400, predicate="release_payload")
+        try:
+            accept = release_store.accept_release_change if "action" in data else release_store.accept_event
+            event_id = accept(data)
+        except EventConflict:
+            return failure("event_conflict", "Release approval conflicts with the durable event.", 409, predicate="release_event_conflict")
+        except Exception as exc:
+            log_notification_failure(app.logger, "integration_request", exc, http_status=503)
+            return failure("acceptance_unconfirmed", "Retry the same event and approval identity.", 503, predicate="release_acceptance")
+        return jsonify(status="accepted", event_id=event_id), 200
 
 from .notification_dispatch import log_notification_failure
 

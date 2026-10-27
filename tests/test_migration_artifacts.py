@@ -42,7 +42,7 @@ def test_revision_docstrings_are_optional_without_changing_operations(artifact_c
     document=json.loads((artifact_copy/'migrations/manifest.json').read_bytes())
     for revision in document['revisions']:
         path=artifact_copy/'migrations/versions'/(revision['id']+'.py')
-        if revision['id'] not in {v.STATE_REQUESTS,v.NOTIFICATIONS,v.MANAGEMENT}:
+        if revision['id'] not in {v.STATE_REQUESTS,v.NOTIFICATIONS,v.MANAGEMENT,v.RELEASE_APPROVALS}:
             continue
         source=path.read_text()
         first=ast.parse(source).body[0]
@@ -58,7 +58,7 @@ def test_authoritative_manifest_and_single_root():
     assert (a.expected_start, a.target) == ("base", "0001_migration_baseline")
     document = json.loads((ROOT / "migrations/manifest.json").read_bytes())
     assert document["approval_status"] == "pending_independent_review"
-    assert len(document["revisions"]) == 6
+    assert len(document["revisions"]) == 7
     assert document["revisions"][0]["parent"] is None
     assert document["revisions"][1]["parent"] == v.BASELINE
     assert set(document["framework"]) == v.FRAMEWORK_FILES

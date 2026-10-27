@@ -450,3 +450,85 @@ def test_missing_key_and_invalid_policy_never_create_or_access_native_secrets(mo
         local_testing.recognition_secret(require_existing=policy)
     native.assert_not_called()
     assert not path.exists()
+
+
+
+def approved_mobile_events(runtime):
+    from test_notification_delivery import payload
+    from oaf_website.notification_delivery import NotificationDeliveryStore
+    store = NotificationDeliveryStore(runtime.model, SECRET, "testing", management_enabled=True, releases_enabled=True)
+    digest = subscribe(runtime.model)
+    bearer = store.request_confirmation("subscriber1@example.invalid")
+    assert store.confirm(bearer) == "verified"
+    store.accept_event(payload())
+    store.accept_event(payload("ios", event_id="00000000-0000-0000-0000-000000000009"))
+    return store, digest
+
+
+def test_existing_processor_drives_both_platforms_and_restart_does_not_repeat(runtime):
+    from oaf_website.notification_delivery_schema import deliveries, attempts
+    approved_mobile_events(runtime)
+    assert invoke(management_enabled=True, releases_enabled=True).status == "processed"
+    assert runtime.transport.call_count == 2
+    assert {r["status"] for r in runtime.model.rows(deliveries)} == {"accepted"}
+    assert len(runtime.model.rows(attempts)) == 2
+    assert invoke(management_enabled=True, releases_enabled=True).processed == 0
+    assert runtime.transport.call_count == 2
+
+
+@pytest.mark.parametrize("mode", ["default", "disabled", "invalid", "no_management", "intent_scope"])
+def test_release_processing_default_off_and_scope_is_not_widened(runtime, mode):
+    store, _ = approved_mobile_events(runtime)
+    options = dict(management_enabled=True)
+    if mode == "disabled": options.update(enabled=False, releases_enabled=True)
+    if mode == "invalid": options.update(releases_enabled=1)
+    if mode == "no_management": options.update(releases_enabled=True, management_enabled=False)
+    if mode == "intent_scope": options.update(releases_enabled=True,
+        intent_scope=outbox.ManagementIntentScope("A"*64, "B"*64, runtime.model.now))
+    result = invoke(**options)
+    assert runtime.transport.call_count == 0
+    if mode != "default": assert result.status in {"disabled", "unavailable"}
+    assert store.pending_release_events()
+
+
+def test_mobile_processor_cli_uses_existing_finite_batch(runtime, capsys):
+    approved_mobile_events(runtime)
+    code = processor.main(["--environment", "testing", "--enable-processing", "--enable-management", "--enable-releases",
+        "--brevo-account", "synthetic-account", "--confirmation-page", PAGE, "--testing-recipient", "subscriber1@example.invalid"])
+    assert code == 0
+    assert json.loads(capsys.readouterr().out)["processed"] == 2
+    assert runtime.transport.call_count == 2
+
+
+def test_mobile_processing_holds_uncertain_provider_results(runtime):
+    from oaf_website.notification_delivery_schema import deliveries, attempts
+    approved_mobile_events(runtime)
+    runtime.transport.side_effect = TimeoutError("synthetic private provider uncertainty")
+    invoke(management_enabled=True, releases_enabled=True)
+    assert {r["status"] for r in runtime.model.rows(deliveries)} == {"uncertain"}
+    assert len(runtime.model.rows(attempts)) == 2
+    runtime.model.elapse(minutes=10)
+    invoke(management_enabled=True, releases_enabled=True)
+    assert runtime.transport.call_count == 2
+
+
+
+@pytest.mark.parametrize("phase", ["pending_release_events", "begin_submission", "record_outcome"])
+def test_release_transaction_uncertainty_cannot_trigger_a_blind_resend(runtime, monkeypatch, phase):
+    from oaf_website.notification_delivery import NotificationDeliveryStore
+    approved_mobile_events(runtime)
+    original=getattr(NotificationDeliveryStore,phase)
+    def fail(store,*args,**kwargs):
+        runtime.model.failure="uncertain"
+        return original(store,*args,**kwargs)
+    monkeypatch.setattr(NotificationDeliveryStore,phase,fail)
+    assert invoke(management_enabled=True,releases_enabled=True).status=="unavailable"
+    assert runtime.transport.call_count==int(phase=="record_outcome")
+    runtime.model.failure=None
+    monkeypatch.setattr(NotificationDeliveryStore,phase,original)
+    runtime.model.elapse(minutes=6)
+    invoke(management_enabled=True,releases_enabled=True)
+    runtime.model.elapse(seconds=60)
+    invoke(management_enabled=True,releases_enabled=True)
+    bodies=[json.loads(call.args[1])["subject"] for call in runtime.transport.call_args_list]
+    assert len(bodies)==len(set(bodies))

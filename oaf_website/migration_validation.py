@@ -20,6 +20,7 @@ from .notification_schema import NOTIFICATIONS, NOTIFICATION_OBJECTS, NOTIFICATI
 from .notification_delivery_schema import DELIVERY, TABLES as DELIVERY_TABLES, OBJECTS as DELIVERY_OBJECTS, GRANTS as DELIVERY_GRANTS, EDGES as DELIVERY_EDGES
 
 from .confirmation_outbox_schema import OUTBOX, TABLES as OUTBOX_TABLES, OBJECTS as OUTBOX_OBJECTS, GRANTS as OUTBOX_GRANTS, EDGES as OUTBOX_EDGES
+from .release_approval_schema import RELEASE_APPROVALS, TABLES as RELEASE_TABLES, OBJECTS as RELEASE_OBJECTS, GRANTS as RELEASE_GRANTS, EDGES as RELEASE_EDGES
 from .notification_management_schema import MANAGEMENT, TABLES as MANAGEMENT_TABLES, ADDED_OBJECTS as MANAGEMENT_OBJECTS, GRANTS as MANAGEMENT_GRANTS, EDGES as MANAGEMENT_EDGES
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -36,7 +37,7 @@ FRAMEWORK_FILES = frozenset({
     "oaf_website/notification_schema.py", "oaf_website/notification_validation.py",
     "oaf_website/notification_delivery_schema.py", "oaf_website/notification_delivery_validation.py",
     "oaf_website/notification_dispatch.py",
-    "oaf_website/notification_management_schema.py",
+    "oaf_website/notification_management_schema.py", "oaf_website/release_approval_schema.py",
 })
 REVISION_FILE = f"migrations/versions/{BASELINE}.py"
 REQUEST_REVISION_FILE = f"migrations/versions/{STATE_REQUESTS}.py"
@@ -44,7 +45,8 @@ NOTIFICATION_REVISION_FILE = f"migrations/versions/{NOTIFICATIONS}.py"
 DELIVERY_REVISION_FILE = f"migrations/versions/{DELIVERY}.py"
 OUTBOX_REVISION_FILE = f"migrations/versions/{OUTBOX}.py"
 MANAGEMENT_REVISION_FILE = f"migrations/versions/{MANAGEMENT}.py"
-REVISION_FILES = frozenset({REVISION_FILE, REQUEST_REVISION_FILE, NOTIFICATION_REVISION_FILE, DELIVERY_REVISION_FILE, OUTBOX_REVISION_FILE, MANAGEMENT_REVISION_FILE})
+RELEASE_REVISION_FILE = f"migrations/versions/{RELEASE_APPROVALS}.py"
+REVISION_FILES = frozenset({RELEASE_REVISION_FILE, REVISION_FILE, REQUEST_REVISION_FILE, NOTIFICATION_REVISION_FILE, DELIVERY_REVISION_FILE, OUTBOX_REVISION_FILE, MANAGEMENT_REVISION_FILE})
 HASH_MODE = "sha256-utf8-lf"
 STATE_CONTRACT = {
     "base": {"revision": None, "managed_objects": []},
@@ -70,6 +72,7 @@ STATE_CONTRACT[NOTIFICATIONS] = {
 STATE_CONTRACT[DELIVERY] = {"revision": DELIVERY, "managed_objects": STATE_CONTRACT[NOTIFICATIONS]["managed_objects"] + DELIVERY_OBJECTS}
 STATE_CONTRACT[OUTBOX] = {"revision": OUTBOX, "managed_objects": STATE_CONTRACT[DELIVERY]["managed_objects"] + OUTBOX_OBJECTS}
 STATE_CONTRACT[MANAGEMENT] = {"revision": MANAGEMENT, "managed_objects": STATE_CONTRACT[OUTBOX]["managed_objects"] + MANAGEMENT_OBJECTS}
+STATE_CONTRACT[RELEASE_APPROVALS] = {"revision": RELEASE_APPROVALS, "managed_objects": STATE_CONTRACT[MANAGEMENT]["managed_objects"] + RELEASE_OBJECTS}
 SECURITY_CONTRACT = {
     "schema": "oaf_website",
     "owners": {name: i.owner for name, i in IDENTITIES.items()},
@@ -124,6 +127,9 @@ SECURITY_CONTRACT["postconditions"] += ["exact_confirmation_outbox_definition", 
 SECURITY_CONTRACT["runtime_object_grants"] += MANAGEMENT_GRANTS
 SECURITY_CONTRACT["dependencies"]["notification_management_edges"] = MANAGEMENT_EDGES
 SECURITY_CONTRACT["postconditions"] += ["exact_notification_management_definition", "exact_notification_management_runtime_grants"]
+SECURITY_CONTRACT["runtime_object_grants"] += RELEASE_GRANTS
+SECURITY_CONTRACT["dependencies"]["release_approval_edges"] = RELEASE_EDGES
+SECURITY_CONTRACT["postconditions"] += ["exact_release_approval_definition", "exact_release_approval_runtime_grants"]
 
 
 def digest(data: bytes) -> str:
@@ -255,7 +261,8 @@ def _validate_artifacts(start, target, manifest_hash, revision_hash):
                                (STATE_REQUESTS, NOTIFICATIONS), (NOTIFICATIONS, NOTIFICATIONS),
                                (NOTIFICATIONS, DELIVERY), (DELIVERY, DELIVERY),
                                (DELIVERY, OUTBOX), (OUTBOX, OUTBOX),
-                               (OUTBOX, MANAGEMENT), (MANAGEMENT, MANAGEMENT)}:
+                               (OUTBOX, MANAGEMENT), (MANAGEMENT, MANAGEMENT),
+                               (MANAGEMENT, RELEASE_APPROVALS), (RELEASE_APPROVALS, RELEASE_APPROVALS)}:
         raise MigrationError(Failure.STARTING_REVISION)
     if any(not isinstance(h, str) or not re.fullmatch(r"[0-9a-f]{64}", h)
            for h in (manifest_hash, revision_hash)):
@@ -277,7 +284,7 @@ def _validate_artifacts(start, target, manifest_hash, revision_hash):
     if set(framework) != FRAMEWORK_FILES:
         raise MigrationError(Failure.ARTIFACT_HASH)
     revisions = document["revisions"]
-    if not isinstance(revisions, list) or len(revisions) != 6:
+    if not isinstance(revisions, list) or len(revisions) != 7:
         raise MigrationError(Failure.ARTIFACT_HASH)
     if revisions[0] != {
         "id": BASELINE, "parent": None, "file": REVISION_FILE,
@@ -303,6 +310,10 @@ def _validate_artifacts(start, target, manifest_hash, revision_hash):
         "id": MANAGEMENT, "parent": OUTBOX, "file": MANAGEMENT_REVISION_FILE,
         "sha256": revisions[5].get("sha256"), "starting_state": OUTBOX,
         "target_state": MANAGEMENT, "grants": MANAGEMENT_GRANTS,
+    } or revisions[6] != {
+        "id": RELEASE_APPROVALS, "parent": MANAGEMENT, "file": RELEASE_REVISION_FILE,
+        "sha256": revisions[6].get("sha256"), "starting_state": MANAGEMENT,
+        "target_state": RELEASE_APPROVALS, "grants": RELEASE_GRANTS,
     } or revision_hash != next(r["sha256"] for r in revisions if r["id"] == target):
         raise MigrationError(Failure.ARTIFACT_HASH)
     # Explicit single linear root, no missing ancestors/branches/second heads.
@@ -424,6 +435,18 @@ def downgrade():
             and isinstance(management_tree.body[0].value.value, str)):
         management_tree.body.pop(0)
     if ast.dump(management_tree) != ast.dump(ast.parse(expected_management_revision)):
+        raise MigrationError(Failure.ARTIFACT_HASH)
+    expected_release_revision = expected_management_revision.replace(
+        "notification_management_schema", "release_approval_schema").replace(
+        "upgrade_notification_management", "upgrade_release_approvals").replace(
+        'revision = "0006_notification_management"', 'revision = "0007_release_approvals"').replace(
+        'down_revision = "0005_confirmation_outbox"', 'down_revision = "0006_notification_management"')
+    release_tree = ast.parse((ROOT / RELEASE_REVISION_FILE).read_text(encoding="utf-8"))
+    if (release_tree.body and isinstance(release_tree.body[0], ast.Expr)
+            and isinstance(release_tree.body[0].value, ast.Constant)
+            and isinstance(release_tree.body[0].value.value, str)):
+        release_tree.body.pop(0)
+    if ast.dump(release_tree) != ast.dump(ast.parse(expected_release_revision)):
         raise MigrationError(Failure.ARTIFACT_HASH)
     return VerifiedArtifacts(manifest_hash, revision_hash, start, target)
 
@@ -675,7 +698,8 @@ def catalog_state(connection, identity) -> str:
         FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
         WHERE n.nspname='oaf_website' ORDER BY c.relname
     """)
-    state = (BASE if not relations else MANAGEMENT
+    state = (BASE if not relations else RELEASE_APPROVALS
+             if any(r["name"] == "notification_release_approvals" for r in relations) else MANAGEMENT
              if any(r["name"] == "notification_preference_changes" for r in relations) else OUTBOX
              if any(r["name"] == "notification_confirmation_intents" for r in relations) else DELIVERY
              if any(r["name"] == "notification_release_events" for r in relations) else NOTIFICATIONS
@@ -683,30 +707,36 @@ def catalog_state(connection, identity) -> str:
              if any(r["name"] == "state_requests" for r in relations) else BASELINE)
     names = [(r["name"], r["kind"]) for r in relations]
     expected_relations = [] if state == BASE else [("alembic_version", "r"), ("alembic_version_pkc", "i")]
-    if state in {STATE_REQUESTS, NOTIFICATIONS, DELIVERY, OUTBOX, MANAGEMENT}:
+    if state in {STATE_REQUESTS, NOTIFICATIONS, DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS}:
         expected_relations += [("state_requests", "r"), ("state_requests_pk", "i")]
-    if state in {NOTIFICATIONS, DELIVERY, OUTBOX, MANAGEMENT}:
+    if state in {NOTIFICATIONS, DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS}:
         expected_relations += [("notifications", "r"), ("notifications_pk", "i"), ("notifications_active_email", "i")]
-    if state in {DELIVERY, OUTBOX, MANAGEMENT}:
+    if state in {DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS}:
         expected_relations += [(o["name"], "r" if o["kind"] == "table" else "i")
                                for o in DELIVERY_OBJECTS if o["kind"] in {"table", "index"}]
-    if state in {OUTBOX, MANAGEMENT}:
+    if state in {OUTBOX, MANAGEMENT, RELEASE_APPROVALS}:
         expected_relations += [(o["name"], "r" if o["kind"] == "table" else "i")
                                for o in OUTBOX_OBJECTS if o["kind"] in {"table", "index"}]
-    if state == MANAGEMENT:
+    if state in {MANAGEMENT, RELEASE_APPROVALS}:
         expected_relations += [(o["name"], "r" if o["kind"] == "table" else "i")
                                for o in MANAGEMENT_OBJECTS if o["kind"] in {"table", "index"}]
+    if state == RELEASE_APPROVALS:
+        expected_relations += [(o["name"], "r" if o["kind"] == "table" else "i")
+                               for o in RELEASE_OBJECTS if o["kind"] in {"table", "index"}]
     if names != sorted(expected_relations):
         raise MigrationError(Failure.DRIFT)
     trigger_tables = set()
-    if state in {DELIVERY, OUTBOX, MANAGEMENT}:
+    if state in {DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS}:
         from .notification_delivery_schema import FK_TRIGGERS
         trigger_tables |= {t["relation"] for t in FK_TRIGGERS}
-    if state in {OUTBOX, MANAGEMENT}:
+    if state in {OUTBOX, MANAGEMENT, RELEASE_APPROVALS}:
         from .confirmation_outbox_schema import FK_TRIGGERS
         trigger_tables |= {t["relation"] for t in FK_TRIGGERS}
-    if state == MANAGEMENT:
+    if state in {MANAGEMENT, RELEASE_APPROVALS}:
         from .notification_management_schema import FK_TRIGGERS
+        trigger_tables |= {t["relation"] for t in FK_TRIGGERS}
+    if state == RELEASE_APPROVALS:
+        from .release_approval_schema import FK_TRIGGERS
         trigger_tables |= {t["relation"] for t in FK_TRIGGERS}
     if any(r["owner"] != identity.owner or r["persistence"] != "p"
            or r["rls"] or r["force_rls"] or r["rules"] or r["triggers"] != (r["name"] in trigger_tables) or r["options"]
@@ -723,18 +753,21 @@ def catalog_state(connection, identity) -> str:
         raise MigrationError(Failure.DRIFT)
     if state != BASE:
         expected_types = [("_alembic_version", "b", identity.owner), ("alembic_version", "c", identity.owner)]
-        if state in {STATE_REQUESTS, NOTIFICATIONS, DELIVERY, OUTBOX, MANAGEMENT}:
+        if state in {STATE_REQUESTS, NOTIFICATIONS, DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS}:
             expected_types += [("_state_requests", "b", identity.owner), ("state_requests", "c", identity.owner)]
-        if state in {NOTIFICATIONS, DELIVERY, OUTBOX, MANAGEMENT}:
+        if state in {NOTIFICATIONS, DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS}:
             expected_types += [("_notifications", "b", identity.owner), ("notifications", "c", identity.owner)]
-        if state in {DELIVERY, OUTBOX, MANAGEMENT}:
+        if state in {DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS}:
             expected_types += [(name, kind, identity.owner) for item in DELIVERY_TABLES
                                for name, kind in [(item.name, "c"), ("_" + item.name, "b")]]
-        if state in {OUTBOX, MANAGEMENT}:
+        if state in {OUTBOX, MANAGEMENT, RELEASE_APPROVALS}:
             expected_types += [(name, kind, identity.owner) for item in OUTBOX_TABLES
                                for name, kind in [(item.name, "c"), ("_" + item.name, "b")]]
-        if state == MANAGEMENT:
+        if state in {MANAGEMENT, RELEASE_APPROVALS}:
             expected_types += [(name, kind, identity.owner) for item in MANAGEMENT_TABLES
+                               for name, kind in [(item.name, "c"), ("_" + item.name, "b")]]
+        if state == RELEASE_APPROVALS:
+            expected_types += [(name, kind, identity.owner) for item in RELEASE_TABLES
                                for name, kind in [(item.name, "c"), ("_" + item.name, "b")]]
         if ([(t["name"], t["kind"], t["owner"]) for t in types] != sorted(expected_types)
                 or any(not t["element"] if t["kind"] == "b" else not t["relation"] for t in types)):
@@ -753,28 +786,33 @@ def catalog_state(connection, identity) -> str:
         """):
             raise MigrationError(Failure.DRIFT)
         verify_generated_type_privileges(connection, identity)
-        if state in {STATE_REQUESTS, NOTIFICATIONS, DELIVERY, OUTBOX, MANAGEMENT}:
+        if state in {STATE_REQUESTS, NOTIFICATIONS, DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS}:
             from .state_request_validation import verify_state_requests
             verify_state_requests(connection, identity)
-        if state in {NOTIFICATIONS, DELIVERY, OUTBOX, MANAGEMENT}:
+        if state in {NOTIFICATIONS, DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS}:
             from .notification_validation import verify_notifications
-            if state == MANAGEMENT:
+            if state in {MANAGEMENT, RELEASE_APPROVALS}:
                 verify_notifications(connection, identity, management=True)
             else:
                 verify_notifications(connection, identity)
-    if state in {DELIVERY, OUTBOX, MANAGEMENT}:
+    if state in {DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS}:
         from .notification_delivery_validation import verify_delivery
-        if state in {OUTBOX, MANAGEMENT}:
+        if state in {OUTBOX, MANAGEMENT, RELEASE_APPROVALS}:
             from .notification_delivery_schema import MUTABLE, FK_TRIGGERS
             from .confirmation_outbox_schema import MUTABLE as outbox_mutable, FK_TRIGGERS as outbox_triggers
             tables = DELIVERY_TABLES + OUTBOX_TABLES
             mutable = {**MUTABLE, **outbox_mutable}
             triggers = FK_TRIGGERS + outbox_triggers
-            if state == MANAGEMENT:
+            if state in {MANAGEMENT, RELEASE_APPROVALS}:
                 from .notification_management_schema import intents, FK_TRIGGERS as management_triggers
                 tables = DELIVERY_TABLES + (intents, OUTBOX_TABLES[1]) + MANAGEMENT_TABLES
                 mutable.update({t.name: () for t in MANAGEMENT_TABLES})
                 triggers = triggers + management_triggers
+            if state == RELEASE_APPROVALS:
+                from .release_approval_schema import FK_TRIGGERS as release_triggers
+                tables += RELEASE_TABLES
+                mutable.update({t.name: () for t in RELEASE_TABLES})
+                triggers += release_triggers
             verify_delivery(connection, identity, tables=tables, mutable=mutable, expected_triggers=triggers)
         else:
             verify_delivery(connection, identity)
@@ -901,17 +939,19 @@ def verify_dependencies(connection, identity, state):
     labels = [o['label'] for o in objects]
     expected_labels = {'schema'} if state == BASE else {
         'schema', 'table', 'index', 'row_type', 'array_type', 'primary_key'}
-    if state in {STATE_REQUESTS, NOTIFICATIONS, DELIVERY, OUTBOX, MANAGEMENT}:
+    if state in {STATE_REQUESTS, NOTIFICATIONS, DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS}:
         expected_labels |= {'request_table', 'request_index', 'request_row_type',
                             'request_array_type', 'request_primary_key', 'request_check', 'request_default'}
-    if state in {NOTIFICATIONS, DELIVERY, OUTBOX, MANAGEMENT}:
+    if state in {NOTIFICATIONS, DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS}:
         expected_labels |= {edge[0] for edge in NOTIFICATION_EDGES}
-    if state in {DELIVERY, OUTBOX, MANAGEMENT}:
+    if state in {DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS}:
         expected_labels |= {edge[0] for edge in DELIVERY_EDGES}
-    if state in {OUTBOX, MANAGEMENT}:
+    if state in {OUTBOX, MANAGEMENT, RELEASE_APPROVALS}:
         expected_labels |= {edge[0] for edge in OUTBOX_EDGES}
-    if state == MANAGEMENT:
+    if state in {MANAGEMENT, RELEASE_APPROVALS}:
         expected_labels |= {edge[0] for edge in MANAGEMENT_EDGES}
+    if state == RELEASE_APPROVALS:
+        expected_labels |= {edge[0] for edge in RELEASE_EDGES}
     if (len(set(labels)) != len(labels) or
             {v for v in labels if not v.startswith('default_')} != expected_labels):
         raise MigrationError(Failure.DRIFT)
@@ -967,16 +1007,18 @@ def verify_dependencies(connection, identity, state):
     expected = set() if state == BASE else {
         tuple(edge) for edge in SECURITY_CONTRACT['dependencies']['baseline_edges']}
     expected |= set(generated_toast.values())
-    if state in {STATE_REQUESTS, NOTIFICATIONS, DELIVERY, OUTBOX, MANAGEMENT}:
+    if state in {STATE_REQUESTS, NOTIFICATIONS, DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS}:
         expected |= {tuple(edge) for edge in REQUEST_EDGES}
-    if state in {NOTIFICATIONS, DELIVERY, OUTBOX, MANAGEMENT}:
+    if state in {NOTIFICATIONS, DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS}:
         expected |= {tuple(edge) for edge in NOTIFICATION_EDGES}
-    if state in {DELIVERY, OUTBOX, MANAGEMENT}:
+    if state in {DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS}:
         expected |= {tuple(edge) for edge in DELIVERY_EDGES}
-    if state in {OUTBOX, MANAGEMENT}:
+    if state in {OUTBOX, MANAGEMENT, RELEASE_APPROVALS}:
         expected |= {tuple(edge) for edge in OUTBOX_EDGES}
-    if state == MANAGEMENT:
+    if state in {MANAGEMENT, RELEASE_APPROVALS}:
         expected |= {tuple(edge) for edge in MANAGEMENT_EDGES}
+    if state == RELEASE_APPROVALS:
+        expected |= {tuple(edge) for edge in RELEASE_EDGES}
     for label in labels:
         if label.startswith('default_'):
             _, namespace, kind = label.split('_')

@@ -36,6 +36,21 @@ class EventConflict(ValueError):
     """An accepted event or semantic platform launch cannot be replaced."""
 
 
+def official_release_reference(platform, release_id, url):
+    """Bounded store references only; never resolve a URL or follow a redirect."""
+    if type(release_id) is not str or type(url) is not str or len(url) > 300:
+        return False
+    if platform == "android":
+        return (len(release_id) <= 150 and re.fullmatch(
+            r"[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)+", release_id) is not None
+            and url == "https://play.google.com/store/apps/details?id=" + release_id)
+    if platform == "ios":
+        return (re.fullmatch(r"[1-9][0-9]{5,19}", release_id) is not None and re.fullmatch(
+            r"https://apps\.apple\.com/(?:[a-z]{2}/)?app/(?:[a-z0-9]+(?:-[a-z0-9]+)*/)?id" + release_id,
+            url) is not None)
+    return False
+
+
 def release_payload(payload, environment, now):
     if type(payload) is not dict or set(payload) != EVENT_FIELDS:
         raise ValueError("Invalid release contract.")
@@ -47,15 +62,7 @@ def release_payload(payload, environment, now):
             or values["content_version"] != CONTENT_VERSION):
         raise ValueError("Invalid release scope.")
     release_id, url = values["release_id"], values["release_url"]
-    if type(release_id) is not str or type(url) is not str:
-        raise ValueError("Invalid official release reference.")
-    if values["platform"] == "android":
-        valid = (len(release_id) <= 150 and re.fullmatch(r"[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+", release_id)
-                 and url == "https://play.google.com/store/apps/details?id=" + release_id)
-    else:
-        valid = (re.fullmatch(r"[1-9][0-9]{5,19}", release_id)
-                 and url == "https://apps.apple.com/app/id" + release_id)
-    if not valid:
+    if not official_release_reference(values["platform"], release_id, url):
         raise ValueError("Invalid official release reference.")
     for name in ("approved_at", "audience_cutoff"):
         value = values[name]
@@ -73,14 +80,18 @@ def release_payload(payload, environment, now):
 
 
 class NotificationDeliveryStore:
-    def __init__(self, engine, secret, environment, *, management_enabled=False):
+    def __init__(self, engine, secret, environment, *, management_enabled=False,
+                 releases_enabled=False, recipient_scope=None):
         UnsubscribeCapabilities(secret)  # Same persistent protected-key requirement; separate HMAC domains.
         if environment not in ENVIRONMENTS:
             raise ValueError("An explicit matching environment is required.")
         self.engine, self.secret, self.environment = engine, secret, environment
-        if type(management_enabled) is not bool:
+        if type(management_enabled) is not bool or type(releases_enabled) is not bool:
             raise ValueError("Management activation must be an explicit boolean.")
         self.management_enabled = management_enabled
+        from .brevo import validate_recipient_scope
+        validate_recipient_scope(recipient_scope, environment)
+        self.releases_enabled, self.recipient_scope = releases_enabled, recipient_scope
 
     def _digest(self, domain, value):
         return hmac.new(self.secret, ("oaf-notification-" + domain + "-v1:").encode()
@@ -130,7 +141,7 @@ class NotificationDeliveryStore:
         # Append-only evidence has SELECT/INSERT grants only. The existing
         # transaction advisory lock serializes its checks/inserts; FOR UPDATE
         # would unnecessarily require UPDATE authority on that history.
-        if item.name not in {suppressions.name, "notification_preference_changes"}:
+        if item.name not in {suppressions.name, "notification_preference_changes", "notification_release_approvals"}:
             statement = statement.with_for_update()
         return list(connection.execute(statement).mappings())
 
@@ -223,7 +234,7 @@ class NotificationDeliveryStore:
             return "verified"
 
     def accept_event(self, payload):
-        """Trusted internal seam only; approval authentication/handoff is a later checkpoint."""
+        """Persist an authenticated approval; repeat the original identity on retry."""
         with self._transaction() as (connection, now):
             values = release_payload(payload, self.environment, now)
             existing = self._get(connection, events, event_id=values["event_id"])
@@ -236,11 +247,65 @@ class NotificationDeliveryStore:
             self._insert(connection, events, dict(values, status="received", created_at=now, updated_at=now))
             return values["event_id"]
 
+    def accept_release_change(self, payload):
+        """Compare-and-append authority under the same dispatch transaction lock."""
+        from .release_approval_schema import revisions
+        if (not self.releases_enabled or type(payload) is not dict
+                or set(payload) != EVENT_FIELDS | {"action", "previous_approval_id"}
+                or payload["action"] not in ("correct", "withdraw")):
+            raise ValueError("Invalid release change contract.")
+        previous = payload["previous_approval_id"]
+        if type(previous) is not str or str(UUID(previous)) != previous:
+            raise ValueError("Invalid preceding approval identity.")
+        with self._transaction() as (connection, now):
+            values = release_payload({k: payload[k] for k in EVENT_FIELDS}, self.environment, now)
+            digest = hashlib.sha256((values["payload_digest"] + payload["action"] + previous).encode("ascii")).hexdigest()
+            existing = self._get(connection, revisions, source_approval_id=values["source_approval_id"])
+            if existing:
+                if existing["payload_digest"] != digest:
+                    raise EventConflict("Release approval conflict.")
+                return existing["event_id"]
+            event = self._event(connection, values["event_id"])
+            if (event is None or event.get("withdrawn", False)
+                    or event["source_approval_id"] != previous or values["source_approval_id"] == previous
+                    or values["platform"] != event["platform"]
+                    or values["audience_cutoff"] != event["audience_cutoff"]
+                    or values["approved_at"] <= event["approved_at"]):
+                raise EventConflict("Release approval chain conflict.")
+            self._insert(connection, revisions, dict(event_id=values["event_id"],
+                source_approval_id=values["source_approval_id"], previous_approval_id=previous,
+                action=payload["action"], release_id=values["release_id"], release_url=values["release_url"],
+                approved_at=values["approved_at"], payload_digest=digest, created_at=now))
+            if payload["action"] == "withdraw":
+                for record in self._rows(connection, deliveries, event_id=values["event_id"]):
+                    if record["status"] in {"pending", "failed", "claimed"}:
+                        self._finish(connection, record, now, "suppressed", "suppressed")
+                # Even an unprepared withdrawal is terminal; replay cannot reopen it.
+                self._refresh(connection, values["event_id"], now)
+            return values["event_id"]
+
     def _event(self, connection, event_id):
-        return self._get(connection, events, event_id=event_id, environment=self.environment)
+        event = self._get(connection, events, event_id=event_id, environment=self.environment)
+        if event is not None and self.releases_enabled:
+            from .release_approval_schema import revisions
+            history = self._rows(connection, revisions, event_id=event_id)
+            if history:
+                latest = max(history, key=lambda row: row["approved_at"])
+                event = dict(event, **{k: latest[k] for k in (
+                    "source_approval_id", "release_id", "release_url", "approved_at")},
+                    withdrawn=latest["action"] == "withdraw")
+        return event
+
+    def pending_release_events(self):
+        """At most the two independent platform launches, recovered from persistence."""
+        with self._transaction() as (connection, now):
+            statement = select(events.c.event_id).where(events.c.environment == self.environment,
+                events.c.status.in_(("received", "ready", "attention"))).order_by(
+                    events.c.created_at, events.c.event_id).limit(2)
+            return [row["event_id"] for row in connection.execute(statement).mappings()]
 
     def _eligible(self, connection, subscriber, event):
-        if (subscriber["unsubscribed_at"] is not None or subscriber["created_at"] > event["audience_cutoff"]
+        if (event.get("withdrawn", False) or subscriber["unsubscribed_at"] is not None or subscriber["created_at"] > event["audience_cutoff"]
                 or not subscriber[event["platform"] + "_launch"]):
             return False
         if self.management_enabled:
@@ -290,6 +355,9 @@ class NotificationDeliveryStore:
                 deliveries.c.event_id == event_id,
                 deliveries.c.status.in_(("pending", "failed")), deliveries.c.attempts < 3,
                 deliveries.c.next_attempt_at <= now).order_by(deliveries.c.subscription).limit(limit)
+            if self.recipient_scope is not None:
+                statement = statement.where(deliveries.c.subscription.in_(select(
+                    notifications.c.unsubscribe_digest).where(notifications.c.email == self.recipient_scope.mailbox)))
             return dict(event), [row["subscription"] for row in connection.execute(statement).mappings()]
 
     def _refresh(self, connection, event_id, now):
@@ -322,6 +390,8 @@ class NotificationDeliveryStore:
                     or record["next_attempt_at"] is None or record["next_attempt_at"] > now):
                 return None
             subscriber = self._get(connection, notifications, unsubscribe_digest=subscription)
+            if self.recipient_scope is not None:
+                self.recipient_scope.require(subscriber["email"])
             if not self._eligible(connection, subscriber, event):
                 self._finish(connection, record, now, "ineligible", "suppressed")
                 return None
@@ -347,11 +417,13 @@ class NotificationDeliveryStore:
             if (event is None or not self._owns(record, claim, "claimed") or record["lease_until"] <= now):
                 return None
             subscriber = self._get(connection, notifications, unsubscribe_digest=subscription)
+            if self.recipient_scope is not None:
+                self.recipient_scope.require(subscriber["email"])
             if not self._eligible(connection, subscriber, event):
                 self._finish(connection, record, now, "ineligible", "suppressed")
                 return None
             # Render lifecycle/revision-bound links under the same final lock.
-            message = prepare(subscriber, now) if prepare is not None else None
+            message = prepare(subscriber, now, event) if prepare is not None else None
             key = dict(event_id=event_id, subscription=subscription)
             self._update(connection, deliveries, key, status="submitting", updated_at=now,
                          lease_until=now + timedelta(minutes=5))

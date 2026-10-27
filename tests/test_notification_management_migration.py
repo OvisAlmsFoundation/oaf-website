@@ -191,3 +191,110 @@ def test_synthetic_single_use_authorization_and_separate_noop(operational,monkey
     noop=replace(request,expected_start=v.MANAGEMENT)
     assert op.run(op.issue(op.approvals(noop)),noop)['outcome']=='verified_noop'
     assert len(records(op,'claim-*.json'))==2
+
+
+
+# The next additive revision is prepared only. This fixture never connects.
+from oaf_website import release_approval_schema as release_schema
+
+
+class ReleaseCatalog(ManagementCatalog):
+    def __init__(self, environment="testing"):
+        super().__init__(environment)
+        s = release_schema
+        self.marker = [dict(version_num=v.RELEASE_APPROVALS)]
+        self.relations += [dict(name=o["name"], kind="r" if o["kind"] == "table" else "i", owner=self.i.owner,
+            persistence="p", rls=False, force_rls=False, rules=False, triggers=o["kind"] == "table", options=None)
+            for o in s.OBJECTS if o["kind"] in {"table", "index"}]
+        self.relations.sort(key=lambda r: r["name"])
+        self.types += [dict(name=name, kind=kind, owner=self.i.owner, relation=900 if kind == "c" else 0,
+            element=901 if kind == "b" else 0) for name,kind in ((s.revisions.name,"c"),("_"+s.revisions.name,"b"))]
+        self.types.sort(key=lambda r: r["name"])
+        labels = sorted({edge[0] for edge in s.EDGES} - {o["label"] for o in self.objects})
+        self.objects += [dict(label=label,classid=39000+n,objid=40000+n) for n,label in enumerate(labels)]
+        addresses = {o["label"]:(o["classid"],o["objid"]) for o in self.objects}
+        self.dependencies += [dict(classid=addresses[a][0], objid=addresses[a][1], objsubid=b,
+            refclassid=addresses[c][0], refobjid=addresses[c][1], refobjsubid=d, deptype=e) for a,b,c,d,e in s.EDGES]
+        self.foreign_keys.update(foreign_key_snapshots({
+            ("oaf_website.notification_release_approvals","notification_release_approvals_event_fk"):
+            ("notification_release_events",["event_id"],["event_id"])}))
+        item = s.revisions
+        snapshot = deepcopy(self.snapshots["oaf_website.notification_preference_changes"])
+        snapshot.update(columns=validator.column_contract(item), indexes=validator.index_contract(item),
+            constraints=[dict(name=c.name, kind="c" if isinstance(c,CheckConstraint) else "f" if isinstance(c,ForeignKeyConstraint)
+                else "p" if isinstance(c,PrimaryKeyConstraint) else "u", validated=True,deferrable=False,deferred=False,
+                local=True,inherited=0,definition=validator.constraint_definition(c)) for c in sorted(item.constraints,key=lambda c:c.name)])
+        self.snapshots["oaf_website."+item.name] = snapshot
+        self.trigger_snapshot = sorted(self.trigger_snapshot + s.FK_TRIGGERS, key=lambda r:r["label"])
+
+    def execute(self, sql, parameters=None):
+        q,p = " ".join(str(sql).split()), parameters or {}
+        if "has_column_privilege" in q and p.get("table") == "oaf_website.notification_release_approvals":
+            return Result(p["role"] == self.i.owner or p["role"] == self.i.runtime and p["privilege"] in {"SELECT","INSERT"})
+        if "has_type_privilege" in q and p.get("name") in {"oaf_website.notification_release_approvals", "oaf_website._notification_release_approvals"}:
+            return Result(p["role"] == self.i.owner and "WITH GRANT OPTION" not in q)
+        return super().execute(sql, parameters)
+
+
+@pytest.mark.parametrize("environment", ["testing","development"])
+def test_release_approval_catalog_uses_append_only_grants_and_exact_dependencies(environment):
+    catalog = ReleaseCatalog(environment)
+    assert v.catalog_state(catalog,catalog.i) == v.RELEASE_APPROVALS
+
+
+@pytest.mark.parametrize("case", ["column", "acl", "dependency", "marker", "trigger", "type", "fork_index"])
+def test_release_approval_catalog_rejects_drift(case):
+    c = ReleaseCatalog()
+    snapshot = c.snapshots["oaf_website.notification_release_approvals"]
+    if case == "column": snapshot["columns"][0]["required"] = False
+    if case == "acl": snapshot["acl"][-1]["privilege"] = "UPDATE"
+    if case == "dependency": c.dependencies.pop()
+    if case == "marker": c.marker = [dict(version_num=v.MANAGEMENT)]
+    if case == "trigger": c.trigger_snapshot.pop()
+    if case == "type": snapshot["type_acl"][0]["grantee"] = "PUBLIC"
+    if case == "fork_index": snapshot["indexes"].pop()
+    with pytest.raises(MigrationError, match=Failure.DRIFT): v.catalog_state(c,c.i)
+
+
+@pytest.mark.parametrize("start", [v.MANAGEMENT, v.RELEASE_APPROVALS])
+def test_release_artifact_allows_only_exact_successor_or_noop(start):
+    payload = (v.ROOT/"migrations/manifest.json").read_bytes()
+    document = json.loads(payload)
+    assert v.validate_artifacts(expected_start=start,target=v.RELEASE_APPROVALS,
+        manifest_hash=v.digest(payload),revision_hash=document["revisions"][6]["sha256"]).target == v.RELEASE_APPROVALS
+
+
+@pytest.mark.parametrize("mutation", ["operation", "parent", "identity", "empty"])
+def test_release_revision_source_is_exactly_declarative(artifact_copy, mutation):
+    path = artifact_copy/v.RELEASE_REVISION_FILE
+    source = path.read_text()
+    source = source.replace("op.get_bind()", "None") if mutation == "operation" else source.replace(
+        'down_revision = "0006_notification_management"', 'down_revision = "0005_confirmation_outbox"') if mutation == "parent" else source.replace(
+        'revision = "0007_release_approvals"', 'revision = "0007_other"') if mutation == "identity" else ""
+    path.write_text(source, encoding="utf-8")
+    document = json.loads((artifact_copy/"migrations/manifest.json").read_bytes())
+    document["revisions"][6]["sha256"] = v.digest(path.read_bytes())
+    write_manifest(artifact_copy, document)
+    from test_migration_artifacts import verify
+    with pytest.raises(MigrationError, match=Failure.ARTIFACT_HASH): verify(artifact_copy)
+
+
+@pytest.mark.parametrize("environment", ["testing", "development"])
+def test_release_approval_ddl_is_additive_owner_only_and_not_executed(environment, monkeypatch):
+    statements=[]
+    def execute(statement):
+        statements.append(str(statement.compile(dialect=postgresql.dialect())))
+        return Result(IDENTITIES[environment].owner)
+    release_schema.upgrade_release_approvals(SimpleNamespace(execute=execute))
+    assert sum("CREATE TABLE" in q for q in statements) == 1
+    grants = " ".join(q for q in statements if q.startswith("GRANT"))
+    assert "SELECT, INSERT" in grants and "UPDATE" not in grants and "DELETE" not in grants
+    with pytest.raises(MigrationError, match=Failure.WRONG_IDENTITY):
+        release_schema.upgrade_release_approvals(SimpleNamespace(execute=lambda q:Result(IDENTITIES[environment].runtime)))
+    revision = runpy.run_path(str(ROOT/v.RELEASE_REVISION_FILE))
+    calls=[]; sentinel=object()
+    monkeypatch.setattr(alembic_op,"get_bind",lambda:sentinel)
+    revision["upgrade"].__globals__["upgrade_release_approvals"]=calls.append
+    revision["upgrade"]()
+    assert calls == [sentinel] and revision["down_revision"] == v.MANAGEMENT
+    with pytest.raises(RuntimeError): revision["downgrade"]()

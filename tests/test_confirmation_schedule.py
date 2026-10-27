@@ -491,3 +491,58 @@ def test_export_synthetic_action_for_powershell_parser_only(scheduled, monkeypat
     assert str(schedule.ROOT).replace("'", "''") in script
     assert script.endswith("exit $LASTEXITCODE")
     assert_no_runtime(scheduled)
+
+
+
+def test_release_task_flag_uses_same_disabled_task_and_bounded_invocation(scheduled, capsys):
+    from test_confirmation_processor import approved_mobile_events
+    approved_mobile_events(scheduled)
+    xml = schedule.task_xml(profile="testing", windows_user=SID, enabled=True, account="synthetic-account",
+        page=PAGE, recipient=MAILBOX, management_enabled=True, releases_enabled=True)
+    task = ET.fromstring(xml)
+    assert task.find("t:Settings/t:Enabled", NS).text == "false"
+    command = base64.b64decode(task.find("t:Actions/t:Exec/t:Arguments", NS).text.split()[-1]).decode("utf-16-le")
+    assert "--enable-releases" in command
+    assert run(management_enabled=True, releases_enabled=True) == 0
+    assert output(capsys)["processed"] == 2
+    assert run(management_enabled=True, releases_enabled=True) == 0
+    assert output(capsys)["processed"] == 0
+    assert scheduled.transport.call_count == 2
+
+
+@pytest.mark.parametrize("options", [dict(releases_enabled=1), dict(releases_enabled=True),
+    dict(releases_enabled=True, management_enabled=True, management_intent_fingerprint="a"*64,
+         management_identity_fingerprint="b"*64, management_deadline="2026-10-16T12:00:00+00:00")])
+def test_release_scheduler_rejects_invalid_or_exceptional_scope(scheduled, capsys, options):
+    assert run(**options) == 2
+    assert output(capsys)["status"] == "invalid_configuration"
+    assert_no_runtime(scheduled)
+
+
+
+@pytest.mark.parametrize("platform", ["android", "ios"])
+def test_one_authenticated_approval_drives_existing_schedule_without_another_send_action(scheduled, capsys, platform):
+    from test_integrations import CONFIG, RELEASE_KEY, RELEASE_PATH, service
+    from dataclasses import replace
+    from oaf_website import state_requests
+    from oaf_website.notification_delivery import NotificationDeliveryStore
+    from oaf_website.notification_delivery_schema import events, deliveries, attempts
+    from test_notification_delivery import SECRET, subscribe, payload
+    from test_state_requests import ORIGIN
+    store=NotificationDeliveryStore(scheduled.model,SECRET,"testing",releases_enabled=True,management_enabled=True)
+    subscribe(scheduled.model)
+    assert store.confirm(store.request_confirmation(MAILBOX))=="verified"
+    app=state_requests._build_app(None,state_requests.BrowserRecognition(SECRET),ORIGIN,
+        integration_config=replace(CONFIG,release_credential=RELEASE_KEY),environment="testing",release_store=store)
+    client=app.test_client(use_cookies=False)
+    assert service(client,RELEASE_PATH,credential=RELEASE_KEY,data=payload(platform)).status_code==200
+    assert len(scheduled.model.rows(events))==1
+    scheduled.transport.assert_not_called()
+    assert run(management_enabled=True,releases_enabled=True)==0
+    assert output(capsys)["processed"]==1
+    assert {row["status"] for row in scheduled.model.rows(deliveries)}=={"accepted"}
+    assert len(scheduled.model.rows(attempts))==1
+    assert service(client,RELEASE_PATH,credential=RELEASE_KEY,data=payload(platform)).status_code==200
+    assert run(management_enabled=True,releases_enabled=True)==0
+    assert output(capsys)["processed"]==0
+    assert scheduled.transport.call_count==1

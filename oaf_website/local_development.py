@@ -29,18 +29,44 @@ INTEGRATION_SERVICES = (
     "OAF Website/development/Integrations/Submission",
     "OAF Website/development/Integrations/Reporting",
 )
+DEVELOPMENT_RELEASE_METADATA = {
+    "client_id": "gramanna",
+    "release_credential_service": "OAF Website/development/Integrations/Release",
+    "release_credential_account": "gramanna",
+}
+TESTING_INTEGRATION_PATH = ROOT / "config/local/integrations.testing.toml"
+TESTING_INTEGRATION_SERVICES = (
+    "OAF Website/testing/Integrations/Submission",
+    "OAF Website/testing/Integrations/Reporting",
+    "OAF Website/testing/Integrations/Release",
+)
+TESTING_INTEGRATION_METADATA = {
+    "client_id": "gramanna",
+    "release_credential_service": TESTING_INTEGRATION_SERVICES[2],
+    "release_credential_account": "gramanna",
+}
+
+
+def load_testing_integration_config(*, local_config_path=TESTING_INTEGRATION_PATH,
+                                   environ=None, credential_loader=None):
+    """Load TESTING permissions only; configuration does not activate release intake."""
+    return load_development_integration_config(local_config_path=local_config_path,
+        environ=environ, credential_loader=credential_loader, expected_profile="testing")
 
 
 def load_development_integration_config(*, local_config_path=INTEGRATION_PATH,
-                                        environ=None, credential_loader=None):
-    """Load requested DEVELOPMENT configuration; never provision or use a fallback.
+                                        environ=None, credential_loader=None,
+                                        expected_profile="development"):
+    """Load explicitly selected local permissions; never provision or use a fallback.
 
     Only non-secret client metadata belongs in TOML. Credentials come from the
     existing pinned Windows backend, using exact machine-local generic targets.
     Injection arguments support offline tests, not runtime location overrides.
     """
     environment = dict(os.environ if environ is None else environ)
-    _validate_environment(environment, "development")
+    _validate_environment(environment, expected_profile)
+    if expected_profile not in {"development", "testing"}:
+        raise diagnostic_error(IntegrationConfigurationError("Local integration profile is unavailable."), "load_development_integration_config", "integration_metadata", stage="startup")
     for path in (ROOT, ROOT / "config", local_config_path.parent, local_config_path):
         if path.exists() and getattr(path.lstat(), "st_file_attributes", 0) & stat.FILE_ATTRIBUTE_REPARSE_POINT:
             raise diagnostic_error(IntegrationConfigurationError("Redirected integration configuration locations are prohibited."), "load_development_integration_config", "integration_location", stage="startup")
@@ -53,23 +79,35 @@ def load_development_integration_config(*, local_config_path=INTEGRATION_PATH,
         # Parser/IO exceptions may contain private supplied text; discard them.
         pass
     else:
-        settings = document.get("development")
-        if (set(document) != {"development"} or type(settings) is not dict
-                or set(settings) != {"client_id"} or type(settings["client_id"]) is not str
+        settings = document.get(expected_profile)
+        release_metadata = TESTING_INTEGRATION_METADATA if expected_profile == "testing" else DEVELOPMENT_RELEASE_METADATA
+        approved_keys = {"client_id"}
+        if expected_profile == "testing" or (type(settings) is dict and
+                set(settings) & (set(release_metadata) - {"client_id"})):
+            approved_keys = set(release_metadata)
+        if (set(document) != {expected_profile} or type(settings) is not dict
+                or set(settings) != approved_keys or type(settings["client_id"]) is not str
                 or re.fullmatch(r"[a-z][a-z0-9_-]{0,63}", settings["client_id"], re.ASCII) is None):
-            raise diagnostic_error(IntegrationConfigurationError("Invalid DEVELOPMENT integration metadata."), "load_development_integration_config", "integration_metadata", stage="startup")
+            raise diagnostic_error(IntegrationConfigurationError("Invalid protected integration metadata."), "load_development_integration_config", "integration_metadata", stage="startup")
+        if len(approved_keys) > 1 and settings != release_metadata:
+            raise diagnostic_error(IntegrationConfigurationError("Local integration credential binding conflicts."), "load_development_integration_config", "integration_metadata", stage="startup")
         provider = _windows_password if credential_loader is None else credential_loader
+        services = TESTING_INTEGRATION_SERVICES if expected_profile == "testing" else INTEGRATION_SERVICES
+        if expected_profile == "development" and len(approved_keys) > 1:
+            services += (DEVELOPMENT_RELEASE_METADATA["release_credential_service"],)
         try:
-            submission, reporting = (
+            credentials = tuple(
                 provider(service, settings["client_id"], environment, exact_target=True)
-                for service in INTEGRATION_SERVICES
+                for service in services
             )
         except Exception:
             pass
         else:
-            return IntegrationConfig("development", settings["client_id"], submission, reporting)
-        raise diagnostic_error(IntegrationConfigurationError("DEVELOPMENT integration credentials are unavailable."), "load_development_integration_config", "integration_credentials", stage="startup")
-    raise diagnostic_error(IntegrationConfigurationError("DEVELOPMENT integration metadata is missing or invalid."), "load_development_integration_config", "integration_metadata_read", stage="startup")
+            if len(services) == 3 and credentials[2] is None:
+                raise diagnostic_error(IntegrationConfigurationError("Local release credential is required."), "load_development_integration_config", "integration_credentials", stage="startup")
+            return IntegrationConfig(expected_profile, settings["client_id"], *credentials)
+        raise diagnostic_error(IntegrationConfigurationError("Protected integration credentials are unavailable."), "load_development_integration_config", "integration_credentials", stage="startup")
+    raise diagnostic_error(IntegrationConfigurationError("Protected integration metadata is missing or invalid."), "load_development_integration_config", "integration_metadata_read", stage="startup")
 
 
 class QuietHandler(WSGIRequestHandler):
