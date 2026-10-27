@@ -94,7 +94,8 @@ def test_valid_activation_injects_existing_factory_without_connections(runtime):
     app = development.development_app(enable_integrations=True)
     routes = {rule.rule: rule.methods for rule in app.url_map.iter_rules()
               if rule.rule.startswith(integrations.PREFIX)}
-    assert set(routes) == {STATE_PATH, NOTIFICATION_PATH, REPORT_PATH}
+    assert set(routes) == {STATE_PATH, NOTIFICATION_PATH, REPORT_PATH,
+                           integrations.PREFIX + "/release-events"}
     assert "POST" in routes[STATE_PATH] and "POST" in routes[NOTIFICATION_PATH]
     assert "GET" in routes[REPORT_PATH]
     runtime.loader.assert_called_once_with()
