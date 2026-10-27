@@ -4383,3 +4383,77 @@ one visual alert; no interim delivery or unobserved helper result is asserted.
 
 **ONE next action:** obtain separate authorization for the OAF Git delivery
 checkpoint, including review of the actual staged candidate. Stop after Step 3.
+
+
+## WU2 - OAF typed web launch implementation (2026-10-26)
+
+Implementation and focused offline validation PASS. Activation stays OFF. Reuse
+accepted WU1 integration/CI evidence; no cross-repository inspection or WU1
+implementation reopening occurs in this unit.
+
+The existing authenticated release-event intake additionally accepts exactly
+platform `web`, release_id `gramanna-web`, content_version `web-launch-v1` in the
+same nine-field original payload. Stable UUID normalization, environment-bound
+release credentials, immutable event/digest/cutoff, replay and append-only
+correction/withdrawal authority remain unchanged. No recipients or message copy
+can be supplied by the caller.
+
+An owner-approved canonical public HTTPS URL is required, with exact equality at
+HTTP validation, persistence and rendering. Supply that same approved value to
+`create_app(..., web_launch_url=...)` and to the existing processor's environment
+as `GRAMANNA_WEB_LAUNCH_URL`, separately for the matching environment. There is no
+default production URL. Missing configuration rejects web events and prevents web
+rendering. Syntax rejects local/IP addresses, userinfo, ports, queries, fragments
+and the accepted Android/iOS store destinations. No URL resolution or fetch occurs.
+The existing prohibition on extra `OAF_` database environment settings is retained.
+
+The existing `web_launch` preference, active consenting lifecycle, verification
+and preference-grant timestamps, suppression and final locked eligibility recheck
+select the audience no later than the original cutoff. Late signups, verification
+and grants are excluded. Pending/claimed work honors withdrawal; attempted and
+uncertain outcomes and original cutoff survive corrections, retry and recovery.
+The fixed text/HTML web-launch-v1 subject is `GraManna is now available on the web`;
+it uses the configured URL and existing OAF sender and management/unsubscribe
+footer. There is no caller-selected template, recipient list or Send action.
+
+The existing processor/scheduler/ReleaseDispatcher/Brevo path discovers up to three
+independent launches. One invocation permits 10 confirmation submissions and at
+most three submissions each for Android, iOS and web (19 total). No second worker,
+queue, role grant, delivery/subscriber/approval table or scheduler change is added.
+The additive `0008_web_launch`, directly after `0007_release_approvals`, replaces
+only the existing platform/content checks and types web identity/content together.
+Exact artifact, catalog, dependency and audit revision validation includes it;
+0001 through 0007 files and historical revision entries remain byte-for-byte
+preserved. Approval status remains pending_independent_review. No migration or
+real authorization/approval issuance occurs; synthetic fixture authority stays in
+isolated temporary test directories.
+
+Focused guarded validation: 922 primary cases plus three targeted coverage cases
+PASS; an earlier three-case correction recheck also PASS. Zero unexpected external
+access in every test attempt. Coverage of new/materially changed statements
+(including enclosing multiline calls) and successor revision is 126/126 statements
+and 112/112 branches, 100%, with no exclusions. Unchanged behavior reuses accepted
+WU1 evidence. No full canonical, browser, live PostgreSQL or provider campaign was
+run. Offline catalog fixtures do not certify live PostgreSQL rendering/readiness.
+
+Evidence: `.pytest_cache/wu2-web-20261027T044519Z-2080d85d/`. The first failure at
+2026-10-27T04:54:46.446586Z was a negative-case fixture passing `platform` twice;
+125 cases had passed, dependent coverage/final acceptance were NOT_RUN at that
+stop. Corrected related fixture, environment-setting compatibility and temporary
+harness issues retain their original logs and failure reconciliation. A short
+unique test temporary directory avoids Windows audit-file path limits. Final
+required focused validation and coverage gates all pass.
+
+The proportional security/deterministic-autonomy review PASS: fixed server rules,
+authenticated environment-bound authority, no destination fetch, existing consent
+and uncertainty controls, durable audit and bounded existing processing. No AI
+runtime dependency is introduced. Owner-approved URL configuration, independent
+exact-artifact review, separately authorized migration and later activation remain
+operational dependencies, with no credentials/database/provider/email/service/task
+changes, GraManna edits, deployment or Git delivery performed here.
+`Invoke-OAFCodex` is unchanged and alone owns final clipboard/read-back/alert;
+there are no interim clipboard writes or visual alerts.
+
+ONE next GraManna implementation action: connect its existing official web-launch
+approval/correction/withdrawal lifecycle to this typed OAF event contract, retaining
+original stable IDs/cutoff and automatically retrying only unconfirmed handoffs.

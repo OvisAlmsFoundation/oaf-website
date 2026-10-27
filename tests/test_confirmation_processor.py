@@ -465,6 +465,65 @@ def approved_mobile_events(runtime):
     return store, digest
 
 
+def test_three_launch_types_have_independent_three_submission_budgets_and_ten_confirmations(runtime):
+    from collections import Counter
+    from test_notification_delivery import payload, web_payload, WEB_URL
+    from oaf_website.notification_delivery import NotificationDeliveryStore
+    from oaf_website.notification_delivery_schema import events, deliveries, attempts
+    # DEVELOPMENT model permits multiple synthetic recipients without widening TESTING scope.
+    store = NotificationDeliveryStore(runtime.model, SECRET, "development", management_enabled=True,
+                                      releases_enabled=True, web_launch_url=WEB_URL)
+    for number in range(1, 6):
+        subscribe(runtime.model, number, web_launch=True)
+        assert store.confirm(store.request_confirmation(f"subscriber{number}@example.invalid")) == "verified"
+    outbox_store = outbox.ConfirmationOutboxStore(runtime.model, SECRET, "development")
+    assert outbox.ConfirmationDispatcher(outbox_store, brevo.BrevoConfig("development", KEY), PAGE).process().processed == 0
+    runtime.transport.assert_not_called()
+    for number in range(101, 113):
+        subscribe(runtime.model, number)
+        outbox_store.request_confirmation(f"subscriber{number}@example.invalid")
+    for values in (payload(event_id="00000000-0000-0000-0000-000000000010"),
+                   payload("ios", event_id="00000000-0000-0000-0000-000000000011"), web_payload()):
+        store.accept_event(dict(values, environment="development"))
+    result = invoke(profile="development", management_enabled=True, releases_enabled=True,
+                    environ={"OAF_ENV":"development", "GRAMANNA_WEB_LAUNCH_URL":WEB_URL})
+    assert result == BatchResult("processed", 19)
+    bodies = [json.loads(call.args[1]) for call in runtime.transport.call_args_list]
+    counts = Counter(body["subject"] for body in bodies)
+    assert counts["GraManna is now available on the web"] == 3
+    assert counts["GraManna is available for Android"] == 3
+    assert counts["GraManna is available for Apple iOS"] == 3
+    assert sum(counts.values()) == 19 and len(runtime.model.rows(attempts)) == 9
+    assert len([r for r in runtime.model.rows(deliveries) if r["status"] == "pending"]) == 6
+
+
+def test_web_processor_configuration_is_required_and_restart_does_not_resend(runtime):
+    from test_notification_delivery import web_payload, WEB_URL, web_store
+    from oaf_website.notification_delivery_schema import deliveries
+    store = web_store(runtime.model)
+    subscribe(runtime.model, web_launch=True)
+    assert store.confirm(store.request_confirmation("subscriber1@example.invalid")) == "verified"
+    store.accept_event(web_payload())
+    # Missing destination fails at rendering before a provider submission.
+    assert invoke(management_enabled=True, releases_enabled=True).status == "unavailable"
+    runtime.transport.assert_not_called()
+    runtime.model.elapse(minutes=6)
+    options = dict(management_enabled=True, releases_enabled=True,
+        environ={"OAF_ENV":"testing", "GRAMANNA_WEB_LAUNCH_URL":WEB_URL})
+    invoke(**options)
+    runtime.model.elapse(seconds=60)
+    assert invoke(**options) == BatchResult("processed", 1)
+    assert invoke(**options) == BatchResult("processed", 0)
+    assert runtime.transport.call_count == 1 and runtime.model.rows(deliveries)[0]["status"] == "accepted"
+
+
+def test_web_configuration_does_not_weaken_existing_environment_override_guard(runtime):
+    from test_notification_delivery import WEB_URL
+    assert invoke(management_enabled=True, releases_enabled=True,
+        environ={"OAF_ENV":"testing", "OAF_GRAMANNA_WEB_LAUNCH_URL":WEB_URL}).status == "unavailable"
+    assert_no_runtime(runtime)
+
+
 def test_existing_processor_drives_both_platforms_and_restart_does_not_repeat(runtime):
     from oaf_website.notification_delivery_schema import deliveries, attempts
     approved_mobile_events(runtime)

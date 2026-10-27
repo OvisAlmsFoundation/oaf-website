@@ -90,10 +90,11 @@ def process_confirmations(*, expected_profile, enabled=False, credential_account
             from .notification_delivery import NotificationDeliveryStore
             from .notification_dispatch import ReleaseDispatcher
             release_store = NotificationDeliveryStore(engine, secret, profile, management_enabled=management_enabled,
-                releases_enabled=True, recipient_scope=scope)
+                releases_enabled=True, recipient_scope=scope,
+                web_launch_url=environment.get("GRAMANNA_WEB_LAUNCH_URL"))
             dispatcher = ReleaseDispatcher(release_store, provider, page.rsplit("/", 1)[0] + "/manage-notifications.html")
             for event_id in release_store.pending_release_events():
-                batch = dispatcher.process(event_id, limit=5)
+                batch = dispatcher.process(event_id, limit=3)
                 result = BatchResult(batch.status, result.processed + batch.processed,
                                      result.first_failure or batch.first_failure)
                 if batch.status != "processed":
@@ -130,7 +131,7 @@ def main(argv=None):
     parser.add_argument("--enable-management", action="store_true",
                         help="Enable V2 outbox purposes only after migration 0006 and owner activation.")
     parser.add_argument("--enable-releases", action="store_true",
-                        help="Include mobile announcements only after migration 0007 and owner activation.")
+                        help="Include approved launch announcements only after matching migrations and owner activation.")
     parser.add_argument("--brevo-account", help="Existing protected credential account metadata.")
     parser.add_argument("--confirmation-page", help="Approved HTTPS /confirm-email.html page (legacy /gramanna.html accepted).")
     parser.add_argument("--testing-recipient", action="append",

@@ -431,7 +431,8 @@ class ReleaseDispatcher:
                         from .notification_management import ManagementCapabilities
                         token = ManagementCapabilities(self.store.secret, self.store.environment).issue(
                             subscription, subscriber["preferences_revision"], now)
-                    return release_message(current_event, subscription, self.capabilities, self.page, management_token=token)
+                    return release_message(current_event, subscription, self.capabilities, self.page,
+                                           management_token=token, web_launch_url=self.store.web_launch_url)
                 operation = "preparation"
                 prepared = self.store.begin_submission(event_id, subscription, claim, prepare=render)
                 if prepared is None:

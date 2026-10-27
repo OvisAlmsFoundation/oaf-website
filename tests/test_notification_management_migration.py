@@ -236,6 +236,121 @@ class ReleaseCatalog(ManagementCatalog):
         return super().execute(sql, parameters)
 
 
+class WebCatalog(ReleaseCatalog):
+    def __init__(self, environment="testing"):
+        super().__init__(environment)
+        from oaf_website import web_launch_schema as web
+        self.marker = [dict(version_num=v.WEB_LAUNCH)]
+        snapshot = self.snapshots["oaf_website.notification_release_events"]
+        for constraint in snapshot["constraints"]:
+            if constraint["name"] in web.CHECKS:
+                constraint["definition"] = "CHECK (" + web.CHECKS[constraint["name"]] + ")"
+        addresses = {o["label"]:(o["classid"],o["objid"]) for o in self.objects}
+        # Independent explicit catalog dependencies for platform (4) and release_id (5).
+        source = addresses["delivery_constraint_notification_release_events_content_check"]
+        target = addresses["delivery_table_notification_release_events"]
+        self.dependencies += [dict(classid=source[0], objid=source[1], objsubid=0,
+            refclassid=target[0], refobjid=target[1], refobjsubid=column, deptype=kind)
+            for column in (4,5) for kind in ("a","n")]
+
+
+@pytest.mark.parametrize("environment", ["testing", "development"])
+def test_web_catalog_extends_only_typed_event_checks_and_preserves_all_acl(environment):
+    catalog = WebCatalog(environment)
+    assert v.catalog_state(catalog, catalog.i) == v.WEB_LAUNCH
+
+
+@pytest.mark.parametrize("case", ["mobile_platform", "untyped_content", "web_id", "dependency", "extra_dependency", "marker", "acl"])
+def test_web_catalog_rejects_loose_constraints_and_drift(case):
+    catalog = WebCatalog()
+    checks = catalog.snapshots["oaf_website.notification_release_events"]["constraints"]
+    if case == "mobile_platform":
+        next(c for c in checks if c["name"].endswith("platform_check"))["definition"] = "CHECK (platform IN ('android','ios'))"
+    if case == "untyped_content":
+        next(c for c in checks if c["name"].endswith("content_check"))["definition"] = "CHECK (content_version IN ('mobile-launch-v1','web-launch-v1'))"
+    if case == "web_id":
+        c = next(c for c in checks if c["name"].endswith("content_check"))
+        c["definition"] = c["definition"].replace(" AND release_id = 'gramanna-web'", "")
+    if case == "dependency": catalog.dependencies.pop()
+    if case == "extra_dependency": catalog.dependencies.append(deepcopy(catalog.dependencies[-1]))
+    if case == "marker": catalog.marker = [dict(version_num=v.RELEASE_APPROVALS)]
+    if case == "acl": catalog.snapshots["oaf_website.notification_release_events"]["acl"][-1]["privilege"] = "UPDATE"
+    with pytest.raises(MigrationError, match=Failure.DRIFT): v.catalog_state(catalog, catalog.i)
+
+
+@pytest.mark.parametrize("start", [v.RELEASE_APPROVALS, v.WEB_LAUNCH])
+def test_web_artifact_exact_successor_and_noop(start):
+    document = json.loads((ROOT/"migrations/manifest.json").read_bytes())
+    assert v.validate_artifacts(expected_start=start, target=v.WEB_LAUNCH,
+        manifest_hash=v.digest((ROOT/"migrations/manifest.json").read_bytes()),
+        revision_hash=document["revisions"][7]["sha256"]).target == v.WEB_LAUNCH
+
+
+@pytest.mark.parametrize("start,target", [(v.MANAGEMENT,v.WEB_LAUNCH), (v.WEB_LAUNCH,v.RELEASE_APPROVALS), (v.BASE,v.WEB_LAUNCH)])
+def test_web_migration_cannot_skip_ancestor_or_downgrade(start, target):
+    with pytest.raises(MigrationError, match=Failure.STARTING_REVISION):
+        v.validate_artifacts(expected_start=start,target=target,manifest_hash="0"*64,revision_hash="0"*64)
+
+
+@pytest.mark.parametrize("mutation", ["operation", "parent", "identity", "empty", "manifest", "no_docstring"])
+def test_web_revision_exact_shape(artifact_copy, mutation):
+    path = artifact_copy/v.WEB_REVISION_FILE
+    source = path.read_text()
+    if mutation == "operation": source = source.replace("op.get_bind()", "None")
+    if mutation == "parent": source = source.replace('down_revision = "0007_release_approvals"', 'down_revision = "0006_notification_management"')
+    if mutation == "identity": source = source.replace('revision = "0008_web_launch"', 'revision = "0008_other"')
+    if mutation == "empty": source = ""
+    if mutation == "no_docstring": source = "\n".join(source.splitlines()[1:])
+    path.write_text(source, encoding="utf-8")
+    document = json.loads((artifact_copy/"migrations/manifest.json").read_bytes())
+    document["revisions"][7]["sha256"] = v.digest(path.read_bytes())
+    if mutation == "manifest": document["revisions"][7]["grants"] = v.RELEASE_GRANTS
+    write_manifest(artifact_copy, document)
+    from test_migration_artifacts import verify
+    if mutation == "no_docstring": assert verify(artifact_copy).target == v.BASELINE
+    else:
+        with pytest.raises(MigrationError, match=Failure.ARTIFACT_HASH): verify(artifact_copy)
+
+
+@pytest.mark.parametrize("environment", ["testing", "development"])
+def test_web_ddl_only_alters_two_checks_and_requires_registered_owner(environment, monkeypatch):
+    from oaf_website import web_launch_schema as web
+    statements = []
+    def execute(statement):
+        statements.append(str(statement.compile(dialect=postgresql.dialect())))
+        return Result(IDENTITIES[environment].owner)
+    web.upgrade_web_launch(SimpleNamespace(execute=execute))
+    assert len(statements) == 5
+    assert all(q.startswith("ALTER TABLE oaf_website.notification_release_events ") for q in statements[1:])
+    assert sum("DROP CONSTRAINT" in q for q in statements) == 2
+    assert sum("ADD CONSTRAINT" in q for q in statements) == 2
+    assert "'gramanna-web'" in " ".join(statements)
+    with pytest.raises(MigrationError, match=Failure.WRONG_IDENTITY):
+        web.upgrade_web_launch(SimpleNamespace(execute=lambda q:Result(IDENTITIES[environment].runtime)))
+    revision = runpy.run_path(str(ROOT/v.WEB_REVISION_FILE))
+    sentinel=object(); calls=[]
+    monkeypatch.setattr(alembic_op,"get_bind",lambda:sentinel)
+    revision["upgrade"].__globals__["upgrade_web_launch"] = calls.append
+    revision["upgrade"]()
+    assert calls == [sentinel] and revision["down_revision"] == v.RELEASE_APPROVALS
+    with pytest.raises(RuntimeError): revision["downgrade"]()
+
+
+def test_web_synthetic_authorization_evidence_and_separate_noop(operational, monkeypatch):
+    op = operational
+    document = json.loads((ROOT/"migrations/manifest.json").read_bytes())
+    request = replace(op.request, expected_start=v.RELEASE_APPROVALS, target=v.WEB_LAUNCH,
+                      revision_hash=document["revisions"][7]["sha256"])
+    monkeypatch.setattr(runner, "catalog_state", lambda *args: v.WEB_LAUNCH if op.runner.connection.target else v.RELEASE_APPROVALS)
+    authorization = op.issue(op.approvals(request))
+    assert op.run(authorization, request)["outcome"] == "applied_and_verified"
+    with pytest.raises(MigrationError, match=Failure.OPERATIONAL_GATE): op.run(authorization, request)
+    op.clock.now += timedelta(seconds=1); op.runner.connection.closed = False
+    noop = replace(request, expected_start=v.WEB_LAUNCH)
+    assert op.run(op.issue(op.approvals(noop)), noop)["outcome"] == "verified_noop"
+    assert len(records(op, "claim-*.json")) == 2
+
+
 @pytest.mark.parametrize("environment", ["testing","development"])
 def test_release_approval_catalog_uses_append_only_grants_and_exact_dependencies(environment):
     catalog = ReleaseCatalog(environment)

@@ -18,6 +18,74 @@ from test_notification_delivery import Model, NOW, SECRET, EVENT, subscribe, pay
 from test_brevo import CONFIG, KEY, PAGE, ACCEPTED, response
 
 
+@pytest.mark.parametrize("change", ["none", "preference", "withdrawal", "suppression", "official_withdrawal"])
+def test_web_fixed_template_and_final_eligibility_recheck(setup, monkeypatch, change, caplog):
+    from test_notification_delivery import WEB_URL, web_store, web_payload
+    from oaf_website.notification_management import NotificationManagementStore
+    model, _, transport, _ = setup
+    store = web_store(model)
+    digest = verified(model, store, web_launch=True)
+    store.accept_event(web_payload())
+    original = store.begin_submission
+    def boundary(*args, **kwargs):
+        if change == "preference":
+            management = NotificationManagementStore(model, SECRET, "testing")
+            management.save(management.capabilities.issue(digest, 0, model.now), "a" * 64, 0,
+                            dict(web_launch=False, android_launch=True, ios_launch=True, state=None, consent=True))
+        if change == "withdrawal": SubscriptionStore(model).unsubscribe(digest)
+        if change == "suppression": store.suppress("subscriber1@example.invalid", "complaint")
+        if change == "official_withdrawal":
+            model.elapse(seconds=1)
+            store.accept_release_change(web_payload(action="withdraw", previous_approval_id=payload()["source_approval_id"],
+                source_approval_id="00000000-0000-0000-0000-000000000003", approved_at=model.now.isoformat()))
+        return original(*args, **kwargs)
+    monkeypatch.setattr(store, "begin_submission", boundary)
+    dispatcher = d.ReleaseDispatcher(store, CONFIG, PAGE, transport=transport)
+    assert dispatcher.process(EVENT).processed == int(change == "none")
+    assert transport.call_count == int(change == "none")
+    if change == "none":
+        body = json.loads(transport.call_args.args[1])
+        assert body["subject"] == "GraManna is now available on the web"
+        assert body["sender"] == dict(name=b.FROM_NAME, email=b.FROM_EMAIL)
+        for key in ("textContent", "htmlContent"):
+            assert WEB_URL in body[key] and "Manage Preferences" in body[key]
+            assert "#manage=" in body[key]
+        assert WEB_URL not in repr(dispatcher) + caplog.text
+        assert "subscriber1@example.invalid" not in caplog.text and KEY not in caplog.text
+    assert dispatcher.process(EVENT).processed == 0
+
+
+def test_web_template_revalidates_config_and_keeps_safe_uncertain_recovery(setup):
+    from test_notification_delivery import WEB_URL, web_store, web_payload
+    from oaf_website.notification_messages import release_message
+    from oaf_website.notifications import UnsubscribeCapabilities
+    model, _, transport, _ = setup
+    store = web_store(model); digest = verified(model, store, web_launch=True)
+    capabilities = UnsubscribeCapabilities(SECRET)
+    with pytest.raises(ValueError): release_message(web_payload(), digest, capabilities, PAGE)
+    message = release_message(web_payload(), digest, capabilities, PAGE, web_launch_url=WEB_URL)
+    assert message.subject == "GraManna is now available on the web"
+    assert "Unsubscribe" in message.text and "#unsubscribe=" in message.text
+    assert WEB_URL not in repr(message) and digest not in repr(message)
+    store.accept_event(web_payload())
+    transport.side_effect = TimeoutError("synthetic private URL and recipient")
+    dispatcher = d.ReleaseDispatcher(store, CONFIG, PAGE, transport=transport)
+    assert dispatcher.process(EVENT).processed == 1
+    model.elapse(minutes=10)
+    recovered = d.ReleaseDispatcher(web_store(model), CONFIG, PAGE, transport=transport)
+    assert recovered.process(EVENT).processed == 0
+    assert transport.call_count == 1 and model.rows(deliveries)[0]["status"] == "uncertain"
+
+
+def test_web_template_extension_keeps_unknown_platforms_rejected():
+    from test_notification_delivery import WEB_URL
+    from oaf_website.notification_messages import release_message
+    from oaf_website.notifications import UnsubscribeCapabilities
+    with pytest.raises(ValueError, match="Invalid approved release template"):
+        release_message(dict(payload(), platform="desktop"), "a" * 64,
+                        UnsubscribeCapabilities(SECRET), PAGE, web_launch_url=WEB_URL)
+
+
 @pytest.fixture
 def setup():
     model=Model()

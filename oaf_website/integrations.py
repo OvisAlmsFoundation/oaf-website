@@ -111,7 +111,7 @@ def _invalid_constant(_value):
     raise ValueError("Invalid JSON constant.")
 
 
-def release_request(data, environment):
+def release_request(data, environment, *, web_launch_url=None):
     """Normalize UUID wire spelling only; stable identities never get regenerated."""
     from .notification_delivery import EVENT_FIELDS, release_payload
     if type(data) is not dict or set(data) not in (
@@ -128,7 +128,8 @@ def release_request(data, environment):
         if type(value) is not str or re.fullmatch(r"[0-9a-f]{32}|[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}", value) is None:
             raise ValueError("Invalid release identity.")
         values[name] = str(UUID(value))
-    release_payload({k: values[k] for k in EVENT_FIELDS}, environment, datetime.now(timezone.utc))
+    release_payload({k: values[k] for k in EVENT_FIELDS}, environment, datetime.now(timezone.utc),
+                    web_launch_url=web_launch_url)
     return values
 
 
@@ -286,7 +287,7 @@ def register_integrations(app, config, environment, recognition, trusted, allow_
         if invalid is not None:
             return invalid
         try:
-            data = release_request(data, environment)
+            data = release_request(data, environment, web_launch_url=release_store.web_launch_url)
         except (ValueError, OverflowError):
             return failure("invalid_request", "Supply valid official release approval fields.", 400, predicate="release_payload")
         try:

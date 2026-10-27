@@ -23,6 +23,7 @@ from .notification_delivery_schema import verification, limits, events, deliveri
 from .notifications import normalize_email, UnsubscribeCapabilities
 
 CONTENT_VERSION = "mobile-launch-v1"
+WEB_CONTENT_VERSION = "web-launch-v1"
 ENVIRONMENTS = {"development", "testing", "production"}
 OUTCOMES = {"provider_accepted": "accepted", "provider_rejected": "rejected",
             "not_submitted": "failed", "retryable_rejection": "failed",
@@ -36,10 +37,20 @@ class EventConflict(ValueError):
     """An accepted event or semantic platform launch cannot be replaced."""
 
 
-def official_release_reference(platform, release_id, url):
+def canonical_web_url(value):
+    """Server-approved public HTTPS reference syntax; no DNS or HTTP access."""
+    return (type(value) is str and len(value) <= 300 and re.fullmatch(
+        r"https://(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}(?:/[A-Za-z0-9_./~-]*)?", value) is not None
+        and not re.search(r"\.(?:localhost|local|internal|lan|home|arpa|onion|test|invalid|example)(?:/|$)", value)
+        and value.split("/", 3)[2] not in ("play.google.com", "apps.apple.com"))
+
+
+def official_release_reference(platform, release_id, url, *, web_launch_url=None):
     """Bounded store references only; never resolve a URL or follow a redirect."""
     if type(release_id) is not str or type(url) is not str or len(url) > 300:
         return False
+    if platform == "web":
+        return release_id == "gramanna-web" and canonical_web_url(web_launch_url) and url == web_launch_url
     if platform == "android":
         return (len(release_id) <= 150 and re.fullmatch(
             r"[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)+", release_id) is not None
@@ -51,18 +62,18 @@ def official_release_reference(platform, release_id, url):
     return False
 
 
-def release_payload(payload, environment, now):
+def release_payload(payload, environment, now, *, web_launch_url=None):
     if type(payload) is not dict or set(payload) != EVENT_FIELDS:
         raise ValueError("Invalid release contract.")
     values = dict(payload)
     for name in ("event_id", "source_approval_id"):
         if type(values[name]) is not str or str(UUID(values[name])) != values[name]:
             raise ValueError("Invalid release identity.")
-    if (values["environment"] != environment or values["platform"] not in ("android", "ios")
-            or values["content_version"] != CONTENT_VERSION):
+    if (values["environment"] != environment or values["platform"] not in ("android", "ios", "web")
+            or values["content_version"] != (WEB_CONTENT_VERSION if values["platform"] == "web" else CONTENT_VERSION)):
         raise ValueError("Invalid release scope.")
     release_id, url = values["release_id"], values["release_url"]
-    if not official_release_reference(values["platform"], release_id, url):
+    if not official_release_reference(values["platform"], release_id, url, web_launch_url=web_launch_url):
         raise ValueError("Invalid official release reference.")
     for name in ("approved_at", "audience_cutoff"):
         value = values[name]
@@ -81,7 +92,7 @@ def release_payload(payload, environment, now):
 
 class NotificationDeliveryStore:
     def __init__(self, engine, secret, environment, *, management_enabled=False,
-                 releases_enabled=False, recipient_scope=None):
+                 releases_enabled=False, recipient_scope=None, web_launch_url=None):
         UnsubscribeCapabilities(secret)  # Same persistent protected-key requirement; separate HMAC domains.
         if environment not in ENVIRONMENTS:
             raise ValueError("An explicit matching environment is required.")
@@ -92,6 +103,9 @@ class NotificationDeliveryStore:
         from .brevo import validate_recipient_scope
         validate_recipient_scope(recipient_scope, environment)
         self.releases_enabled, self.recipient_scope = releases_enabled, recipient_scope
+        if web_launch_url is not None and not canonical_web_url(web_launch_url):
+            raise ValueError("Invalid configured public web launch URL.")
+        self.web_launch_url = web_launch_url
 
     def _digest(self, domain, value):
         return hmac.new(self.secret, ("oaf-notification-" + domain + "-v1:").encode()
@@ -236,7 +250,7 @@ class NotificationDeliveryStore:
     def accept_event(self, payload):
         """Persist an authenticated approval; repeat the original identity on retry."""
         with self._transaction() as (connection, now):
-            values = release_payload(payload, self.environment, now)
+            values = release_payload(payload, self.environment, now, web_launch_url=self.web_launch_url)
             existing = self._get(connection, events, event_id=values["event_id"])
             if existing:
                 if existing["payload_digest"] != values["payload_digest"]:
@@ -258,7 +272,8 @@ class NotificationDeliveryStore:
         if type(previous) is not str or str(UUID(previous)) != previous:
             raise ValueError("Invalid preceding approval identity.")
         with self._transaction() as (connection, now):
-            values = release_payload({k: payload[k] for k in EVENT_FIELDS}, self.environment, now)
+            values = release_payload({k: payload[k] for k in EVENT_FIELDS}, self.environment, now,
+                                     web_launch_url=self.web_launch_url)
             digest = hashlib.sha256((values["payload_digest"] + payload["action"] + previous).encode("ascii")).hexdigest()
             existing = self._get(connection, revisions, source_approval_id=values["source_approval_id"])
             if existing:
@@ -297,11 +312,11 @@ class NotificationDeliveryStore:
         return event
 
     def pending_release_events(self):
-        """At most the two independent platform launches, recovered from persistence."""
+        """At most the three independent platform launches, recovered from persistence."""
         with self._transaction() as (connection, now):
             statement = select(events.c.event_id).where(events.c.environment == self.environment,
                 events.c.status.in_(("received", "ready", "attention"))).order_by(
-                    events.c.created_at, events.c.event_id).limit(2)
+                    events.c.created_at, events.c.event_id).limit(3)
             return [row["event_id"] for row in connection.execute(statement).mappings()]
 
     def _eligible(self, connection, subscriber, event):

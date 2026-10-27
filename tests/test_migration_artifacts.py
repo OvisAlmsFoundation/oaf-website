@@ -42,7 +42,7 @@ def test_revision_docstrings_are_optional_without_changing_operations(artifact_c
     document=json.loads((artifact_copy/'migrations/manifest.json').read_bytes())
     for revision in document['revisions']:
         path=artifact_copy/'migrations/versions'/(revision['id']+'.py')
-        if revision['id'] not in {v.STATE_REQUESTS,v.NOTIFICATIONS,v.MANAGEMENT,v.RELEASE_APPROVALS}:
+        if revision['id'] not in {v.STATE_REQUESTS,v.NOTIFICATIONS,v.MANAGEMENT,v.RELEASE_APPROVALS,v.WEB_LAUNCH}:
             continue
         source=path.read_text()
         first=ast.parse(source).body[0]
@@ -58,7 +58,7 @@ def test_authoritative_manifest_and_single_root():
     assert (a.expected_start, a.target) == ("base", "0001_migration_baseline")
     document = json.loads((ROOT / "migrations/manifest.json").read_bytes())
     assert document["approval_status"] == "pending_independent_review"
-    assert len(document["revisions"]) == 7
+    assert len(document["revisions"]) == 8
     assert document["revisions"][0]["parent"] is None
     assert document["revisions"][1]["parent"] == v.BASELINE
     assert set(document["framework"]) == v.FRAMEWORK_FILES
@@ -69,7 +69,7 @@ def test_authoritative_manifest_and_single_root():
 
 
 def test_digest_utf8_lf_normalization():
-    assert v.digest("Ã©\n".encode()) == v.digest("Ã©\r\n".encode())
+    assert v.digest("ÃƒÂ©\n".encode()) == v.digest("ÃƒÂ©\r\n".encode())
 
 
 @pytest.mark.parametrize("payload", [b"\xef\xbb\xbf{}", b"a\rb"])

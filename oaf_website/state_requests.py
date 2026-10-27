@@ -269,7 +269,7 @@ def _build_app(store, recognition, public_origin, *, allow_insecure_localhost=Fa
 
 def create_app(*, expected_profile, recognition_secret, public_origin,
                allow_insecure_localhost=False, integration_config=None, confirmation_enabled=False,
-               management_enabled=False, brevo_webhook_config=None, releases_enabled=False):
+               management_enabled=False, brevo_webhook_config=None, releases_enabled=False, web_launch_url=None):
     """Explicit runtime factory. No schema creation, migration or secret fallback.
 
     Supply one persistent, protected recognition secret to every API worker.
@@ -333,7 +333,7 @@ def create_app(*, expected_profile, recognition_secret, public_origin,
         if releases_enabled:
             from .notification_delivery import NotificationDeliveryStore
             release = NotificationDeliveryStore(engine, recognition.secret, config.profile,
-                management_enabled=management_enabled, releases_enabled=True)
+                management_enabled=management_enabled, releases_enabled=True, web_launch_url=web_launch_url)
         operation = "application_startup"
         app = _build_app(RequestStore(engine), recognition, public_origin,
                          allow_insecure_localhost=allow_insecure_localhost,

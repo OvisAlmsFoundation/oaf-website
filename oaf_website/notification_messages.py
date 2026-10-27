@@ -5,7 +5,7 @@ from html import escape
 import re
 from urllib.parse import urlsplit
 
-from .notification_delivery import CONTENT_VERSION, HEX, official_release_reference
+from .notification_delivery import CONTENT_VERSION, WEB_CONTENT_VERSION, HEX, official_release_reference
 from .notifications import LABEL
 
 
@@ -105,22 +105,25 @@ def management_message(token, page):
         "This private management link expires 24 hours after your request. If you did not request it, ignore this email.")
 
 
-def release_message(event, subscription, capabilities, notification_page, *, management_token=None):
+def release_message(event, subscription, capabilities, notification_page, *, management_token=None, web_launch_url=None):
     platform, release_id, url = event["platform"], event["release_id"], event["release_url"]
-    if (event["content_version"] != CONTENT_VERSION or type(release_id) is not str
+    if (event["content_version"] != (WEB_CONTENT_VERSION if platform == "web" else CONTENT_VERSION) or type(release_id) is not str
             or type(url) is not str or len(release_id) > 150):
         raise diagnostic_error(ValueError("Invalid approved release template."), "release_message", "release_template_platform", stage="request")
     if platform == "android":
         name = "Android"
     elif platform == "ios":
         name = "Apple iOS"
+    elif platform == "web":
+        name = "the web"
     else:
         raise diagnostic_error(ValueError("Invalid approved release template."), "release_message", "release_template_url", stage="request")
-    if not official_release_reference(platform, release_id, url) or type(subscription) is not str or HEX.fullmatch(subscription) is None:
+    if not official_release_reference(platform, release_id, url, web_launch_url=web_launch_url) or type(subscription) is not str or HEX.fullmatch(subscription) is None:
         raise diagnostic_error(ValueError("Invalid approved release template."), "release_message", "release_template_url", stage="request")
-    message = _message(f"GraManna is available for {name}",
+    message = _message("GraManna is now available on the web" if platform == "web" else f"GraManna is available for {name}",
+        "GraManna is now available on the web. You requested this web launch announcement." if platform == "web" else
         f"GraManna is now available for {name}. You requested this platform launch announcement.",
-        "View the approved store listing", url, "Ovis Alms Foundation")
+        "Open GraManna" if platform == "web" else "View the approved store listing", url, "Ovis Alms Foundation")
     return management_footer(message, secure_page(notification_page), management_token,
                              capabilities.issue(subscription) if management_token is None else None)
 

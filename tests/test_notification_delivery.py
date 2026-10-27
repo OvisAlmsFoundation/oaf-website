@@ -643,3 +643,122 @@ def test_release_activation_requires_a_boolean_and_cross_environment_selection_i
     development.accept_event(payload(event_id=other,environment="development"))
     assert testing.pending_release_events()==[EVENT]
     assert development.pending_release_events()==[other]
+
+
+# WU2 synthetic canonical reference only; never a configured production destination.
+WEB_URL = "https://gramanna.example.org/app"
+
+
+def web_payload(**overrides):
+    return dict(payload("web", release_id="gramanna-web", release_url=WEB_URL,
+                        content_version="web-launch-v1"), **overrides)
+
+
+def web_store(model, **overrides):
+    return service.NotificationDeliveryStore(model, SECRET, "testing", **dict(dict(
+        management_enabled=True, releases_enabled=True, web_launch_url=WEB_URL), **overrides))
+
+
+@pytest.mark.parametrize("value", [None, 3, True, [], {}, "", "http://gramanna.example.org/app",
+    "https://localhost", "https://127.0.0.1/app", "https://[::1]/", "https://10.0.0.1/",
+    "https://host.local/", "https://host.internal/", "https://host.test/", "https://host.invalid/",
+    "https://host.localhost/", "https://user@gramanna.example.org/app", WEB_URL + "?", WEB_URL + "?x=1",
+    WEB_URL + "#", WEB_URL + "#fragment", "https://gramanna.example.org:443/app",
+    "https://apps.apple.com/app/id123456789", "https://play.google.com/store/apps/details",
+    WEB_URL + "\n", "https://gramanna.example.org/" + "x" * 300])
+def test_web_canonical_configuration_rejects_nonpublic_or_decorated_destinations(value):
+    assert not service.canonical_web_url(value)
+    if value is not None:
+        with pytest.raises(ValueError, match="configured public"):
+            web_store(Model(), web_launch_url=value)
+
+
+@pytest.mark.parametrize("override", [dict(release_id="gramanna"), dict(release_id=None),
+    dict(release_url=WEB_URL + "/"), dict(release_url="https://other.example.org/app"),
+    dict(release_url=None), dict(content_version="mobile-launch-v1"), dict(environment="development"),
+    dict(platform="Web"), dict(recipients=[]), dict(subject="caller copy")])
+def test_web_contract_requires_exact_identity_url_environment_and_nine_fields(override):
+    with pytest.raises(ValueError):
+        service.release_payload(web_payload(**override), "testing", NOW, web_launch_url=WEB_URL)
+
+
+def test_web_configuration_is_required_and_mobile_content_cannot_cross_types():
+    with pytest.raises(ValueError): service.release_payload(web_payload(), "testing", NOW)
+    for platform in ("android", "ios"):
+        with pytest.raises(ValueError):
+            service.release_payload(payload(platform, content_version="web-launch-v1"), "testing", NOW,
+                                    web_launch_url=WEB_URL)
+    assert service.canonical_web_url(WEB_URL)
+    assert service.canonical_web_url("https://gramanna.example.org")
+
+
+def test_web_replay_restart_conflicts_and_three_independent_launches():
+    model = Model(); store = web_store(model)
+    original = web_payload()
+    assert store.accept_event(original) == EVENT
+    model.elapse(minutes=1)
+    assert web_store(model).accept_event(original) == EVENT
+    assert model.rows(events)[0]["audience_cutoff"] == NOW
+    for values in (web_payload(audience_cutoff=(NOW-timedelta(seconds=1)).isoformat()),
+                   web_payload(event_id=str(UUID(int=9)))):
+        with pytest.raises(service.EventConflict): store.accept_event(values)
+    store.accept_event(payload(event_id=str(UUID(int=10))))
+    store.accept_event(payload("ios", event_id=str(UUID(int=11))))
+    assert store.pending_release_events() == [EVENT, str(UUID(int=10)), str(UUID(int=11))]
+
+
+@pytest.mark.parametrize("case", ["eligible", "mobile_only", "unverified", "late_signup", "late_verification",
+    "early_preference", "late_preference", "withdrawn", "suppressed", "new_lifecycle"])
+def test_web_audience_uses_verified_current_lifecycle_and_original_grant_cutoff(case):
+    from oaf_website.notification_management import NotificationManagementStore
+    model = Model(); store = web_store(model)
+    if case == "late_signup": model.elapse(seconds=1)
+    digest = subscribe(model, web_launch=case not in {"mobile_only", "early_preference", "late_preference"})
+    token = store.request_confirmation("subscriber1@example.invalid")
+    if case == "late_verification": model.elapse(seconds=1)
+    if case != "unverified": assert store.confirm(token) == "verified"
+    if case in {"early_preference", "late_preference"}:
+        if case == "late_preference": model.elapse(seconds=1)
+        management = NotificationManagementStore(model, SECRET, "testing")
+        management.save(management.capabilities.issue(digest, 0, model.now), "a" * 64, 0,
+                        dict(web_launch=True, android_launch=True, ios_launch=True, state=None, consent=True))
+    if case in {"withdrawn", "new_lifecycle"}: SubscriptionStore(model).unsubscribe(digest)
+    if case == "new_lifecycle":
+        model.elapse(seconds=60); subscribe(model, 2, email="subscriber1@example.invalid", web_launch=True)
+    if case == "suppressed": store.suppress("subscriber1@example.invalid", "complaint")
+    store.accept_event(web_payload())
+    store.prepare_event(EVENT)
+    assert len(model.rows(deliveries)) == int(case in {"eligible", "early_preference"})
+    assert model.rows(events)[0]["audience_cutoff"] == NOW
+
+
+@pytest.mark.parametrize("state", ["pending", "claimed", "submitting", "accepted", "uncertain", "failed"])
+def test_web_official_correction_withdrawal_preserves_original_and_attempt_uncertainty(state):
+    model = Model(); store = web_store(model)
+    digest = subscribe(model, web_launch=True)
+    assert store.confirm(store.request_confirmation("subscriber1@example.invalid")) == "verified"
+    store.accept_event(web_payload()); store.prepare_event(EVENT)
+    if state != "pending":
+        claim = store.claim(EVENT, digest)
+        if state != "claimed": store.begin_submission(EVENT, digest, claim)
+        if state in {"accepted", "uncertain", "failed"}:
+            store.record_outcome(EVENT, digest, claim, {"accepted":"provider_accepted", "uncertain":"submission_unknown",
+                                                      "failed":"retryable_rejection"}[state])
+    old_attempts = deepcopy(model.rows(attempts)); original = deepcopy(model.rows(events)[0])
+    model.elapse(seconds=1)
+    correction = web_payload(action="correct", previous_approval_id=str(UUID(int=2)),
+        source_approval_id=str(UUID(int=3)), approved_at=model.now.isoformat())
+    store.accept_release_change(correction)
+    assert store.dispatch_batch(EVENT)[0]["source_approval_id"] == str(UUID(int=3))
+    model.elapse(seconds=1)
+    withdrawal = dict(correction, action="withdraw", previous_approval_id=str(UUID(int=3)),
+        source_approval_id=str(UUID(int=4)), approved_at=model.now.isoformat())
+    store.accept_release_change(withdrawal); store.accept_release_change(withdrawal)
+    assert store.accept_event(web_payload()) == EVENT
+    model.elapse(minutes=6); web_store(model).recover_event(EVENT)
+    assert store.dispatch_batch(EVENT)[1] == []
+    assert store.claim(EVENT, digest) is None
+    assert model.rows(events)[0]["audience_cutoff"] == original["audience_cutoff"]
+    assert model.rows(events)[0]["payload_digest"] == original["payload_digest"]
+    if state in {"accepted", "uncertain", "failed"}: assert model.rows(attempts) == old_attempts
+    if state == "submitting": assert model.rows(deliveries)[0]["status"] == "uncertain"

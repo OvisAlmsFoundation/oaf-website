@@ -693,24 +693,48 @@ RELEASE_PATH = api.PREFIX + "/release-events"
 RELEASE_KEY = "4" * 64
 
 
+@pytest.mark.parametrize("credential,status", [(SUBMISSION,401), (REPORTING,401), ("f"*64,401), (RELEASE_KEY,200)])
+def test_web_intake_reuses_typed_release_authorization(release_api, credential, status):
+    from test_notification_delivery import web_payload
+    assert service(release_api.client, RELEASE_PATH, credential=credential, data=web_payload()).status_code == status
+    if status != 200: assert not release_api.model.statements
+
+
+@pytest.mark.parametrize("override", [dict(environment="development"), dict(release_url="https://other.example.org/app"),
+    dict(release_url="http://localhost/"), dict(content_version="mobile-launch-v1"), dict(recipients=[])])
+def test_web_http_invalid_scope_and_destination_reject_before_persistence(release_api, override):
+    from test_notification_delivery import web_payload
+    reply = service(release_api.client, RELEASE_PATH, credential=RELEASE_KEY, data=web_payload(**override))
+    assert reply.status_code == 400 and not release_api.model.statements
+
+
+def test_web_http_requires_configured_canonical_destination_and_default_activation_off(release_api, setup):
+    from test_notification_delivery import web_payload
+    release_api.store.web_launch_url = None
+    assert service(release_api.client, RELEASE_PATH, credential=RELEASE_KEY, data=web_payload()).status_code == 400
+    assert not release_api.model.statements
+    assert service(setup.client, RELEASE_PATH, credential=RELEASE_KEY, data=web_payload()).status_code == 503
+
+
 @pytest.fixture
 def release_api():
-    from test_notification_delivery import Model
+    from test_notification_delivery import Model, WEB_URL
     from oaf_website.notification_delivery import NotificationDeliveryStore
     model = Model()
-    store = NotificationDeliveryStore(model, SECRET, "testing", releases_enabled=True, management_enabled=True)
+    store = NotificationDeliveryStore(model, SECRET, "testing", releases_enabled=True, management_enabled=True,
+                                      web_launch_url=WEB_URL)
     config = replace(CONFIG, release_credential=RELEASE_KEY)
     app = state_requests._build_app(None, state_requests.BrowserRecognition(SECRET), ORIGIN,
         integration_config=config, environment="testing", release_store=store)
     return SimpleNamespace(model=model, store=store, config=config, app=app, client=app.test_client(use_cookies=False))
 
 
-@pytest.mark.parametrize("platform", ["android", "ios"])
+@pytest.mark.parametrize("platform", ["android", "ios", "web"])
 @pytest.mark.parametrize("compact", [False, True])
 def test_authenticated_release_acceptance_persists_once_with_stable_wire_identity(release_api, platform, compact):
-    from test_notification_delivery import payload
+    from test_notification_delivery import payload, web_payload
     from oaf_website.notification_delivery_schema import events
-    values = payload(platform)
+    values = web_payload() if platform == "web" else payload(platform)
     if compact:
         for name in ("event_id", "source_approval_id"): values[name] = values[name].replace("-", "")
     first = service(release_api.client, RELEASE_PATH, credential=RELEASE_KEY, data=values)
@@ -824,8 +848,9 @@ def test_release_factory_rejects_invalid_activation_before_runtime(monkeypatch, 
     forbidden.assert_not_called()
 
 
-def test_release_factory_injects_matching_persistence_and_never_starts_a_sender(monkeypatch):
-    from test_notification_delivery import Model, payload
+@pytest.mark.parametrize("web", [False, True])
+def test_release_factory_injects_matching_persistence_and_never_starts_a_sender(monkeypatch, web):
+    from test_notification_delivery import Model, payload, web_payload, WEB_URL
     from oaf_website.notification_dispatch import ReleaseDispatcher
     model = Model()
     monkeypatch.setattr(state_requests, "load_testing_database_config", lambda:SimpleNamespace(profile="testing",url="synthetic"))
@@ -834,9 +859,11 @@ def test_release_factory_injects_matching_persistence_and_never_starts_a_sender(
     forbidden = Mock(side_effect=AssertionError("No send on intake or startup"))
     monkeypatch.setattr(ReleaseDispatcher, "process", forbidden)
     app = state_requests.create_app(expected_profile="testing", recognition_secret=SECRET, public_origin=ORIGIN,
-        integration_config=replace(CONFIG, release_credential=RELEASE_KEY), management_enabled=True, releases_enabled=True)
+        integration_config=replace(CONFIG, release_credential=RELEASE_KEY), management_enabled=True, releases_enabled=True,
+        web_launch_url=WEB_URL)
     assert not model.statements
-    assert service(app.test_client(use_cookies=False), RELEASE_PATH, credential=RELEASE_KEY, data=payload()).status_code == 200
+    assert service(app.test_client(use_cookies=False), RELEASE_PATH, credential=RELEASE_KEY,
+                   data=web_payload() if web else payload()).status_code == 200
     forbidden.assert_not_called()
 
 
