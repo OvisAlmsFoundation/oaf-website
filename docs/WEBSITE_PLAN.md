@@ -1435,3 +1435,72 @@ separately authorized delivery checkpoint; nothing is staged here.
 **ONE next action:** obtain separate authorization for the OAF Git delivery
 checkpoint. Step 3 PASS establishes readiness only; stop without delivery or
 activation.
+
+
+### WU2 - final evidence and documentation reconciliation (2026-10-27)
+
+**READINESS PASS / READY FOR OWNER CLOSURE; NOT CLOSED.** This current append
+supersedes historical pending WU2 implementation, review, migration and integration
+directions while preserving prior entries and owner notes. Detailed evidence,
+receipt paths and the single deterministic autonomy review are in
+[WORKFLOW.md](WORKFLOW.md#wu2---final-evidence-and-documentation-reconciliation-2026-10-27).
+
+- OAF WU2 implementation PASS; corrective commit
+  `5c4bba88064b50d9e717bc3e9a7ecf1cd59d6ce3` delivered and CI GREEN,
+  owner-confirmed. Canonical 3,915 tests PASS, 5,932/5,932 statements and
+  2,138/2,138 branches covered, 100% each; accepted evidence is reused.
+- GraManna WU2 implementation/focused evidence PASS; commit `55dbeb46` CI GREEN,
+  owner-confirmed. Its separate Git-thread handoff remains required; the distinct
+  connected source snapshot is not certified by that earlier CI result.
+- OAF `0008_web_launch`: TESTING and DEVELOPMENT **APPLIED_AND_VERIFIED**, each
+  native exit 0. GraManna DEVELOPMENT `agweb01`: **PASS / COMPLETED**, native exit
+  0; data/schema/integrity/foreign keys and guards preserved. Neither migration
+  remains pending; no database access or repeat execution occurs here.
+- Connected evidence:
+  `.pytest_cache/wu2-connected-20261027T233203Z-ff7b89a7/consolidated-report.txt`
+  and `source-dependency-identities.json`: 10 distinct scenarios PASS (5 web,
+  5 mobile), 11 guarded OAF checks PASS, zero unexpected external access and no
+  unresolved failures. Earlier fixture failures and native exits remain preserved.
+  Official approval, atomic durable handoff, audience selection, retries, recovery,
+  suppression and uncertainty handling pass the accepted synthetic autonomy review.
+
+No source, migration or validation defect remains demonstrated. This task updates
+only WORKFLOW and this plan; the new documentation delta awaits separately
+authorized OAF Git delivery. Preserve the separate GraManna Git-thread handoff.
+
+**Canonical public GraManna HTTPS URL: NOT YET OWNER-APPROVED.**
+`https://gramanna.example.org/app` remains solely a synthetic fixture. Live URL
+configuration, real notification/external activation, production deployment and
+real provider delivery are separate operational gates, not requirements for the
+current WU2 owner closure decision. **Activation remains OFF.** Synthetic proof
+does not certify deployed runtime/scheduler behavior, live PostgreSQL integration
+or actual delivery. Accepted historical limits and excluded findings are retained.
+
+**ONE smallest next checkpoint:** owner decision on formal WU2 closure using the
+reconciled evidence and explicit remaining Git obligations. Owner closure and Git
+delivery are not performed here. Existing `Invoke-OAFCodex` reporting is unchanged;
+no completed campaign is rerun.
+
+
+### WU2 - owner-approved formal closure (2026-10-27)
+
+**WU2 CLOSED / PASS - Development and Synthetic Integration.** The owner's
+formal closure supersedes the earlier pending owner-closure status; all prior
+content and owner work remain. Accepted final readiness, migration, canonical,
+owner-confirmed GitHub CI and connected evidence are reused within their recorded
+limits; see [WORKFLOW closure](WORKFLOW.md#wu2---owner-approved-formal-closure-2026-10-27).
+
+- OAF `0008_web_launch`: TESTING **PASS** and DEVELOPMENT **PASS**,
+  both **APPLIED_AND_VERIFIED**.
+- GraManna `agweb01`: DEVELOPMENT **PASS / COMPLETED**.
+- Connected synthetic integration: **10 scenarios PASS** plus **11 guarded
+  checks PASS**.
+
+**OPEN Git obligations:** OAF documentation delivery and the separate GraManna
+Git-thread handoff; neither is completed by this closure. Canonical public URL
+approval/configuration, live activation, provider delivery and deployment remain
+outside this completed development scope. **Activation remains OFF.**
+
+Validation is documentation-only: delta, consistency, preservation and whitespace.
+No accepted campaign is rerun. Existing reporting and clipboard mechanisms remain
+unchanged; no Git staging, commit, push, reset or cleanup occurs.

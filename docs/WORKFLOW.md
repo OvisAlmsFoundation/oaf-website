@@ -4457,3 +4457,145 @@ there are no interim clipboard writes or visual alerts.
 ONE next GraManna implementation action: connect its existing official web-launch
 approval/correction/withdrawal lifecycle to this typed OAF event contract, retaining
 original stable IDs/cutoff and automatically retrying only unconfirmed handoffs.
+
+
+## WU2 - final evidence and documentation reconciliation (2026-10-27)
+
+**READINESS PASS / READY FOR OWNER CLOSURE; NOT CLOSED.** Source, migrations and
+accepted validation are complete. The owner closure decision, delivery of this
+documentation delta and the separate GraManna Git-thread handoff remain open.
+This current append supersedes earlier pending WU2 implementation, artifact-review,
+migration and connected-validation directions at their historical scope; all
+historical entries and owner-authored content remain intact. 5P: SIMPLE. DIRECT.
+SUFFICIENT. EFFICIENT. SAFE.
+
+### Accepted completion by evidence boundary
+
+- **OAF source and Git:** WU2 implementation PASS. Corrective commit
+  `5c4bba88064b50d9e717bc3e9a7ecf1cd59d6ce3` was delivered; retained delivery
+  evidence is `.pytest_cache/wu2-delivery-20261027T182647Z/final.json`.
+  GitHub Actions CI GREEN is owner-confirmed, not queried again here.
+- **Canonical validation:** 3,915 tests PASS, 5,932/5,932 statements and
+  2,138/2,138 branches, 100% each. Corrected shards and combiner exited 0.
+  Reuse `.pytest_cache/wu2-local-20261027T174600Z/verification-final.json`;
+  historical failures and their reconciliations remain preserved. Accepted
+  focused, browser, security, artifact-review and authorization evidence is
+  reused within its original scope, without repeated execution or issuance.
+- **GraManna source and CI:** WU2 implementation and focused evidence PASS;
+  commit `55dbeb46` CI GREEN is owner-confirmed. The connected source snapshot
+  records GraManna HEAD `9b908f825257bc69ca9480069bdf4fc212ed2c44` and selected
+  interface hashes in `source-dependency-identities.json`; that snapshot is not
+  attributed to the CI result for `55dbeb46`. The separate GraManna Git-thread
+  handoff remains required; this OAF record does not certify its completion.
+- **OAF databases:** `0008_web_launch` is **APPLIED_AND_VERIFIED** in both
+  TESTING and DEVELOPMENT, each native exit 0. Accepted completion receipts:
+  `.pytest_cache/wu2-testing-0008-v1/owner-20261027T221816Z-7bb6ce1c87d04f8a87b57df4b5b69ee5-completion.json`
+  and
+  `.pytest_cache/wu2-development-0008-v1/owner-20261027T223434Z-c82e5b3b2467429eb9a8340b2840e292-completion.json`.
+  Completed exact-artifact review and authorization prerequisites are reused;
+  no migration, live database recheck or fresh authority is needed here.
+- **GraManna database:** DEVELOPMENT migration `agweb01` is **PASS / COMPLETED**,
+  native exit 0, with data, schema, integrity, foreign keys and guards preserved,
+  carried forward from the owner's accepted result. It is not a pending
+  migration or a substitute for the separate GraManna Git-thread handoff.
+- **Connected synthetic integration:** 10 distinct scenarios PASS (5 web and
+  5 accepted mobile scenarios reused unchanged); 11 guarded OAF/default-OFF
+  checks PASS, each child exit 0; zero unexpected external access and no
+  unresolved failures. Reuse
+  `.pytest_cache/wu2-connected-20261027T233203Z-ff7b89a7/consolidated-report.txt`,
+  `source-dependency-identities.json`, `validation-summary.json` and
+  `evidence-verification.json` in the same package.
+
+The connected attempt history remains truthful: native exits 1, 1, then 0.
+The first failure at `2026-10-27T23:35:29.477924+00:00` was the new correction
+fixture expecting 409 while its cutoff after approval correctly produced 400.
+The second fixture paired HTTP 429 with a success body and correctly produced an
+uncertainty hold. Both evidence-only fixture errors were reconciled; the initial
+logs, first-failure record, NOT_RUN history and continuations remain preserved.
+No application defect or unresolved validation failure is demonstrated.
+
+### One deterministic autonomy readiness review
+
+**PASS for accepted source/offline and connected synthetic scope.** This single
+review reuses accepted evidence; no new execution or operational approval occurs.
+
+| Area | Accepted deterministic behavior |
+| --- | --- |
+| Official approval | Existing official approval/correction/withdrawal authority and audit govern typed web identity, exact configured URL, environment, original event/digest/cutoff and ordered successors. Administrative launch/URL approval remains deliberate; synthetic authority grants no real approval. |
+| Durable handoff | Approval, audit and existing outbox commit together; representative outbox failure rolls them back together. Existing scheduled processing reaches authenticated OAF intake without a separate Send action or AI dependency. |
+| Audience selection | Independent Android/iOS/web launches use fixed consent, active lifecycle, verification, platform preference and original signup/verification/grant cutoff rules; late and ineligible recipients are excluded. Fixed server template, OAF sender and management footer are enforced. |
+| Retries | Lost-response replay retains exact identity and payload, deduplicates accepted work and preserves successor order. Safe 429 handling follows the accepted bounded retry rules. |
+| Recovery | Expired handoff leases and OAF restart resume durable work while preserving original event, digest, cutoff and attempt history. Existing processing remains bounded; no new worker or scheduler is required. |
+| Suppression | Withdrawal is terminal and suppresses pending/claimed work; consent withdrawal, suppression and resubscription exclusions are rechecked before submission. |
+| Uncertainty | Provider timeout or ambiguous acceptance retains uncertainty across restart and prevents blind resend. Attempted/acknowledged/uncertain outcomes are not reset by correction, withdrawal or replay. |
+
+### Remaining obligations and operational boundaries
+
+No current WU2 source correction, migration, repeated validation or further
+documentation reconciliation is demonstrated as necessary. Only
+`docs/WORKFLOW.md` and `docs/WEBSITE_PLAN.md` receive append-only current records.
+The OAF implementation delivery is accepted; these new documentation appends are
+uncommitted and require separately authorized Git delivery. The GraManna Git-thread
+handoff remains a separate open obligation. No GraManna repository inspection,
+edit or Git completion is claimed by this task.
+
+**Canonical public GraManna HTTPS URL: NOT YET OWNER-APPROVED.**
+`https://gramanna.example.org/app` is solely the synthetic fixture URL, never an
+approved public destination. Approval and matching live URL configuration, real
+notification/external activation, production deployment, deployed scheduler/runtime
+certification and real provider delivery remain separate operational gates. The
+governing WU2 source/readiness contract does not require those operations for this
+owner closure decision. **Real notification and external activation remain OFF.**
+
+Connected proof uses temporary SQLite and serialized transaction/restart fixtures;
+it does not certify live PostgreSQL integration, OS scheduling, destination
+ownership, deployed configuration or actual email delivery. Existing SQLite
+teardown warnings and the excluded conditional legacy-withdrawal/no-prior-handoff
+finding retain their accepted limits; neither is silently converted into new proof.
+
+This task preserves application source, tests, migration artifacts, accepted
+evidence, credentials, databases, services, tasks, owner changes, HEAD and index.
+Only proportional documentation consistency, byte-prefix/preservation and
+whitespace checks apply; no canonical, browser, migration or security campaign is
+rerun. Visible logging, first-failure reporting and native exit capture remain in
+use. The unchanged outer `Invoke-OAFCodex` alone owns final clipboard/read-back
+and visual-alert delivery; no interim delivery or unobserved reporting success
+is claimed. No staging, commit, push, reset or cleanup is performed.
+
+**ONE smallest next checkpoint:** owner decision on formal WU2 closure using this
+reconciled accepted evidence and the explicit remaining Git obligations. This task
+stops without declaring owner closure, delivering Git changes or activating live
+operations.
+
+
+## WU2 - owner-approved formal closure (2026-10-27)
+
+**WU2 CLOSED / PASS - Development and Synthetic Integration.** The owner
+accepts the final WU2 readiness report and evidence. This entry supersedes the
+earlier pending owner-closure status; all prior content and owner work remain.
+
+Reuse the accepted [final readiness record](#wu2---final-evidence-and-documentation-reconciliation-2026-10-27)
+and its migration receipts, canonical results, owner-confirmed GitHub CI GREEN
+and connected evidence, within their recorded source identities and limits:
+
+- OAF `0008_web_launch`: TESTING **PASS** and DEVELOPMENT **PASS**,
+  both **APPLIED_AND_VERIFIED**, native exits 0.
+- GraManna `agweb01`: DEVELOPMENT **PASS / COMPLETED**, native exit 0.
+- Connected synthetic integration: **10 scenarios PASS** (5 web, 5 reused mobile)
+  plus **11 guarded checks PASS**; zero unresolved failures.
+- Canonical: **3,915 tests PASS**, **5,932/5,932 statements** and
+  **2,138/2,138 branches**, 100% each; accepted CI confirmations are reused.
+
+**Separate Git obligations remain OPEN:** OAF delivery of the documentation
+delta and the GraManna Git-thread handoff. This closure completes neither;
+the previously accepted OAF implementation delivery retains its recorded scope.
+
+Canonical public URL approval/configuration, live notification/external
+activation, provider delivery and deployment remain outside this completed
+development scope. **Activation remains OFF.** Synthetic proof does not certify
+live PostgreSQL integration or deployed runtime/scheduler behavior.
+
+Only the documentation delta, consistency, byte preservation and whitespace are
+validated; no tests, migrations, inspections or certification campaigns are rerun.
+Existing reporting and `Invoke-OAFCodex` clipboard/read-back/visual-alert mechanisms
+remain unchanged. No Git staging, commit, push, reset or cleanup occurs.
