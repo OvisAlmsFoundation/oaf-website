@@ -2,6 +2,7 @@
 import migration_offline as isolation
 isolation.require_early_registration()
 
+from collections import Counter
 from copy import deepcopy
 from dataclasses import replace
 from datetime import timedelta
@@ -252,6 +253,197 @@ class WebCatalog(ReleaseCatalog):
         self.dependencies += [dict(classid=source[0], objid=source[1], objsubid=0,
             refclassid=target[0], refobjid=target[1], refobjsubid=column, deptype=kind)
             for column in (4,5) for kind in ("a","n")]
+
+
+class StateCatalog(WebCatalog):
+    """Synthetic catalog using the accepted PostgreSQL 17 dependency observation."""
+    def __init__(self, environment="testing"):
+        super().__init__(environment)
+        from oaf_website import state_availability_schema as state
+        self.marker = [dict(version_num=v.STATE_AVAILABILITY)]
+        self.relations.append(dict(name="notification_release_events_state", kind="i", owner=self.i.owner,
+            persistence="p", rls=False, force_rls=False, rules=False, triggers=False, options=None))
+        self.relations.sort(key=lambda row: row["name"])
+        snapshot = self.snapshots["oaf_website.notification_release_events"]
+        snapshot["constraints"] = [dict(name=c.name, kind="c" if isinstance(c, CheckConstraint) else "p",
+            validated=True, deferrable=False, deferred=False, local=True, inherited=0,
+            definition=validator.constraint_definition(c)) for c in sorted(state.events.constraints, key=lambda c:c.name)]
+        snapshot["indexes"] = [dict(name="notification_release_events_launch",
+            definition="CREATE UNIQUE INDEX notification_release_events_launch ON oaf_website.notification_release_events USING btree (environment, platform) WHERE ((platform)::text <> 'state'::text)"),
+            dict(name="notification_release_events_pk", definition="CREATE UNIQUE INDEX notification_release_events_pk ON oaf_website.notification_release_events USING btree (event_id)"),
+            dict(name="notification_release_events_state", definition="CREATE UNIQUE INDEX notification_release_events_state ON oaf_website.notification_release_events USING btree (environment, platform, release_id) WHERE ((platform)::text = 'state'::text)")]
+        obsolete = next(obj for obj in self.objects if obj["label"] == "delivery_constraint_notification_release_events_launch")
+        old_index = next(obj for obj in self.objects if obj["label"] == "delivery_index_notification_release_events_launch")
+        excluded = {(obj["classid"], obj["objid"]) for obj in (obsolete, old_index)}
+        self.objects.remove(obsolete)
+        self.dependencies = [edge for edge in self.dependencies if (edge["classid"], edge["objid"]) not in excluded]
+        self.objects.append(dict(label="delivery_index_notification_release_events_state", classid=49000, objid=50000))
+        addresses = {obj["label"]:(obj["classid"], obj["objid"]) for obj in self.objects}
+        target = addresses["delivery_table_notification_release_events"]
+        for label, columns in (("delivery_index_notification_release_events_launch", (3,4,4)),
+                               ("delivery_index_notification_release_events_state", (3,4,4,5))):
+            source = addresses[label]
+            self.dependencies += [dict(classid=source[0], objid=source[1], objsubid=0, refclassid=target[0],
+                refobjid=target[1], refobjsubid=column, deptype="a") for column in columns]
+
+
+@pytest.mark.parametrize("environment", ["testing", "development"])
+def test_state_catalog_preserves_ownership_least_privilege_and_exact_scope(environment):
+    catalog = StateCatalog(environment)
+    assert v.catalog_state(catalog, catalog.i) == v.STATE_AVAILABILITY
+
+
+def test_state_index_dependency_counts_match_verified_postgresql_17():
+    from oaf_website import state_availability_schema as state
+    assert Counter(map(tuple, state.ADDED_EDGES)) == Counter({
+        ("delivery_index_notification_release_events_launch", 0, "delivery_table_notification_release_events", 3, "a"): 1,
+        ("delivery_index_notification_release_events_launch", 0, "delivery_table_notification_release_events", 4, "a"): 2,
+        ("delivery_index_notification_release_events_state", 0, "delivery_table_notification_release_events", 3, "a"): 1,
+        ("delivery_index_notification_release_events_state", 0, "delivery_table_notification_release_events", 4, "a"): 2,
+        ("delivery_index_notification_release_events_state", 0, "delivery_table_notification_release_events", 5, "a"): 1,
+    })
+    assert len(state.ADDED_EDGES) == 7
+
+
+@pytest.mark.parametrize("index,column", [("launch", 3), ("launch", 4), ("state", 3), ("state", 4), ("state", 5)])
+@pytest.mark.parametrize("case", ["missing", "additional", "wrong_type", "source_subobject", "referenced_column",
+    "source_identity", "target_identity"])
+def test_state_index_dependency_identity_and_multiplicity_fail_closed(index, column, case):
+    catalog = StateCatalog()
+    addresses = {obj["label"]:(obj["classid"], obj["objid"]) for obj in catalog.objects}
+    source = addresses["delivery_index_notification_release_events_" + index]
+    edge = next(edge for edge in catalog.dependencies
+                if (edge["classid"], edge["objid"]) == source and edge["refobjsubid"] == column)
+    if case == "missing": catalog.dependencies.remove(edge)
+    if case == "additional": catalog.dependencies.append(deepcopy(edge))
+    if case == "wrong_type": edge["deptype"] = "n"
+    if case == "source_subobject": edge["objsubid"] = 1
+    if case == "referenced_column": edge["refobjsubid"] = 2
+    if case == "source_identity":
+        other = "state" if index == "launch" else "launch"
+        edge["classid"], edge["objid"] = addresses["delivery_index_notification_release_events_" + other]
+    if case == "target_identity": edge["refclassid"], edge["refobjid"] = addresses["schema"]
+    with pytest.raises(MigrationError, match=Failure.DRIFT): v.verify_dependencies(catalog, catalog.i, v.STATE_AVAILABILITY)
+
+
+@pytest.mark.parametrize("index", ["launch", "state"])
+def test_state_index_rejects_redistributed_duplicates_with_same_identities_and_total_count(index):
+    catalog = StateCatalog()
+    source = next(obj for obj in catalog.objects if obj["label"] == "delivery_index_notification_release_events_" + index)
+    edge = next(edge for edge in catalog.dependencies if (edge["classid"], edge["objid"]) ==
+                (source["classid"], source["objid"]) and edge["refobjsubid"] == 4)
+    # Moving one of the two platform rows preserves the identity set and row total.
+    edge["refobjsubid"] = 3
+    with pytest.raises(MigrationError, match=Failure.DRIFT): v.verify_dependencies(catalog, catalog.i, v.STATE_AVAILABILITY)
+
+
+@pytest.mark.parametrize("case", ["platform", "content", "state_code", "untyped_content", "predicate", "state_predicate",
+    "nonunique", "keys", "extra_index", "missing_index", "index_name", "dependency", "extra_dependency",
+    "old_unique_dependency", "owner", "acl", "column_acl", "type_acl", "effective_acl", "marker"])
+def test_state_catalog_rejects_weakened_constraints_uniqueness_dependencies_and_grants(case):
+    catalog = StateCatalog()
+    snapshot = catalog.snapshots["oaf_website.notification_release_events"]
+    constraint = next(c for c in snapshot["constraints"] if c["name"].endswith("content_check"))
+    if case == "platform": next(c for c in snapshot["constraints"] if c["name"].endswith("platform_check"))["definition"] = "CHECK (platform IN ('android','ios','web'))"
+    if case == "content": constraint["definition"] = constraint["definition"].replace("state-availability-v1", "state-v2")
+    if case == "state_code": constraint["definition"] = constraint["definition"].replace("'CA'", "'DC'")
+    if case == "untyped_content": constraint["definition"] = "CHECK (content_version IN ('mobile-launch-v1','web-launch-v1','state-availability-v1'))"
+    if case == "predicate": snapshot["indexes"][0]["definition"] = snapshot["indexes"][0]["definition"].replace("<>", "=")
+    if case == "state_predicate": snapshot["indexes"][2]["definition"] = snapshot["indexes"][2]["definition"].split(" WHERE ")[0]
+    if case == "nonunique": snapshot["indexes"][2]["definition"] = snapshot["indexes"][2]["definition"].replace(" UNIQUE", "")
+    if case == "keys": snapshot["indexes"][0]["definition"] = snapshot["indexes"][0]["definition"].replace("(environment, platform)", "(environment, platform, release_id)")
+    if case == "extra_index": snapshot["indexes"].append(deepcopy(snapshot["indexes"][-1]))
+    if case == "missing_index": snapshot["indexes"].pop()
+    if case == "index_name": snapshot["indexes"][-1]["name"] = "unapproved_index"
+    if case == "dependency": catalog.dependencies.pop()
+    if case == "extra_dependency": catalog.dependencies.append(deepcopy(catalog.dependencies[-1]))
+    if case == "old_unique_dependency": catalog.dependencies[-1]["deptype"] = "i"
+    if case == "owner": catalog.relations[-1]["owner"] = catalog.i.runtime
+    if case == "acl": snapshot["acl"][-1]["privilege"] = "UPDATE"
+    if case == "column_acl": snapshot["column_acl"].append(dict(column="release_id", grantee=catalog.i.runtime,
+        grantor=catalog.i.owner, privilege="UPDATE", grantable=False))
+    if case == "type_acl": snapshot["type_acl"][0]["grantee"] = "PUBLIC"
+    if case == "effective_acl": catalog.effective_override = True
+    if case == "marker": catalog.marker = [dict(version_num=v.WEB_LAUNCH)]
+    with pytest.raises(MigrationError, match=Failure.DRIFT): v.catalog_state(catalog, catalog.i)
+
+
+@pytest.mark.parametrize("start", [v.WEB_LAUNCH, v.STATE_AVAILABILITY])
+def test_state_artifact_allows_only_exact_successor_and_noop(start):
+    document = json.loads((ROOT/"migrations/manifest.json").read_bytes())
+    assert v.validate_artifacts(expected_start=start, target=v.STATE_AVAILABILITY,
+        manifest_hash=v.digest((ROOT/"migrations/manifest.json").read_bytes()),
+        revision_hash=document["revisions"][8]["sha256"]).target == v.STATE_AVAILABILITY
+
+
+@pytest.mark.parametrize("start", [v.WEB_LAUNCH, v.STATE_AVAILABILITY])
+@pytest.mark.parametrize("observed", [None, *v.STATE_CONTRACT])
+def test_state_audit_revision_inventory_is_exact_and_issues_no_authority(tmp_path, start, observed):
+    from dataclasses import asdict
+    from oaf_website import migration_authority as authority
+    request = runner.Request("verify", "testing", start, v.STATE_AVAILABILITY, "0"*64, "1"*64)
+    run_id = "00000000-0000-0000-0000-000000000001"
+    sink = authority.FileAuditSink(tmp_path, run_id, "00000000-0000-0000-0000-000000000002",
+        asdict(request), None)
+    event = runner._Evidence(request, IDENTITIES["testing"], run_id).event()
+    accepted = sink._event(replace(event, observed_start=observed))
+    assert accepted["observed_start"] == observed
+    assert not accepted["operational_authority_verified"] and not accepted["database_commit_confirmed"]
+    with pytest.raises(MigrationError, match=Failure.OPERATIONAL_GATE):
+        sink._event(replace(event, observed_start="0010_unreviewed"))
+    assert not list(tmp_path.rglob("*.json"))
+
+
+@pytest.mark.parametrize("start,target", [(v.RELEASE_APPROVALS,v.STATE_AVAILABILITY),
+    (v.STATE_AVAILABILITY,v.WEB_LAUNCH), (v.BASE,v.STATE_AVAILABILITY)])
+def test_state_artifact_cannot_skip_ancestor_or_downgrade(start, target):
+    with pytest.raises(MigrationError, match=Failure.STARTING_REVISION):
+        v.validate_artifacts(expected_start=start, target=target, manifest_hash="0"*64, revision_hash="0"*64)
+
+
+@pytest.mark.parametrize("mutation", ["operation", "parent", "identity", "empty", "manifest", "no_docstring"])
+def test_state_revision_exact_shape(artifact_copy, mutation):
+    path = artifact_copy/v.STATE_REVISION_FILE
+    source = path.read_text()
+    if mutation == "operation": source = source.replace("op.get_bind()", "None")
+    if mutation == "parent": source = source.replace('down_revision = "0008_web_launch"', 'down_revision = "0007_release_approvals"')
+    if mutation == "identity": source = source.replace('revision = "0009_state_availability"', 'revision = "0009_other"')
+    if mutation == "empty": source = ""
+    if mutation == "no_docstring": source = "\n".join(source.splitlines()[1:])
+    path.write_text(source, encoding="utf-8")
+    document = json.loads((artifact_copy/"migrations/manifest.json").read_bytes())
+    document["revisions"][8]["sha256"] = v.digest(path.read_bytes())
+    if mutation == "manifest": document["revisions"][8]["grants"] = v.RELEASE_GRANTS
+    write_manifest(artifact_copy, document)
+    from test_migration_artifacts import verify
+    if mutation == "no_docstring": assert verify(artifact_copy).target == v.BASELINE
+    else:
+        with pytest.raises(MigrationError, match=Failure.ARTIFACT_HASH): verify(artifact_copy)
+
+
+@pytest.mark.parametrize("environment", ["testing", "development"])
+def test_state_ddl_only_changes_event_checks_and_scoped_uniqueness_under_registered_owner(environment, monkeypatch):
+    from oaf_website import state_availability_schema as state
+    statements = []
+    def execute(statement):
+        statements.append(str(statement.compile(dialect=postgresql.dialect())))
+        return Result(IDENTITIES[environment].owner)
+    state.upgrade_state_availability(SimpleNamespace(execute=execute))
+    assert len(statements) == 8
+    assert sum("DROP CONSTRAINT" in q for q in statements) == 3
+    assert sum("ADD CONSTRAINT" in q for q in statements) == 2
+    assert sum(q.startswith("CREATE UNIQUE INDEX") for q in statements) == 2
+    assert all("notification_release_events" in q for q in statements[1:])
+    assert not any(word in " ".join(statements) for word in ("GRANT", "REVOKE", "INSERT", "DELETE", "COMMIT"))
+    with pytest.raises(MigrationError, match=Failure.WRONG_IDENTITY):
+        state.upgrade_state_availability(SimpleNamespace(execute=lambda q:Result(IDENTITIES[environment].runtime)))
+    revision = runpy.run_path(str(ROOT/v.STATE_REVISION_FILE))
+    calls = []; sentinel = object()
+    monkeypatch.setattr(alembic_op, "get_bind", lambda:sentinel)
+    revision["upgrade"].__globals__["upgrade_state_availability"] = calls.append
+    revision["upgrade"]()
+    assert calls == [sentinel] and revision["down_revision"] == v.WEB_LAUNCH
+    with pytest.raises(RuntimeError): revision["downgrade"]()
 
 
 @pytest.mark.parametrize("environment", ["testing", "development"])

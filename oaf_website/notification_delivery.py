@@ -18,12 +18,14 @@ from uuid import UUID
 from sqlalchemy import func, select, text, update
 from sqlalchemy.dialects.postgresql import insert
 
-from .notification_schema import notifications
+from .notification_schema import notifications, CONSENT_VERSION
 from .notification_delivery_schema import verification, limits, events, deliveries, attempts, suppressions
 from .notifications import normalize_email, UnsubscribeCapabilities
+from .state_request_schema import STATE_CODES
 
 CONTENT_VERSION = "mobile-launch-v1"
 WEB_CONTENT_VERSION = "web-launch-v1"
+STATE_CONTENT_VERSION = "state-availability-v1"
 ENVIRONMENTS = {"development", "testing", "production"}
 OUTCOMES = {"provider_accepted": "accepted", "provider_rejected": "rejected",
             "not_submitted": "failed", "retryable_rejection": "failed",
@@ -49,8 +51,9 @@ def official_release_reference(platform, release_id, url, *, web_launch_url=None
     """Bounded store references only; never resolve a URL or follow a redirect."""
     if type(release_id) is not str or type(url) is not str or len(url) > 300:
         return False
-    if platform == "web":
-        return release_id == "gramanna-web" and canonical_web_url(web_launch_url) and url == web_launch_url
+    if platform in ("web", "state"):
+        identity = release_id == "gramanna-web" if platform == "web" else release_id in STATE_CODES
+        return identity and canonical_web_url(web_launch_url) and url == web_launch_url
     if platform == "android":
         return (len(release_id) <= 150 and re.fullmatch(
             r"[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)+", release_id) is not None
@@ -69,8 +72,9 @@ def release_payload(payload, environment, now, *, web_launch_url=None):
     for name in ("event_id", "source_approval_id"):
         if type(values[name]) is not str or str(UUID(values[name])) != values[name]:
             raise ValueError("Invalid release identity.")
-    if (values["environment"] != environment or values["platform"] not in ("android", "ios", "web")
-            or values["content_version"] != (WEB_CONTENT_VERSION if values["platform"] == "web" else CONTENT_VERSION)):
+    if (values["environment"] != environment or values["platform"] not in ("android", "ios", "web", "state")
+            or values["content_version"] != (STATE_CONTENT_VERSION if values["platform"] == "state" else
+                WEB_CONTENT_VERSION if values["platform"] == "web" else CONTENT_VERSION)):
         raise ValueError("Invalid release scope.")
     release_id, url = values["release_id"], values["release_url"]
     if not official_release_reference(values["platform"], release_id, url, web_launch_url=web_launch_url):
@@ -256,7 +260,10 @@ class NotificationDeliveryStore:
                 if existing["payload_digest"] != values["payload_digest"]:
                     raise EventConflict("Release event conflict.")
                 return existing["event_id"]
-            if self._get(connection, events, environment=self.environment, platform=values["platform"]):
+            scope = dict(environment=self.environment, platform=values["platform"])
+            if values["platform"] == "state":
+                scope["release_id"] = values["release_id"]
+            if self._get(connection, events, **scope):
                 raise EventConflict("Platform launch already recorded.")
             self._insert(connection, events, dict(values, status="received", created_at=now, updated_at=now))
             return values["event_id"]
@@ -284,6 +291,7 @@ class NotificationDeliveryStore:
             if (event is None or event.get("withdrawn", False)
                     or event["source_approval_id"] != previous or values["source_approval_id"] == previous
                     or values["platform"] != event["platform"]
+                    or event["platform"] == "state" and values["release_id"] != event["release_id"]
                     or values["audience_cutoff"] != event["audience_cutoff"]
                     or values["approved_at"] <= event["approved_at"]):
                 raise EventConflict("Release approval chain conflict.")
@@ -312,25 +320,37 @@ class NotificationDeliveryStore:
         return event
 
     def pending_release_events(self):
-        """At most the three independent platform launches, recovered from persistence."""
+        """Three launch budgets and one rotating state budget; at most four events.
+
+        Oldest serviced state wins, including attention/backoff work. Recovery
+        advances its existing timestamp before dispatch, so held or failed states
+        cannot monopolize discovery. Order all selected work by that same clock
+        so an unavailable event cannot permanently block another type.
+        """
         with self._transaction() as (connection, now):
-            statement = select(events.c.event_id).where(events.c.environment == self.environment,
+            statement = select(events.c.event_id, events.c.updated_at).where(
+                events.c.environment == self.environment,
                 events.c.status.in_(("received", "ready", "attention"))).order_by(
-                    events.c.created_at, events.c.event_id).limit(3)
-            return [row["event_id"] for row in connection.execute(statement).mappings()]
+                    events.c.updated_at, events.c.event_id)
+            launches = list(connection.execute(statement.where(events.c.platform.in_(
+                ("android", "ios", "web"))).limit(3)).mappings())
+            states = list(connection.execute(statement.where(events.c.platform == "state").limit(1)).mappings())
+            return [row["event_id"] for row in sorted(launches + states,
+                key=lambda row: (row["updated_at"], row["event_id"]))]
 
     def _eligible(self, connection, subscriber, event):
+        name = "state" if event["platform"] == "state" else event["platform"] + "_launch"
+        selected = event["release_id"] if name == "state" else True
         if (event.get("withdrawn", False) or subscriber["unsubscribed_at"] is not None or subscriber["created_at"] > event["audience_cutoff"]
-                or not subscriber[event["platform"] + "_launch"]):
+                or subscriber["consent_version"] != CONSENT_VERSION or subscriber[name] != selected):
             return False
         if self.management_enabled:
             from .notification_management_schema import changes
             current = self._get(connection, notifications, unsubscribe_digest=subscriber["unsubscribe_digest"])
             revision = current["preferences_revision"]
             audit = self._get(connection, changes, subscription=current["unsubscribe_digest"], revision=revision) if revision else None
-            name = event["platform"] + "_launch"
             granted = audit[name + "_granted_at"] if audit else current["created_at"]
-            if (revision and audit is None or not current[name] or granted is None
+            if (revision and audit is None or current[name] != selected or granted is None
                     or granted > event["audience_cutoff"]):
                 return False
         record = self._get(connection, verification, subscription=subscriber["unsubscribe_digest"])
@@ -347,9 +367,11 @@ class NotificationDeliveryStore:
             if event["status"] != "received":
                 return event["status"]
             # A cutoff never expands on retry/recovery. This complete operation is atomic.
+            preference = (notifications.c.state == event["release_id"] if event["platform"] == "state"
+                          else notifications.c[event["platform"] + "_launch"].is_(True))
             statement = select(notifications).where(notifications.c.unsubscribed_at.is_(None),
                 notifications.c.created_at <= event["audience_cutoff"],
-                notifications.c[event["platform"] + "_launch"].is_(True)).with_for_update()
+                preference).with_for_update()
             for subscriber in connection.execute(statement).mappings():
                 if self._eligible(connection, subscriber, event):
                     self._insert(connection, deliveries, dict(event_id=event_id,
@@ -467,6 +489,7 @@ class NotificationDeliveryStore:
             if event is None:
                 return None
             if event["status"] == "received":
+                self._update(connection, events, dict(event_id=event_id), updated_at=now)
                 return "received"
             for record in self._rows(connection, deliveries, event_id=event_id):
                 if record["status"] in {"claimed", "submitting"} and record["lease_until"] <= now:

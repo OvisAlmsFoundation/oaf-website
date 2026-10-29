@@ -18,6 +18,120 @@ from test_notification_delivery import Model, NOW, SECRET, EVENT, subscribe, pay
 from test_brevo import CONFIG, KEY, PAGE, ACCEPTED, response
 
 
+@pytest.mark.parametrize("boundary", ["claim", "begin_submission"])
+@pytest.mark.parametrize("change", ["none", "other_state", "removed", "changed_back", "withdrawn",
+                                    "suppressed", "official_withdrawal", "correction"])
+def test_state_final_locked_checks_and_fixed_template(setup, monkeypatch, boundary, change, caplog):
+    from test_notification_delivery import state_payload, state_preference, web_store, WEB_URL
+    model, _, transport, _ = setup
+    store = web_store(model); digest = verified(model, store, state="CA")
+    store.accept_event(state_payload())
+    original = getattr(store, boundary)
+    observed = []
+    def recheck(*args, **kwargs):
+        if change in {"other_state", "changed_back", "removed"}:
+            model.elapse(seconds=1)
+            state_preference(model, digest, None if change == "removed" else "NY")
+            if change == "changed_back":
+                model.elapse(seconds=1); state_preference(model, digest, "CA")
+        if change == "withdrawn": SubscriptionStore(model).unsubscribe(digest)
+        if change == "suppressed": store.suppress("subscriber1@example.invalid", "complaint")
+        if change in {"official_withdrawal", "correction"}:
+            model.elapse(seconds=1)
+            store.accept_release_change(state_payload(action="withdraw" if change == "official_withdrawal" else "correct",
+                previous_approval_id=payload()["source_approval_id"],
+                source_approval_id="00000000-0000-0000-0000-000000000003", approved_at=model.now.isoformat()))
+        return original(*args, **kwargs)
+    monkeypatch.setattr(store, boundary, recheck)
+    from oaf_website import notification_messages
+    render = notification_messages.release_message
+    def capture(event, *args, **kwargs):
+        observed.append(event["source_approval_id"])
+        return render(event, *args, **kwargs)
+    monkeypatch.setattr(notification_messages, "release_message", capture)
+    dispatcher = d.ReleaseDispatcher(store, CONFIG, PAGE, transport=transport)
+    expected = int(change in {"none", "correction"})
+    assert dispatcher.process(EVENT).processed == expected and transport.call_count == expected
+    if expected:
+        assert observed == ["00000000-0000-0000-0000-000000000003" if change == "correction" else payload()["source_approval_id"]]
+        body = json.loads(transport.call_args.args[1])
+        assert body["subject"] == "GraManna is now available in CA"
+        assert body["to"] == [dict(email="subscriber1@example.invalid")]
+        assert body["sender"] == dict(name=b.FROM_NAME, email=b.FROM_EMAIL)
+        for key in ("textContent", "htmlContent"):
+            assert WEB_URL in body[key] and "state availability" in body[key] and "#manage=" in body[key]
+    assert web_store(model).accept_event(state_payload()) == EVENT
+    assert dispatcher.process(EVENT).processed == 0
+    assert "subscriber1@example.invalid" not in caplog.text and KEY not in caplog.text
+
+
+def test_concurrent_state_dispatchers_share_durable_claim_and_keep_other_states_independent(setup):
+    from test_notification_delivery import state_payload, web_store
+    model, _, transport, _ = setup
+    store = web_store(model)
+    verified(model, store, 1, state="CA"); verified(model, store, 2, state="NY")
+    other = "00000000-0000-0000-0000-000000000009"
+    store.accept_event(state_payload()); store.accept_event(state_payload("NY", event_id=other))
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        results = list(pool.map(lambda _: d.ReleaseDispatcher(web_store(model), CONFIG, PAGE,
+            transport=transport).process(EVENT), range(4)))
+    assert sum(result.processed for result in results) == 1
+    assert d.ReleaseDispatcher(store, CONFIG, PAGE, transport=transport).process(other).processed == 1
+    assert len(model.rows(attempts)) == 2
+    bodies = [json.loads(call.args[1]) for call in transport.call_args_list]
+    assert {body["to"][0]["email"] for body in bodies} == {"subscriber1@example.invalid", "subscriber2@example.invalid"}
+
+
+@pytest.mark.parametrize("outcome", ["retry", "timeout", "claimed_restart", "submitting_restart", "commit_uncertain"])
+def test_state_retry_restart_and_uncertainty_hold(setup, monkeypatch, outcome):
+    from test_notification_delivery import state_payload, web_store
+    model, _, transport, _ = setup
+    store = web_store(model); digest = verified(model, store, state="CA")
+    store.accept_event(state_payload())
+    if outcome in {"claimed_restart", "submitting_restart"}:
+        store.prepare_event(EVENT); claim = store.claim(EVENT, digest)
+        if outcome == "submitting_restart": store.begin_submission(EVENT, digest, claim)
+    if outcome == "retry": transport.return_value = response(429, {"code":"rate_limit", "message":"synthetic rejection"})
+    if outcome == "timeout": transport.side_effect = TimeoutError("synthetic private provider uncertainty")
+    if outcome == "commit_uncertain":
+        original = store.begin_submission
+        def uncertain(*args, **kwargs):
+            model.failure = "uncertain"
+            return original(*args, **kwargs)
+        monkeypatch.setattr(store, "begin_submission", uncertain)
+    dispatcher = d.ReleaseDispatcher(store, CONFIG, PAGE, transport=transport)
+    if outcome not in {"claimed_restart", "submitting_restart"}: dispatcher.process(EVENT)
+    model.failure = None; model.elapse(minutes=6)
+    before = transport.call_count
+    transport.side_effect = None; transport.return_value = response()
+    restarted = d.ReleaseDispatcher(web_store(model), CONFIG, PAGE, transport=transport)
+    restarted.process(EVENT)
+    model.elapse(seconds=60); restarted.process(EVENT)
+    assert transport.call_count - before == int(outcome in {"retry", "claimed_restart"})
+    expected = "accepted" if outcome in {"retry", "claimed_restart"} else "uncertain"
+    assert model.rows(deliveries)[0]["status"] == expected
+    assert restarted.process(EVENT).processed == 0
+
+
+@pytest.mark.parametrize("override", [dict(content_version="web-launch-v1"), dict(platform="desktop"),
+    dict(release_id="NY\n"), dict(release_id="DC"), dict(release_url="https://other.example.org/app")])
+def test_state_template_rejects_invalid_persisted_contract(override):
+    from test_notification_delivery import state_payload, WEB_URL
+    from oaf_website.notification_messages import release_message
+    from oaf_website.notifications import UnsubscribeCapabilities
+    with pytest.raises(ValueError):
+        release_message(state_payload(**override), "a" * 64, UnsubscribeCapabilities(SECRET), PAGE, web_launch_url=WEB_URL)
+
+
+def test_state_template_revalidates_missing_configuration_and_retains_legacy_footer():
+    from test_notification_delivery import state_payload, WEB_URL
+    from oaf_website.notification_messages import release_message
+    from oaf_website.notifications import UnsubscribeCapabilities
+    with pytest.raises(ValueError): release_message(state_payload(), "a" * 64, UnsubscribeCapabilities(SECRET), PAGE)
+    message = release_message(state_payload(), "a" * 64, UnsubscribeCapabilities(SECRET), PAGE, web_launch_url=WEB_URL)
+    assert message.subject == "GraManna is now available in CA" and "#unsubscribe=" in message.text
+
+
 @pytest.mark.parametrize("change", ["none", "preference", "withdrawal", "suppression", "official_withdrawal"])
 def test_web_fixed_template_and_final_eligibility_recheck(setup, monkeypatch, change, caplog):
     from test_notification_delivery import WEB_URL, web_store, web_payload

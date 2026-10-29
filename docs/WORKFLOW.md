@@ -4599,3 +4599,66 @@ Only the documentation delta, consistency, byte preservation and whitespace are
 validated; no tests, migrations, inspections or certification campaigns are rerun.
 Existing reporting and `Invoke-OAFCodex` clipboard/read-back/visual-alert mechanisms
 remain unchanged. No Git staging, commit, push, reset or cleanup occurs.
+
+
+## WU3 - OAF state availability source and focused offline validation (2026-10-27)
+
+**OAF implementation / focused offline validation PASS; activation remains OFF.**
+SIMPLE. DIRECT. SUFFICIENT. EFFICIENT. SAFE. Accepted WU1/WU2 closure, evidence,
+recorded exclusions, owner content and governing history retain their scope.
+
+The existing authenticated `POST /api/integrations/v1/release-events` nine-field
+contract additionally accepts `platform=state`, `release_id` equal to one of the
+existing 50 uppercase U.S. state codes, and fixed `state-availability-v1` content.
+State Requests confer no official availability approval. Use the same approved
+canonical HTTPS destination injected as `web_launch_url` / `GRAMANNA_WEB_LAUNCH_URL`;
+missing or mismatched configuration rejects intake/rendering. No URL is invented
+or fetched. The accepted public production URL remains unapproved.
+
+Eligibility requires an active consenting lifecycle, verified mailbox, exact
+current selected state, no suppression, and consent/verification/state-grant times
+no later than the original cutoff. Final locked checks exclude late selection,
+state changes away/back and replacement lifecycles. Original identity/digest/cutoff,
+ordered corrections, idempotence and terminal withdrawal remain; state corrections
+cannot change the state's `release_id`. Existing attempts, acknowledged outcomes,
+uncertainty holds, retries, recovery and sanitized first-failure reporting remain.
+The fixed subject is `GraManna is now available in <STATE_CODE>`, with existing
+Brevo sender, approved destination and preference-management/withdrawal footer.
+
+Existing processing discovers up to three launches plus one oldest-serviced state.
+Recovery advances existing processing timestamps, including held/backoff work;
+ordering selected work by that clock also prevents a rendering failure from
+permanently blocking another type. Each invocation permits 10 confirmation and
+3 each Android/iOS/web submissions, plus 3 state submissions: **22 maximum**.
+No scheduler/service change, new worker, queue, table, recipient chooser, Send
+action, AI dependency or routine second administrator decision is introduced.
+
+Prepared successor `0009_state_availability` follows unchanged 0008. It replaces
+only the event platform/content checks and launch uniqueness: a partial unique
+`(environment, platform)` index for non-state launches and a partial unique
+`(environment, platform, release_id)` index for states. No grants are widened.
+Exact artifact, catalog, dependency, ownership, ACL and audit revision validation
+include 0009. All 0001-0008 revision bytes, historical manifest revision entries
+and catalog states are preserved. Status remains `pending_independent_review`;
+no migration, artifact approval or operational authorization is issued/executed.
+
+Guarded focused validation: **1,558 PASS**, then **32 PASS** for the final audit
+allowlist/artifact follow-up; zero unexpected external access. The only executable
+delta after the 1,558-test run is the explicit audit revision allowlist, covered
+by that follow-up; its integrity hash and audit tests also changed. Coverage of
+new/materially changed logic, enclosing multiline statements and successor revision:
+**146/146 statements and 128/128 branches**, no exclusions. One focused security
+and deterministic-autonomy review PASS. Earlier fixture/predicate failures and
+native exits are retained and reconciled in `.pytest_cache/wu3-state-20261028T002520Z/`.
+Synthetic failure diagnostics were retained there and the default log's pre-test
+bytes restored. Test/source identities, coverage, review and preservation records
+are in that evidence directory. No full canonical campaign or current CI is claimed.
+
+This is synthetic source evidence, not live PostgreSQL, deployed scheduling,
+configuration ownership or provider-delivery certification. No GraManna source
+handoff/hook is implemented or invented. No live credentials/database/provider,
+notification activation, deployment, service/task changes or Git staging/commit/
+push/reset/cleanup occur. Existing reporting machinery remains unchanged.
+
+**ONE smallest next checkpoint:** independent review of the exact OAF 0009
+migration artifacts and manifest. Stop before execution or activation.

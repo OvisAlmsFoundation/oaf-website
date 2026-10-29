@@ -1504,3 +1504,36 @@ outside this completed development scope. **Activation remains OFF.**
 Validation is documentation-only: delta, consistency, preservation and whitespace.
 No accepted campaign is rerun. Existing reporting and clipboard mechanisms remain
 unchanged; no Git staging, commit, push, reset or cleanup occurs.
+
+
+### WU3 - OAF state availability source implementation (2026-10-27)
+
+**OAF source / focused offline validation PASS; activation remains OFF.**
+The existing authenticated release-event contract now supports `platform=state`,
+one validated U.S. state code as `release_id`, and fixed `state-availability-v1`.
+It reuses the configured approved canonical GraManna HTTPS destination, consent,
+verification, state-grant cutoff, final locked eligibility checks, immutable
+identity, ordered corrections/terminal withdrawal, existing Brevo templates,
+claims, audit, retries and uncertainty recovery. State Requests remain separate
+from official approval; no GraManna approval hook or production URL is invented.
+
+The prepared `0009_state_availability` successor adds state-specific uniqueness
+while retaining Android/iOS/web uniqueness and exact catalog/dependency/owner/ACL
+validation. No applied revision or historical manifest entry is rewritten; artifact
+status remains pending independent review. Existing processing fairly rotates one
+state batch alongside the three original launch budgets: at most 10 confirmation
+plus 3 each Android/iOS/web/state submissions, **22 total**. No new worker, queue,
+table, Send action, AI dependency, scheduler/service change or routine second
+administrator decision is added.
+
+Focused guarded checks: **1,558 PASS + 32 final audit/artifact checks PASS**, zero
+unexpected external access; changed logic/revision coverage **146/146 statements,
+128/128 branches**, no exclusions. One focused security/deterministic-autonomy
+review PASS. Exact contract, source identities, limitations and evidence are in
+WORKFLOW's matching WU3 entry and `.pytest_cache/wu3-state-20261028T002520Z/`.
+Accepted WU1/WU2 evidence and all prior document bytes/owner work are preserved.
+No live PostgreSQL/provider/deployed-runtime proof, current CI, migration execution,
+operational authorization, activation, deployment or Git delivery is claimed.
+
+**ONE smallest next checkpoint:** independent review of the exact OAF 0009
+migration artifacts and manifest; stop before execution or activation.

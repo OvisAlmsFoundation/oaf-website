@@ -93,6 +93,8 @@ def process_confirmations(*, expected_profile, enabled=False, credential_account
                 releases_enabled=True, recipient_scope=scope,
                 web_launch_url=environment.get("GRAMANNA_WEB_LAUNCH_URL"))
             dispatcher = ReleaseDispatcher(release_store, provider, page.rsplit("/", 1)[0] + "/manage-notifications.html")
+            # Discovery reserves the original three launch budgets plus one
+            # rotating state batch: 10 + (4 * 3) = 22 submissions at most.
             for event_id in release_store.pending_release_events():
                 batch = dispatcher.process(event_id, limit=3)
                 result = BatchResult(batch.status, result.processed + batch.processed,

@@ -58,7 +58,7 @@ def test_authoritative_manifest_and_single_root():
     assert (a.expected_start, a.target) == ("base", "0001_migration_baseline")
     document = json.loads((ROOT / "migrations/manifest.json").read_bytes())
     assert document["approval_status"] == "pending_independent_review"
-    assert len(document["revisions"]) == 8
+    assert len(document["revisions"]) == 9
     assert document["revisions"][0]["parent"] is None
     assert document["revisions"][1]["parent"] == v.BASELINE
     assert set(document["framework"]) == v.FRAMEWORK_FILES

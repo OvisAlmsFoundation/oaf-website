@@ -497,6 +497,65 @@ def test_three_launch_types_have_independent_three_submission_budgets_and_ten_co
     assert len([r for r in runtime.model.rows(deliveries) if r["status"] == "pending"]) == 6
 
 
+def test_state_processing_reserves_all_existing_budgets_caps_at_twenty_two_and_rotates_on_restart(runtime):
+    from collections import Counter
+    from uuid import UUID
+    from test_notification_delivery import payload, web_payload, state_payload, WEB_URL
+    from oaf_website.notification_delivery import NotificationDeliveryStore
+    store = NotificationDeliveryStore(runtime.model, SECRET, "development", management_enabled=True,
+        releases_enabled=True, web_launch_url=WEB_URL)
+    states = ("CA", "NY", "TX")
+    for index, state in enumerate(states):
+        for offset in range(4):
+            number = index * 4 + offset + 1
+            subscribe(runtime.model, number, state=state, web_launch=True)
+            assert store.confirm(store.request_confirmation(f"subscriber{number}@example.invalid")) == "verified"
+        store.accept_event(dict(state_payload(state, event_id=str(UUID(int=index + 50))), environment="development"))
+    outbox_store = outbox.ConfirmationOutboxStore(runtime.model, SECRET, "development")
+    assert outbox.ConfirmationDispatcher(outbox_store, brevo.BrevoConfig("development", KEY), PAGE).process().processed == 0
+    for number in range(101, 113):
+        subscribe(runtime.model, number); outbox_store.request_confirmation(f"subscriber{number}@example.invalid")
+    for index, values in enumerate((payload(), payload("ios"), web_payload()), 10):
+        store.accept_event(dict(values, event_id=str(UUID(int=index)), environment="development"))
+    options = dict(profile="development", management_enabled=True, releases_enabled=True,
+                   environ={"OAF_ENV":"development", "GRAMANNA_WEB_LAUNCH_URL":WEB_URL})
+    runtime.model.elapse(seconds=1)
+    assert invoke(**options) == BatchResult("processed", 22)
+    counts = Counter(json.loads(call.args[1])["subject"] for call in runtime.transport.call_args_list)
+    assert counts["Confirm your OAF notification subscription"] == 10
+    for subject in ("GraManna is available for Android", "GraManna is available for Apple iOS",
+                    "GraManna is now available on the web", "GraManna is now available in CA"):
+        assert counts[subject] == 3
+    for state in states[1:]:
+        runtime.model.elapse(seconds=1)
+        start = runtime.transport.call_count
+        assert invoke(**options).processed <= 22
+        subjects = [json.loads(call.args[1])["subject"] for call in runtime.transport.call_args_list[start:]]
+        assert subjects.count(f"GraManna is now available in {state}") == 3
+    runtime.model.elapse(seconds=1)
+    start = runtime.transport.call_count
+    invoke(**options)
+    assert [json.loads(call.args[1])["subject"] for call in runtime.transport.call_args_list[start:]].count(
+        "GraManna is now available in CA") == 1
+
+
+def test_state_missing_destination_hold_does_not_starve_other_states_or_mobile_work(runtime):
+    from uuid import UUID
+    from test_notification_delivery import payload, state_payload, web_store
+    store = web_store(runtime.model)
+    subscribe(runtime.model, state="CA")
+    assert store.confirm(store.request_confirmation("subscriber1@example.invalid")) == "verified"
+    store.accept_event(state_payload(event_id=str(UUID(int=1))))
+    store.accept_event(state_payload("NY", event_id=str(UUID(int=2))))
+    store.accept_event(payload(event_id=str(UUID(int=3))))
+    runtime.model.elapse(seconds=1)
+    assert invoke(management_enabled=True, releases_enabled=True).status == "unavailable"
+    runtime.transport.assert_not_called()
+    runtime.model.elapse(seconds=1)
+    assert invoke(management_enabled=True, releases_enabled=True).processed == 1
+    assert json.loads(runtime.transport.call_args.args[1])["subject"] == "GraManna is available for Android"
+
+
 def test_web_processor_configuration_is_required_and_restart_does_not_resend(runtime):
     from test_notification_delivery import web_payload, WEB_URL, web_store
     from oaf_website.notification_delivery_schema import deliveries

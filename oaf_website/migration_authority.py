@@ -16,7 +16,7 @@ import re
 from uuid import UUID, uuid4
 
 from .migration_config import IDENTITIES, Failure, MigrationError, select_identity
-from .migration_validation import BASE, BASELINE, STATE_REQUESTS, NOTIFICATIONS, DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS, WEB_LAUNCH, validate_artifacts
+from .migration_validation import BASE, BASELINE, STATE_REQUESTS, NOTIFICATIONS, DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY, validate_artifacts
 
 
 PREREQUISITES = frozenset({
@@ -552,7 +552,7 @@ class FileAuditSink:
                               'effective': identity.owner}.items():
             _require(data[f'expected_{key}'] == expected)
             _require(data[f'verified_{key}'] in {None, expected})
-        _require(data['observed_start'] in {None, BASE, BASELINE, STATE_REQUESTS, NOTIFICATIONS, DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS, WEB_LAUNCH})
+        _require(data['observed_start'] in {None, BASE, BASELINE, STATE_REQUESTS, NOTIFICATIONS, DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY})
         for key in ('verified_identity', 'operational_authority_verified', 'database_commit_confirmed', 'mutation_started'):
             _require(type(data[key]) is bool)
         for key in ('phase', 'failed_phase', 'lock_outcome', 'validation_outcome', 'commit_certainty',

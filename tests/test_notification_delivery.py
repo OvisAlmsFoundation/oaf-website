@@ -660,6 +660,169 @@ def web_store(model, **overrides):
         management_enabled=True, releases_enabled=True, web_launch_url=WEB_URL), **overrides))
 
 
+def state_payload(state_code="CA", **overrides):
+    return dict(web_payload(platform="state", release_id=state_code,
+                            content_version="state-availability-v1"), **overrides)
+
+
+@pytest.mark.parametrize("state", service.STATE_CODES)
+def test_state_contract_accepts_exactly_existing_fifty_state_codes(state):
+    values = service.release_payload(state_payload(state), "testing", NOW, web_launch_url=WEB_URL)
+    assert values["release_id"] == state and values["content_version"] == "state-availability-v1"
+
+
+@pytest.mark.parametrize("override", [dict(release_id=value) for value in
+    (None, 3, [], "", "ca", "DC", "PR", "USA", "CA ", "California", "NY\n")] + [
+    dict(content_version="web-launch-v1"), dict(content_version="mobile-launch-v1"),
+    dict(environment="development"), dict(platform="State"), dict(recipients=[]),
+    dict(subject="caller copy"), dict(release_url=WEB_URL + "/"),
+    dict(release_url="https://other.example.org/app")])
+def test_state_contract_rejects_invalid_scope_copy_and_destination(override):
+    with pytest.raises(ValueError):
+        service.release_payload(state_payload(**override), "testing", NOW, web_launch_url=WEB_URL)
+
+
+def test_state_contract_requires_configured_destination_and_cannot_cross_existing_content_types():
+    with pytest.raises(ValueError): service.release_payload(state_payload(), "testing", NOW)
+    for original in (payload(), payload("ios"), web_payload()):
+        with pytest.raises(ValueError):
+            service.release_payload(dict(original, content_version="state-availability-v1"),
+                                    "testing", NOW, web_launch_url=WEB_URL)
+
+
+def test_concurrent_state_acceptance_replay_and_restart_preserve_per_state_identity():
+    model = Model(); store = web_store(model)
+    original = state_payload()
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        assert set(pool.map(lambda _: store.accept_event(original), range(8))) == {EVENT}
+    model.elapse(seconds=1)
+    assert web_store(model).accept_event(original) == EVENT
+    for values in (state_payload(event_id=str(UUID(int=8))),
+                   state_payload(audience_cutoff=(NOW - timedelta(seconds=1)).isoformat()),
+                   state_payload("NY")):
+        with pytest.raises(service.EventConflict): store.accept_event(values)
+    other = str(UUID(int=9))
+    assert store.accept_event(state_payload("NY", event_id=other)) == other
+    for index, original in enumerate((payload(), payload("ios"), web_payload()), 10):
+        store.accept_event(dict(original, event_id=str(UUID(int=index))))
+        with pytest.raises(service.EventConflict):
+            store.accept_event(dict(original, event_id=str(UUID(int=index + 100))))
+    assert len(model.rows(events)) == 5
+    assert model.rows(events)[0]["audience_cutoff"] == NOW
+    assert len(store.pending_release_events()) == 4
+    assert EVENT in store.pending_release_events() and other not in store.pending_release_events()
+
+
+def state_preference(model, digest, state):
+    from oaf_website.notification_management import NotificationManagementStore
+    manager = NotificationManagementStore(model, SECRET, "testing")
+    current = next(row for row in model.rows(service.notifications) if row["unsubscribe_digest"] == digest)
+    revision = current["preferences_revision"]
+    manager.save(manager.capabilities.issue(digest, revision, model.now), f"{revision + 200:064x}", revision,
+        dict(web_launch=current["web_launch"], android_launch=current["android_launch"],
+             ios_launch=current["ios_launch"], state=state, consent=True))
+
+
+@pytest.mark.parametrize("case", ["eligible", "no_state", "other_state", "unverified", "late_signup",
+    "late_verification", "early_grant", "late_grant", "changed_away", "changed_back", "removed",
+    "withdrawn", "suppressed", "new_lifecycle", "audit_missing", "unrelated_late_change", "invalid_consent"])
+def test_state_audience_requires_exact_current_state_and_original_lifecycle_cutoffs(case):
+    model = Model(); store = web_store(model)
+    if case == "late_signup": model.elapse(seconds=1)
+    initial = None if case in {"no_state", "early_grant", "late_grant"} else "NY" if case == "other_state" else "CA"
+    digest = subscribe(model, state=initial)
+    token = store.request_confirmation("subscriber1@example.invalid")
+    if case == "late_verification": model.elapse(seconds=1)
+    if case != "unverified": assert store.confirm(token) == "verified"
+    if case in {"early_grant", "late_grant"}:
+        if case == "late_grant": model.elapse(seconds=1)
+        state_preference(model, digest, "CA")
+    if case in {"changed_away", "changed_back", "removed"}:
+        model.elapse(seconds=1)
+        state_preference(model, digest, None if case == "removed" else "NY")
+        if case == "changed_back":
+            model.elapse(seconds=1); state_preference(model, digest, "CA")
+    if case == "unrelated_late_change":
+        from oaf_website.notification_management import NotificationManagementStore
+        model.elapse(seconds=1)
+        manager = NotificationManagementStore(model, SECRET, "testing")
+        manager.save(manager.capabilities.issue(digest, 0, model.now), "a" * 64, 0,
+            dict(web_launch=False, android_launch=False, ios_launch=True, state="CA", consent=True))
+    if case == "audit_missing": model.rows(service.notifications)[0]["preferences_revision"] = 1
+    if case == "invalid_consent": model.rows(service.notifications)[0]["consent_version"] = "unapproved"
+    if case in {"withdrawn", "new_lifecycle"}: SubscriptionStore(model).unsubscribe(digest)
+    if case == "new_lifecycle":
+        model.elapse(seconds=60); subscribe(model, 2, email="subscriber1@example.invalid", state="CA")
+    if case == "suppressed": store.suppress("subscriber1@example.invalid", "complaint")
+    store.accept_event(state_payload()); store.prepare_event(EVENT)
+    assert len(model.rows(deliveries)) == int(case in {"eligible", "early_grant", "unrelated_late_change"})
+    assert model.rows(events)[0]["audience_cutoff"] == NOW
+
+
+@pytest.mark.parametrize("status", ["pending", "claimed", "submitting", "accepted", "uncertain", "failed"])
+def test_state_ordered_correction_and_terminal_withdrawal_preserve_cutoff_and_outcomes(status):
+    model = Model(); store = web_store(model)
+    digest = subscribe(model, state="CA")
+    assert store.confirm(store.request_confirmation("subscriber1@example.invalid")) == "verified"
+    store.accept_event(state_payload()); store.prepare_event(EVENT)
+    if status != "pending":
+        claim = store.claim(EVENT, digest)
+        if status != "claimed": store.begin_submission(EVENT, digest, claim)
+        if status in {"accepted", "uncertain", "failed"}:
+            store.record_outcome(EVENT, digest, claim,
+                {"accepted":"provider_accepted", "uncertain":"submission_unknown", "failed":"retryable_rejection"}[status])
+    original = deepcopy(model.rows(events)[0]); history = deepcopy(model.rows(attempts))
+    model.elapse(seconds=1)
+    correction = state_payload(action="correct", previous_approval_id=str(UUID(int=2)),
+        source_approval_id=str(UUID(int=3)), approved_at=model.now.isoformat())
+    for bad in (dict(correction, release_id="NY"), dict(correction, previous_approval_id=str(UUID(int=8))),
+                dict(correction, audience_cutoff=model.now.isoformat())):
+        with pytest.raises(service.EventConflict): store.accept_release_change(bad)
+    assert store.accept_release_change(correction) == EVENT
+    assert store.accept_release_change(correction) == EVENT
+    assert store.dispatch_batch(EVENT)[0]["source_approval_id"] == str(UUID(int=3))
+    model.elapse(seconds=1)
+    withdrawal = dict(correction, action="withdraw", previous_approval_id=str(UUID(int=3)),
+                      source_approval_id=str(UUID(int=4)), approved_at=model.now.isoformat())
+    store.accept_release_change(withdrawal); store.accept_release_change(withdrawal)
+    assert store.accept_event(state_payload()) == EVENT
+    with pytest.raises(service.EventConflict):
+        store.accept_release_change(dict(withdrawal, action="correct", previous_approval_id=str(UUID(int=4)),
+                                        source_approval_id=str(UUID(int=5))))
+    model.elapse(minutes=6); web_store(model).recover_event(EVENT)
+    assert store.dispatch_batch(EVENT)[1] == [] and store.claim(EVENT, digest) is None
+    for name in ("payload_digest", "audience_cutoff", "release_id", "source_approval_id"):
+        assert model.rows(events)[0][name] == original[name]
+    assert len(model.rows(revisions)) == 2
+    if status in {"accepted", "uncertain", "failed"}: assert model.rows(attempts) == history
+    if status == "submitting": assert model.rows(deliveries)[0]["status"] == "uncertain"
+
+
+def test_state_discovery_rotates_held_and_backoff_work_and_remains_environment_bound():
+    model = Model(); store = web_store(model)
+    ids = [str(UUID(int=i)) for i in range(10, 60)]
+    for index, state in enumerate(service.STATE_CODES):
+        digest = subscribe(model, index + 1, state=state)
+        assert store.confirm(store.request_confirmation(f"subscriber{index + 1}@example.invalid")) == "verified"
+        store.accept_event(state_payload(state, event_id=ids[index]))
+        store.prepare_event(ids[index])
+        claim = store.claim(ids[index], digest)
+        store.begin_submission(ids[index], digest, claim)
+        store.record_outcome(ids[index], digest, claim, "submission_unknown" if index % 2 else "retryable_rejection")
+    foreign = service.NotificationDeliveryStore(
+        model, SECRET, "development", releases_enabled=True, management_enabled=True, web_launch_url=WEB_URL)
+    foreign.accept_event(dict(state_payload(event_id=str(UUID(int=100))), environment="development"))
+    visited = []
+    for _ in ids:
+        model.elapse(seconds=1)
+        selected = web_store(model).pending_release_events()
+        assert len(selected) == 1
+        visited.extend(selected)
+        assert web_store(model).recover_event(selected[0]) in {"attention", "ready"}
+    assert visited == ids
+    assert foreign.pending_release_events() == [str(UUID(int=100))]
+
+
 @pytest.mark.parametrize("value", [None, 3, True, [], {}, "", "http://gramanna.example.org/app",
     "https://localhost", "https://127.0.0.1/app", "https://[::1]/", "https://10.0.0.1/",
     "https://host.local/", "https://host.internal/", "https://host.test/", "https://host.invalid/",

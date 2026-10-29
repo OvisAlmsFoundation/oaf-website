@@ -693,6 +693,49 @@ RELEASE_PATH = api.PREFIX + "/release-events"
 RELEASE_KEY = "4" * 64
 
 
+@pytest.mark.parametrize("credential,status", [(SUBMISSION, 401), (REPORTING, 401), ("f" * 64, 401), (RELEASE_KEY, 200)])
+def test_state_approval_uses_only_existing_release_authorization(release_api, credential, status):
+    from test_notification_delivery import state_payload
+    reply = service(release_api.client, RELEASE_PATH, credential=credential, data=state_payload())
+    assert reply.status_code == status
+    if status != 200: assert not release_api.model.statements
+
+
+@pytest.mark.parametrize("override", [dict(release_id="ca"), dict(release_id="DC"), dict(release_id="CA "),
+    dict(environment="development"), dict(content_version="web-launch-v1"), dict(recipients=[]),
+    dict(subject="caller text"), dict(release_url="https://other.example.org/app"), dict(state="CA")])
+def test_state_http_invalid_contract_is_rejected_before_persistence(release_api, override):
+    from test_notification_delivery import state_payload
+    reply = service(release_api.client, RELEASE_PATH, credential=RELEASE_KEY, data=state_payload(**override))
+    assert reply.status_code == 400 and not release_api.model.statements
+
+
+def test_state_http_replay_compact_identity_correction_withdrawal_and_canonical_configuration(release_api):
+    from test_notification_delivery import state_payload, EVENT
+    from oaf_website.notification_delivery_schema import events
+    from oaf_website.release_approval_schema import revisions
+    original = state_payload()
+    compact = {k: value.replace("-", "") if k in {"event_id", "source_approval_id"} else value for k, value in original.items()}
+    assert service(release_api.client, RELEASE_PATH, credential=RELEASE_KEY, data=compact).status_code == 200
+    assert service(release_api.client, RELEASE_PATH, credential=RELEASE_KEY, data=original).status_code == 200
+    assert len(release_api.model.rows(events)) == 1
+    release_api.model.elapse(seconds=1)
+    correction = dict(original, action="correct", previous_approval_id=original["source_approval_id"],
+        source_approval_id="00000000-0000-0000-0000-000000000003", approved_at=release_api.model.now.isoformat())
+    assert service(release_api.client, RELEASE_PATH, credential=RELEASE_KEY, data=dict(correction, release_id="NY")).status_code == 409
+    assert service(release_api.client, RELEASE_PATH, credential=RELEASE_KEY, data=correction).status_code == 200
+    release_api.model.elapse(seconds=1)
+    withdrawal = dict(correction, action="withdraw", previous_approval_id=correction["source_approval_id"],
+        source_approval_id="00000000-0000-0000-0000-000000000004", approved_at=release_api.model.now.isoformat())
+    assert service(release_api.client, RELEASE_PATH, credential=RELEASE_KEY, data=withdrawal).status_code == 200
+    assert service(release_api.client, RELEASE_PATH, credential=RELEASE_KEY, data=withdrawal).status_code == 200
+    assert len(release_api.model.rows(revisions)) == 2
+    assert release_api.store.pending_release_events() == []
+    release_api.store.web_launch_url = None
+    assert service(release_api.client, RELEASE_PATH, credential=RELEASE_KEY, data=original).status_code == 400
+    assert release_api.model.rows(events)[0]["event_id"] == EVENT
+
+
 @pytest.mark.parametrize("credential,status", [(SUBMISSION,401), (REPORTING,401), ("f"*64,401), (RELEASE_KEY,200)])
 def test_web_intake_reuses_typed_release_authorization(release_api, credential, status):
     from test_notification_delivery import web_payload

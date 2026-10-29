@@ -252,7 +252,18 @@ def verify_delivery(connection, identity, *, tables=TABLES, mutable=MUTABLE, exp
             WHERE i.indrelid=CAST(:table AS pg_catalog.regclass) AND i.indisvalid AND i.indisready AND i.indislive
               AND NOT i.indnullsnotdistinct ORDER BY c.relname
         """, table=name)
-        require(indexes == index_contract(item))
+        expected_indexes = index_contract(item)
+        require(len(indexes) == len(expected_indexes))
+        for actual_index, expected_index in zip(indexes, expected_indexes):
+            require(actual_index["name"] == expected_index["name"])
+            expected_base, separator, expected_where = expected_index["definition"].partition(" WHERE ")
+            if separator:
+                actual_base, actual_separator, actual_where = actual_index["definition"].partition(" WHERE ")
+                require(actual_base == expected_base and actual_separator == separator)
+                require(check_tree("CHECK (" + actual_where + ")", item.columns) ==
+                        check_tree("CHECK (" + expected_where + ")", item.columns))
+            else:
+                require(actual_index == expected_index)
         require(not scalar(connection, """
             SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_inherits WHERE inhrelid=CAST(:table AS pg_catalog.regclass) OR inhparent=CAST(:table AS pg_catalog.regclass))
               OR EXISTS (SELECT 1 FROM pg_catalog.pg_policy WHERE polrelid=CAST(:table AS pg_catalog.regclass))
