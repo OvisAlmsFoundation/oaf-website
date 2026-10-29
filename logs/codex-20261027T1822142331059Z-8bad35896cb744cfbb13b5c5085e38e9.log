@@ -1,0 +1,1541 @@
+PROJECT: GRAMANNA APP
+TASK: WU2 - Corrective Git Delivery for Coverage
+STATUS: INCOMPLETE
+UTC: 2026-10-27T18:22:14.2068477Z
+Mode: SOL / EXTRA HIGH
+Model: gpt-6.1-sol
+Reasoning: xhigh
+Sandbox: workspace-write
+Codex is running...
+OpenAI Codex v0.164.0
+--------
+workdir: C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+model: gpt-6.1-sol
+provider: openai
+approval: on-request
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 01a17e99-4319-7912-bef5-1d85e9e0fa76
+--------
+user
+PROJECT: OAF WEBSITE
+TASK: WU2 - Corrective Git Delivery for Coverage
+STATUS: INCOMPLETE
+System.Management.Automation.RemoteException
+OBJECTIVE
+System.Management.Automation.RemoteException
+Deliver the single validated WU2 CI coverage
+correction to the existing origin/main branch.
+System.Management.Automation.RemoteException
+One authorized Git delivery:
+verify, stage, review, commit, push, report, exit.
+System.Management.Automation.RemoteException
+MANDATORY 5P
+System.Management.Automation.RemoteException
+SIMPLE. DIRECT. SUFFICIENT. EFFICIENT. SAFE.
+System.Management.Automation.RemoteException
+Reuse accepted evidence and established procedures.
+No new tooling, redundant investigation or tests.
+System.Management.Automation.RemoteException
+ACCEPTED BASELINE
+System.Management.Automation.RemoteException
+Repository: OAF Website
+Branch: main
+System.Management.Automation.RemoteException
+Expected HEAD:
+3259aaf787f97c34aa4a01c3d97ce19ea1dd2a61
+System.Management.Automation.RemoteException
+Accepted correction:
+tests/test_notification_delivery.py
+System.Management.Automation.RemoteException
+One added unsupported-platform test case restores
+coverage of the existing strict rejection path.
+No application code was changed.
+System.Management.Automation.RemoteException
+Accepted candidate input SHA256:
+6a696031906a17d8c85d8f26b3b4a1fd04b7040972976d4a90b0a95c0b6a00f4
+System.Management.Automation.RemoteException
+Accepted evidence:
+.pytest_cache/wu2-local-20261027T174600Z/
+System.Management.Automation.RemoteException
+Final verification:
+- Focused tests: 15 PASS.
+- Canonical shard 0: 1,958 PASS.
+- Canonical shard 1: 1,957 PASS.
+- Exactly-once inventory: 3,915 tests.
+- Statements: 5,932/5,932 (100%).
+- Branches: 2,138/2,138 (100%).
+- Zero failures, errors or unexpected external access.
+- Security and autonomy: PASS.
+System.Management.Automation.RemoteException
+AUTHORIZED DELIVERY
+System.Management.Automation.RemoteException
+1. Confirm repository, branch, expected HEAD,
+   current index and all owner work.
+System.Management.Automation.RemoteException
+2. Verify the exact current candidate matches
+   accepted validation and fingerprints.
+System.Management.Automation.RemoteException
+3. Stage ONLY:
+   tests/test_notification_delivery.py
+System.Management.Automation.RemoteException
+4. Review the COMPLETE actual staged diff.
+System.Management.Automation.RemoteException
+   Confirm:
+   - Only the approved test correction is staged.
+   - Strict unsupported-platform rejection tested.
+   - No weakened assertions or exclusions.
+   - No application or migration changes.
+   - No credentials, conflicts or whitespace errors.
+   - Owner work and evidence preserved.
+System.Management.Automation.RemoteException
+5. Verify staged candidate identity against
+   accepted evidence.
+System.Management.Automation.RemoteException
+   Reuse canonical coverage results.
+   Rerun tests only if material changes invalidate
+   accepted evidence or a mandatory gate requires it.
+System.Management.Automation.RemoteException
+6. Commit with message:
+System.Management.Automation.RemoteException
+   Restore full coverage for web launch validation
+System.Management.Automation.RemoteException
+7. Push normally to the existing origin/main.
+System.Management.Automation.RemoteException
+   No force push or history rewrite.
+System.Management.Automation.RemoteException
+8. Verify commit, tree, remote-ref agreement,
+   native exits and final working-tree status.
+System.Management.Automation.RemoteException
+9. After successful push, REPORT AND EXIT.
+System.Management.Automation.RemoteException
+   Do not query, poll or monitor GitHub Actions.
+   The owner independently checks CI.
+System.Management.Automation.RemoteException
+SAFETY
+System.Management.Automation.RemoteException
+No database migrations, credentials, real approvals,
+integration submissions, emails or provider access.
+System.Management.Automation.RemoteException
+No notification activation, deployment, service
+or scheduler changes.
+System.Management.Automation.RemoteException
+No GraManna repository modifications.
+No unrelated source or documentation changes.
+No reset, clean, stash or discarded owner work.
+System.Management.Automation.RemoteException
+REPORTING
+System.Management.Automation.RemoteException
+The actual repository is OAF WEBSITE.
+System.Management.Automation.RemoteException
+Use the existing corrected Invoke-OAFCodex helper.
+Do not modify or replace its reporting machinery.
+System.Management.Automation.RemoteException
+Begin the consolidated Codex report:
+System.Management.Automation.RemoteException
+PROJECT: OAF WEBSITE
+TASK: WU2 - Corrective Git Delivery for Coverage
+STATUS: PASS / BLOCKED / ERROR / INCOMPLETE
+System.Management.Automation.RemoteException
+Report staged-diff review, candidate identity,
+validation reuse, commit/push, remote verification,
+preservation and any actionable first failure.
+System.Management.Automation.RemoteException
+Verify the outer reporting project heading
+through normal execution without an extra run.
+System.Management.Automation.RemoteException
+Preserve visible logging, native exit reporting,
+final clipboard delivery/read-back and alert.
+System.Management.Automation.RemoteException
+No interim clipboard writes or alerts.
+System.Management.Automation.RemoteException
+STOP CONDITION
+System.Management.Automation.RemoteException
+Successful verified push or first genuine blocker.
+System.Management.Automation.RemoteException
+5P:
+ONE VALIDATED CORRECTION.
+ONE AUTHORIZED DELIVERY.
+ONE CONSOLIDATED REPORT.
+System.Management.Automation.RemoteException
+codex
+IΓÇÖll verify the repository, accepted candidate and evidence, then stage, review, commit and push the single correction. IΓÇÖll use the existing Invoke-OAFCodex reporting flow and stop after the verified push or first genuine blocker.
+System.Management.Automation.RemoteException
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Location
+rg --files --hidden -g AGENTS.md -g '*Invoke-OAFCodex*' -g '*wu2*' -g '"'!node_modules'"' -g '"'!.git/objects'"' -g '"'!.venv'"' -g '"'!venv'"' -g '"'!.aws'"' -g '"'!dist'"' -g '"'!build'"' .
+Get-Command Invoke-OAFCodex -ErrorAction SilentlyContinue | Format-List Name,CommandType,Source,Definition" in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+ exited 1 in 1293ms:
+System.Management.Automation.RemoteException
+Path                                                    
+----                                                    
+C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-ChildItem -Force | Select-Object Mode,Name
+$ancestors = @('"'C:\\AGENTS.md','C:\\Users\\AGENTS.md','C:\\Users\\ovisa\\AGENTS.md','C:\\Users\\ovisa\\Documents\\AGENTS.md','C:\\Users\\ovisa\\Documents\\OAF_App\\AGENTS.md','C:\\Users\\ovisa\\Documents\\OAF_App\\Development\\AGENTS.md','C:\\Users\\ovisa\\Documents\\OAF_App\\Development\\OAF Website\\AGENTS.md')
+foreach ("'$file in $ancestors) { if (Test-Path -LiteralPath $file) { Write-Output "INSTRUCTIONS: $file"; Get-Content -LiteralPath $file } }
+rg --files --hidden --no-ignore -g AGENTS.md -g '"'"'!node_modules'"' -g '"'!.git'"' -g '"'!.venv'"' -g '"'!venv'"' -g '"'!.aws'"' ." in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$PROFILE | Format-List * -Force
+$profiles = @($PROFILE.CurrentUserCurrentHost,$PROFILE.CurrentUserAllHosts,$PROFILE.AllUsersCurrentHost,$PROFILE.AllUsersAllHosts)
+foreach ($file in $profiles) { if (Test-Path -LiteralPath $file) { Write-Output "PROFILE: $file"; Get-Content -LiteralPath $file } }
+Get-ChildItem -LiteralPath '"'C:\\Users\\ovisa\\Documents\\OAF_App\\Development' -Force | Select-Object Mode,Name
+Get-ChildItem -LiteralPath '.pytest_cache\\wu2-local-20261027T174600Z' -Force | Select-Object Mode,Name,Length" in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+ succeeded in 3369ms:
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+AllUsersAllHosts       : C:\Windows\System32\WindowsPowerShell\v1.0\profile.ps1
+AllUsersCurrentHost    : C:\Windows\System32\WindowsPowerShell\v1.0\Microsoft.PowerShell_profile.ps1
+CurrentUserAllHosts    : C:\Users\ovisa\Documents\WindowsPowerShell\profile.ps1
+CurrentUserCurrentHost : C:\Users\ovisa\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1
+Length                 : 75
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+PROFILE: C:\Users\ovisa\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1
+function Show-OAFPowerShellAlert {
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateSet('success', 'failure')]
+        [string]$Status,
+System.Management.Automation.RemoteException
+        [string]$Title = 'OAF PowerShell',
+System.Management.Automation.RemoteException
+        [string]$Message
+    )
+System.Management.Automation.RemoteException
+    try {
+        Add-Type -AssemblyName System.Windows.Forms -ErrorAction Stop
+        Add-Type -AssemblyName System.Drawing -ErrorAction Stop
+System.Management.Automation.RemoteException
+        if ($Status -eq 'success') {
+            if ([string]::IsNullOrWhiteSpace($Message)) {
+                $Message = 'PowerShell task completed successfully. Output is ready on the clipboard.'
+            }
+System.Management.Automation.RemoteException
+            $heading = 'PASS'
+            $background = [System.Drawing.Color]::FromArgb(20, 155, 65)
+System.Management.Automation.RemoteException
+            [System.Media.SystemSounds]::Asterisk.Play()
+            Start-Sleep -Milliseconds 250
+            [System.Media.SystemSounds]::Asterisk.Play()
+        }
+        else {
+            if ([string]::IsNullOrWhiteSpace($Message)) {
+                $Message = 'PowerShell task needs attention. Check the terminal.'
+            }
+System.Management.Automation.RemoteException
+            $heading = 'ATTENTION'
+            $background = [System.Drawing.Color]::FromArgb(200, 40, 40)
+System.Management.Automation.RemoteException
+            [System.Media.SystemSounds]::Hand.Play()
+            Start-Sleep -Milliseconds 250
+            [System.Media.SystemSounds]::Exclamation.Play()
+        }
+System.Management.Automation.RemoteException
+        $form = New-Object System.Windows.Forms.Form
+        $form.Text = $Title
+        $form.ClientSize = New-Object System.Drawing.Size(650, 250)
+        $form.BackColor = $background
+        $form.ForeColor = [System.Drawing.Color]::White
+        $form.TopMost = $true
+        $form.ShowInTaskbar = $true
+        $form.MaximizeBox = $false
+        $form.MinimizeBox = $false
+        $form.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
+        $form.StartPosition = [System.Windows.Forms.FormStartPosition]::Manual
+System.Management.Automation.RemoteException
+        $screen = [System.Windows.Forms.Screen]::FromPoint(
+            [System.Windows.Forms.Cursor]::Position
+        )
+System.Management.Automation.RemoteException
+        $working = $screen.WorkingArea
+System.Management.Automation.RemoteException
+        $form.Location = New-Object System.Drawing.Point(
+            ($working.Right - $form.Width - 35),
+            ($working.Top + 35)
+        )
+System.Management.Automation.RemoteException
+        $headingLabel = New-Object System.Windows.Forms.Label
+        $headingLabel.Text = $heading
+        $headingLabel.ForeColor = [System.Drawing.Color]::White
+        $headingLabel.BackColor = $background
+        $headingLabel.Font = New-Object System.Drawing.Font(
+            'Segoe UI',
+            30,
+            [System.Drawing.FontStyle]::Bold
+        )
+        $headingLabel.Location = New-Object System.Drawing.Point(25, 18)
+        $headingLabel.Size = New-Object System.Drawing.Size(590, 58)
+System.Management.Automation.RemoteException
+        $titleLabel = New-Object System.Windows.Forms.Label
+        $titleLabel.Text = $Title
+        $titleLabel.ForeColor = [System.Drawing.Color]::White
+        $titleLabel.BackColor = $background
+        $titleLabel.Font = New-Object System.Drawing.Font(
+            'Segoe UI',
+            16,
+            [System.Drawing.FontStyle]::Bold
+        )
+        $titleLabel.Location = New-Object System.Drawing.Point(29, 80)
+        $titleLabel.Size = New-Object System.Drawing.Size(585, 34)
+        $titleLabel.AutoEllipsis = $true
+System.Management.Automation.RemoteException
+        $messageLabel = New-Object System.Windows.Forms.Label
+        $messageLabel.Text = $Message
+        $messageLabel.ForeColor = [System.Drawing.Color]::White
+        $messageLabel.BackColor = $background
+        $messageLabel.Font = New-Object System.Drawing.Font(
+            'Segoe UI',
+            12
+        )
+        $messageLabel.Location = New-Object System.Drawing.Point(30, 120)
+        $messageLabel.Size = New-Object System.Drawing.Size(580, 65)
+        $messageLabel.AutoEllipsis = $true
+System.Management.Automation.RemoteException
+        $okButton = New-Object System.Windows.Forms.Button
+        $okButton.Text = 'OK'
+        $okButton.Font = New-Object System.Drawing.Font(
+            'Segoe UI',
+            11,
+            [System.Drawing.FontStyle]::Bold
+        )
+        $okButton.Size = New-Object System.Drawing.Size(110, 40)
+        $okButton.Location = New-Object System.Drawing.Point(505, 195)
+        $okButton.BackColor = [System.Drawing.Color]::White
+        $okButton.ForeColor = [System.Drawing.Color]::Black
+        $okButton.DialogResult = [System.Windows.Forms.DialogResult]::OK
+System.Management.Automation.RemoteException
+        $form.Controls.Add($headingLabel)
+        $form.Controls.Add($titleLabel)
+        $form.Controls.Add($messageLabel)
+        $form.Controls.Add($okButton)
+System.Management.Automation.RemoteException
+        $form.AcceptButton = $okButton
+        $form.CancelButton = $okButton
+System.Management.Automation.RemoteException
+        $form.Add_Shown({
+            $form.Activate()
+            $form.BringToFront()
+            $okButton.Focus()
+        })
+System.Management.Automation.RemoteException
+        [void]$form.ShowDialog()
+        $form.Dispose()
+    }
+    catch {
+        if ($Status -eq 'success') {
+            [console]::Beep(900, 180)
+            [console]::Beep(1100, 220)
+        }
+        else {
+            [console]::Beep(500, 350)
+            [console]::Beep(350, 450)
+        }
+    }
+}
+System.Management.Automation.RemoteException
+function Show-OAFCodexAlert {
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateSet('success', 'failure')]
+        [string]$Status
+    )
+System.Management.Automation.RemoteException
+    if ($Status -eq 'success') {
+        Show-OAFPowerShellAlert `
+            -Status success `
+            -Title 'OAF CODEX COMPLETE' `
+            -Message 'Codex finished successfully. The final report is on the clipboard.'
+    }
+    else {
+        Show-OAFPowerShellAlert `
+            -Status failure `
+            -Title 'OAF CODEX NEEDS ATTENTION' `
+            -Message 'Codex did not complete successfully. Check the terminal.'
+    }
+}
+System.Management.Automation.RemoteException
+function Invoke-OAFCodex {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Prompt,
+System.Management.Automation.RemoteException
+        [Parameter(Mandatory = $true)]
+        [ValidateSet('SOL / HIGH', 'SOL / EXTRA HIGH', 'SOL / MAX', 'ASTRA / EXTRA HIGH', 'ASTRA / MAX')]
+        [string]$Mode,
+System.Management.Automation.RemoteException
+        [Parameter(Mandatory = $true)]
+        [ValidateSet('read-only', 'workspace-write')]
+        [string]$Sandbox
+    )
+System.Management.Automation.RemoteException
+    switch ($Mode) {
+        'SOL / HIGH' {
+            $model = 'gpt-6.1-sol'
+            $reasoning = 'high'
+        }
+System.Management.Automation.RemoteException
+        'SOL / EXTRA HIGH' {
+            $model = 'gpt-6.1-sol'
+            $reasoning = 'xhigh'
+        }
+System.Management.Automation.RemoteException
+        'SOL / MAX' {
+            $model = 'gpt-6.1-sol'
+            $reasoning = 'max'
+        }
+System.Management.Automation.RemoteException
+        'ASTRA / EXTRA HIGH' {
+            $model = 'gpt-6-astra'
+            $reasoning = 'xhigh'
+        }
+System.Management.Automation.RemoteException
+        'ASTRA / MAX' {
+            $model = 'gpt-6-astra'
+            $reasoning = 'max'
+        }
+System.Management.Automation.RemoteException
+        default {
+            Write-Host "ERROR ΓÇö Unsupported CODEX MODE: $Mode"
+            Show-OAFCodexAlert -Status failure
+            return
+        }
+    }
+System.Management.Automation.RemoteException
+    $ErrorActionPreference = 'Stop'
+    $utc = [DateTime]::UtcNow.ToString('o')
+    $task = 'Codex execution'
+    if ($Prompt -match '(?m)^TASK:[ \t]*(.+)') { $task = $Matches[1].Trim() }
+        $project = switch ((Split-Path -Leaf (Get-Location).Path)) {
+        'OAF Website' { 'OAF WEBSITE'; break }
+        'GraManna'    { 'GRAMANNA APP'; break }
+        default       { throw 'Invoke-OAFCodex: Unknown repository; project identity cannot be verified.' }
+    }
+    $heading = "PROJECT: $project`nTASK: $task`nSTATUS: INCOMPLETE"
+    $state = @{
+        NativeExit = $null
+        ExecutionFailure = $null
+        Reporting = [System.Collections.Generic.List[string]]::new()
+        Stdout = [System.Collections.Generic.List[string]]::new()
+        Writer = $null
+    }
+    $logPath = $null
+    $writer = $null
+    Write-Host "$heading`nUTC: $utc`nMode: $Mode`nModel: $model`nReasoning: $reasoning`nSandbox: $Sandbox"
+System.Management.Automation.RemoteException
+    # Keep live output and the complete combined native streams together.
+    # Logging failures are secondary evidence; they must not stop native capture.
+    $emit = {
+        param([string]$Text)
+        Write-Host $Text
+        if ($null -ne $state.Writer) {
+            try { $state.Writer.WriteLine($Text) }
+            catch {
+                $state.Reporting.Add("operation=log-write code=$($_.Exception.GetType().Name) utc=$([DateTime]::UtcNow.ToString('o'))")
+                $state.Writer = $null
+            }
+        }
+    }
+System.Management.Automation.RemoteException
+    try {
+        $logDirectory = Join-Path (Get-Location).Path 'logs'
+        New-Item -ItemType Directory -Path $logDirectory -Force -ErrorAction Stop | Out-Null
+        $logPath = Join-Path $logDirectory "codex-$([DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffffffZ'))-$([Guid]::NewGuid().ToString('N')).log"
+        $writer = [System.IO.StreamWriter]::new($logPath, $false, [System.Text.UTF8Encoding]::new($false))
+        $writer.AutoFlush = $true
+        $state.Writer = $writer
+        $writer.WriteLine("$heading`nUTC: $utc`nMode: $Mode`nModel: $model`nReasoning: $reasoning`nSandbox: $Sandbox")
+    }
+    catch {
+        $state.Reporting.Add("operation=log-start code=$($_.Exception.GetType().Name) utc=$([DateTime]::UtcNow.ToString('o'))")
+    }
+System.Management.Automation.RemoteException
+    $codexArgs = @(
+        'exec'
+        '--model'
+        $model
+        '-c'
+        "model_reasoning_effort=`"$reasoning`""
+        '--color'
+        'never'
+    )
+    if ($Sandbox -eq 'read-only') {
+        $codexArgs += @('--sandbox', 'read-only')
+    }
+    elseif ($Sandbox -eq 'workspace-write') {
+        $codexArgs += '--approve-for-me'
+    }
+    $codexArgs += '-'
+System.Management.Automation.RemoteException
+    if ([string]::IsNullOrWhiteSpace($Prompt)) {
+        $state.ExecutionFailure = "operation=codex code=EMPTY_PROMPT utc=$([DateTime]::UtcNow.ToString('o'))"
+    }
+    elseif ($state.Reporting.Count -eq 0) {
+        & $emit 'Codex is running...'
+        try {
+            & {
+                # Windows PowerShell 5.1 represents redirected native stderr as
+                # ErrorRecord objects. Continue drains both streams even when
+                # the caller uses ErrorActionPreference=Stop.
+                $ErrorActionPreference = 'Continue'
+                $global:LASTEXITCODE = $null
+                $Prompt | & codex @codexArgs 2>&1
+                $state.NativeExit = $global:LASTEXITCODE
+                if ($null -eq $state.NativeExit) {
+                    $state.ExecutionFailure = "operation=codex code=NATIVE_NOT_STARTED utc=$([DateTime]::UtcNow.ToString('o'))"
+                }
+                elseif ($state.NativeExit -ne 0) {
+                    $state.ExecutionFailure = "operation=codex code=NATIVE_EXIT native_exit=$($state.NativeExit) utc=$([DateTime]::UtcNow.ToString('o'))"
+                }
+            } | ForEach-Object {
+                $line = [string]$_
+                if ($_ -isnot [System.Management.Automation.ErrorRecord]) { $state.Stdout.Add($line) }
+                & $emit $line
+            }
+        }
+        catch {
+            $state.ExecutionFailure = "operation=codex code=$($_.Exception.GetType().Name) utc=$([DateTime]::UtcNow.ToString('o'))"
+        }
+    }
+System.Management.Automation.RemoteException
+    if ($null -ne $writer) {
+        try { $writer.Dispose() }
+        catch { $state.Reporting.Add("operation=log-close code=$($_.Exception.GetType().Name) utc=$([DateTime]::UtcNow.ToString('o'))") }
+        $state.Writer = $null
+    }
+System.Management.Automation.RemoteException
+    $technical = if ($null -eq $state.NativeExit) { 'NOT_RUN' } elseif ($state.NativeExit -ne 0) { 'ERROR' } else { 'PASS' }
+    $originalReport = $state.Stdout -join [Environment]::NewLine
+    $status = $technical
+    if ($technical -eq 'PASS') {
+        if ([string]::IsNullOrWhiteSpace($originalReport)) {
+            $status = 'INCOMPLETE'
+            $state.Reporting.Add("operation=report code=EMPTY_STDOUT utc=$([DateTime]::UtcNow.ToString('o'))")
+        }
+        elseif ($originalReport -match '(?m)^STATUS:[ \t]*(PASS|BLOCKED|ERROR|INCOMPLETE)[ \t]*\r?$') {
+            $status = $Matches[1]
+        }
+    }
+    elseif ($technical -eq 'NOT_RUN') { $status = 'ERROR' }
+    if ($status -eq 'PASS' -and $state.Reporting.Count -gt 0) { $status = 'ERROR' }
+    $buildReport = {
+        $first = $state.ExecutionFailure
+        if (-not $first -and $state.Reporting.Count -gt 0) { $first = $state.Reporting[0] }
+        if (-not $first -and $status -ne 'PASS') { $first = "operation=codex-report code=TASK_$status utc=$utc; see original report" }
+        if (-not $first) { $first = 'NONE' }
+        "PROJECT: $project`nTASK: $task`nSTATUS: $status`nUTC: $utc`nEXECUTION: $technical`nNATIVE_EXIT: $($state.NativeExit)`nFIRST_FAILURE: $first`nREPORTING_FAILURES: $($state.Reporting -join '; ')`nEVIDENCE: $logPath`n`nORIGINAL CODEX REPORT:`n$originalReport"
+    }
+    $report = & $buildReport
+    if ($logPath -and [System.IO.File]::Exists($logPath)) {
+        try { Add-Content -LiteralPath $logPath -Value $report -Encoding UTF8 -ErrorAction Stop }
+        catch {
+            $state.Reporting.Add("operation=report-log code=$($_.Exception.GetType().Name) utc=$([DateTime]::UtcNow.ToString('o'))")
+            if ($status -eq 'PASS') { $status = 'ERROR' }
+            $report = & $buildReport
+        }
+    }
+System.Management.Automation.RemoteException
+    # The one completed payload precedes the one authoritative delivery attempt.
+    Write-Host $report
+    $clipboardVerified = $false
+    $deliveryOperation = 'clipboard-clear'
+    try {
+        '' | & "$env:SystemRoot\System32\clip.exe"
+        $clearExit = $global:LASTEXITCODE
+        if ($clearExit -ne 0) { throw [System.InvalidOperationException]::new('Clipboard clear failed.') }
+        $deliveryOperation = 'clipboard-write'
+        Set-Clipboard -Value $report -ErrorAction Stop
+        $deliveryOperation = 'clipboard-readback'
+        $verify = Get-Clipboard -Raw -ErrorAction Stop
+        $deliveryOperation = 'clipboard-compare'
+        if (-not [string]::Equals($verify, $report, [StringComparison]::Ordinal)) {
+            throw [System.InvalidOperationException]::new('Clipboard content mismatch.')
+        }
+        $clipboardVerified = $true
+        $receipt = 'DONE - VERIFIED - new output is on the clipboard. Exact ordinal full-content read-back PASS.'
+    }
+    catch {
+        $receipt = "ERROR - clipboard did not update correctly. Do not Ctrl+V yet. operation=$deliveryOperation code=$($_.Exception.GetType().Name) utc=$([DateTime]::UtcNow.ToString('o')); EXECUTION=$technical; NATIVE_EXIT=$($state.NativeExit)"
+        $state.Reporting.Add($receipt)
+    }
+    Write-Host $receipt
+    if ($logPath -and [System.IO.File]::Exists($logPath)) {
+        try { Add-Content -LiteralPath $logPath -Value $receipt -Encoding UTF8 -ErrorAction Stop }
+        catch {
+            $state.Reporting.Add("operation=delivery-log code=$($_.Exception.GetType().Name) utc=$([DateTime]::UtcNow.ToString('o'))")
+            Write-Host "REPORTING_FAILURE: $($state.Reporting[$state.Reporting.Count - 1]); EXECUTION=$technical; NATIVE_EXIT=$($state.NativeExit)"
+        }
+    }
+System.Management.Automation.RemoteException
+    # The existing alert remains best-effort. Its appearance is not a task gate.
+    try {
+        $alertStatus = if ($status -eq 'PASS' -and $clipboardVerified -and $state.Reporting.Count -eq 0) { 'success' } else { 'failure' }
+        Show-OAFCodexAlert -Status $alertStatus
+    }
+    catch { Write-Host "ALERT: best-effort unavailable; EXECUTION=$technical; NATIVE_EXIT=$($state.NativeExit)" }
+    finally { $global:LASTEXITCODE = if ($null -eq $state.NativeExit) { 1 } else { $state.NativeExit } }
+}
+System.Management.Automation.RemoteException
+function Invoke-OAFCodexClipboard {
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateSet('SOL / HIGH', 'SOL / EXTRA HIGH', 'SOL / MAX', 'ASTRA / EXTRA HIGH', 'ASTRA / MAX')]
+        [string]$Mode,
+System.Management.Automation.RemoteException
+        [Parameter(Mandatory = $true)]
+        [ValidateSet('read-only', 'workspace-write')]
+        [string]$Sandbox
+    )
+System.Management.Automation.RemoteException
+    $promptText = Get-Clipboard -Raw
+System.Management.Automation.RemoteException
+    if ([string]::IsNullOrWhiteSpace($promptText)) {
+        Write-Host 'ERROR ΓÇö Clipboard prompt is empty.'
+        Show-OAFCodexAlert -Status failure
+        return
+    }
+System.Management.Automation.RemoteException
+    Invoke-OAFCodex `
+        -Prompt $promptText `
+        -Mode $Mode `
+        -Sandbox $Sandbox
+}
+$env:C22_REPAIR4_PG_BIN = 'C:\Program Files\PostgreSQL\17\bin'
+System.Management.Automation.RemoteException
+Mode   Name                                                  
+----   ----                                                  
+d----- C22S8_Canonical_20260916_202151                       
+d----- C22S8_Canonical_AUTHORITATIVE_20260916_204420         
+d----- C22S8_Canonical_FINAL_20260916_203753                 
+d----- C22S8_FINAL_DELIVERY_CANONICAL_20260916_211412        
+d----- GraManna                                              
+d----- GraManna_C22S7_CIRepair1_FinalEvidence_20260915-175805
+d----- GraManna_C22S7_FinalEvidence_20260915-153000          
+d----- GraManna_C22S7_FinalStageEvidence_20260915-140706     
+d----- GraManna_C22S7_PostPushCIDiagnosis                    
+d----- GraManna_C22S7_PostRepairEvidence_20260915-140822     
+d----- GraManna_C22S7_PreClosureEvidence_20260915-123834     
+d----- GraManna_C22S7_StageEvidence_20260915-123558          
+d----- GraManna_C22S7_StageEvidence_20260915-123653          
+d----- GraManna_ci_ef6ff17_evidence                          
+d----- GraManna_ci_repair_candidate_browsers                 
+d----- GraManna_ci_repair_candidate_venv                     
+d----- OAF Website                                           
+-a---- GraManna_ci_repair_candidate.coverage                 
+d----- baseline-ci                                           
+-a---- baseline-combine.log                                  
+-a---- baseline-gaps.json                                    
+-a---- baseline-shard-0-result.json                          
+-a---- baseline-shard-0.log                                  
+-a---- baseline-shard-1-result.json                          
+-a---- baseline-shard-1.log                                  
+-a---- baseline.json                                         
+-a---- candidate.json                                        
+-a---- corrected-combine-result.json                         
+-a---- corrected-combine.log                                 
+-a---- corrected-shard-0-result.json                         
+-a---- corrected-shard-0.log                                 
+-a---- corrected-shard-1-result.json                         
+-a---- corrected-shard-1.log                                 
+-a---- correction.diff                                       
+-a---- finalization-reconciliation.json                      
+-a---- first-failure.json                                    
+-a---- focused-result.json                                   
+-a---- focused.log                                           
+-a---- gap-diagnosis.json                                    
+-a---- security-autonomy.json                                
+-a---- test_notification_delivery.before.py                  
+-a---- verification-final.json                               
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+ exited 1 in 5161ms:
+System.Management.Automation.RemoteException
+rg: .\instance\step5-sealed-handoff-offline-93a58f8659064cc382a360247091c505: Access is denied. (os error 5)
+rg: .\instance\step5-confirmation-authority-b143c3389ba54b7d96991f9b23ab2976: Access is denied. (os error 5)
+rg: .\instance\step5-original-binding-04639b3b4c9e463aa79bb673c5d67ac7: Access is denied. (os error 5)
+rg: .\instance\step5-original-binding-918f16fc6d804f629780a14ce70035b9: Access is denied. (os error 5)
+rg: .\instance\step3-fresh-observation-77a48ed62be24f5295f34b5e69a44332: Access is denied. (os error 5)
+rg: .\instance\step5-handoff-offline-v2-633b83ce43a348e782afc2dcbfdd61ff: Access is denied. (os error 5)
+rg: .\instance\step3-final-unsubscribe-0f2dae0f9be24b4aa95976aaf8415506: Access is denied. (os error 5)
+rg: .\instance\step5-fresh-signup-a830460bd27b4cb1893a29a83e0f92fd: Access is denied. (os error 5)
+rg: .\instance\step5-original-binding-8bf0279d2e9e4066875c81702b4f9ec8: Access is denied. (os error 5)
+rg: .\instance\step5-execution-preflight-b05ddb531f74465d5d0182b3eac0a96f: Access is denied. (os error 5)
+rg: .\instance\step5-original-binding-594c753a5b284c21a88cd4a9e6c0602d: Access is denied. (os error 5)
+rg: .\instance\step5-eligibility-dcea19bf76ba41e2bdcafcea7a55bdf7: Access is denied. (os error 5)
+rg: .\instance\step5-original-binding-0a0dd0fec0b24f7489e2e79139a0efba: Access is denied. (os error 5)
+rg: .\instance\step5-confirmation-run-daeed0869f96438daa76ea82f257e4f7: Access is denied. (os error 5)
+rg: .\instance\step5-original-binding-075aeb224a0c4b5fbaf7a17cab4aa504: Access is denied. (os error 5)
+rg: .\instance\step5-confirmation-run-913d3425d8f04975ae94d421fd009730: Access is denied. (os error 5)
+rg: .\instance\step5-original-binding-05ec61f991a9485dbe4d7c7026bbe551: Access is denied. (os error 5)
+rg: .\instance\step5-confirmation-run-6024a72bf59f4cf5a6885c58292c388f: Access is denied. (os error 5)
+rg: .\instance\step5-original-binding-b143c3389ba54b7d96991f9b23ab2976: Access is denied. (os error 5)
+rg: .\instance\step5-confirmation-run-516bddfe8e4b4536bd0a806c1d915242: Access is denied. (os error 5)
+rg: .\instance\step5-original-binding-b0daa962f62c45b1a95acc921f43a248: Access is denied. (os error 5)
+rg: .\instance\step5-confirmation-run-1e664261c11440bf94ecec044946dc11: Access is denied. (os error 5)
+rg: .\instance\step5-original-binding-92176895094547c3930505fee1859ae5: Access is denied. (os error 5)
+rg: .\instance\step5-confirmation-run-1248216361a543a6be37c93d561ce4ce: Access is denied. (os error 5)
+rg: .\instance\step5-readonly-checkpoint-run-6f735f8229474a71a3360c232d4738df: Access is denied. (os error 5)
+rg: .\instance\step5-confirmation-delivery-67892e38e20f45f3a5ead8d305c3f9a4: Access is denied. (os error 5)
+rg: .\instance\step5-readonly-checkpoint-run-be42c2b4c22d4c098d2cdf763c2a5410: Access is denied. (os error 5)
+rg: .\instance\step5-sealed-handoff-offline-5156dab541ec4390b6e5a063fcb833e5: Access is denied. (os error 5)
+rg: .\.pytest_cache\step5-confirmation-scope-observer-v4-20261023: Access is denied. (os error 5)
+rg: .\.pytest_cache\step5-confirmation-scope-observer-v3-20261023: Access is denied. (os error 5)
+rg: .\.pytest_cache\step5-live-r47-review-v1-20261023\observation-6d3d48e2eb224ab0a13bede4d22bcd0a\private: Access is denied. (os error 5)
+rg: .\.pytest_cache\r47-step3-xml-drift-20261020T171813Z-bae319870c1e4e05935f710eb4116cfe: Access is denied. (os error 5)
+rg: .\.pytest_cache\step5-three-process-conflicts-v1-20261023\private: Access is denied. (os error 5)
+rg: .\.pytest_cache\step5-original-signup-identity-v2-20261023: Access is denied. (os error 5)
+Mode   Name                       
+----   ----                       
+d--h-- .git                       
+d----- .github                    
+d----- .pytest_cache              
+d----- .venv                      
+d----- .vscode                    
+d----- assets                     
+d----- config                     
+d----- docs                       
+d----- instance                   
+d----- logs                       
+d----- migrations                 
+d----- oaf_website                
+d----- ops                        
+d----- tests                      
+-a---- .gitignore                 
+-a---- about.html                 
+-a---- alembic.ini                
+-a---- confirm-email.html         
+-a---- contact.html               
+-a---- faq.html                   
+-a---- gramanna.html              
+-a---- index.html                 
+-a---- manage-notifications.html  
+-a---- README.md                  
+-a---- requirements-dev.txt       
+-a---- requirements-migrations.txt
+-a---- requirements.txt           
+-a---- styles.css                 
+-a---- support.html               
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$evidenceDirectory = '"'.pytest_cache\\wu2-local-20261027T174600Z'
+foreach ("'$name in @('"'baseline.json','candidate.json','verification-final.json','finalization-reconciliation.json','security-autonomy.json','focused-result.json','corrected-combine-result.json')) { Write-Output \"EVIDENCE: "'$name"; Get-Content -LiteralPath (Join-Path $evidenceDirectory $name) }
+Get-ChildItem -LiteralPath '"'.github' -Filter 'AGENTS.md' -Force" in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'git rev-parse --show-toplevel
+Write-Output "NATIVE_EXIT(repository): $LASTEXITCODE"
+git branch --show-current
+Write-Output "NATIVE_EXIT(branch): $LASTEXITCODE"
+git rev-parse HEAD
+Write-Output "NATIVE_EXIT(head): $LASTEXITCODE"
+git status --porcelain=v1 --untracked-files=all
+Write-Output "NATIVE_EXIT(status): $LASTEXITCODE"
+git diff --cached --stat
+Write-Output "NATIVE_EXIT(index): $LASTEXITCODE"
+git diff -- tests/test_notification_delivery.py
+Write-Output "NATIVE_EXIT(candidate-diff): $LASTEXITCODE"
+git ls-files '"'*AGENTS.md'
+Write-Output \"NATIVE_EXIT(tracked-instructions): "'$LASTEXITCODE"
+Get-Command codex -ErrorAction Stop | Select-Object Name,CommandType,Source
+Get-ChildItem -LiteralPath '"'tests' -Filter 'AGENTS.md' -Force
+Get-ChildItem -LiteralPath 'logs' -Filter 'codex-*.log' | Sort-Object LastWriteTime -Descending | Select-Object -First 3 Name,Length,LastWriteTime" in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+ succeeded in 2512ms:
+EVIDENCE: baseline.json
+{
+  "utc": "2026-10-27T17:45:33.962840+00:00",
+  "repository": "C:\\Users\\ovisa\\Documents\\OAF_App\\Development\\OAF Website",
+  "head": "3259aaf787f97c34aa4a01c3d97ce19ea1dd2a61",
+  "tree": "7d7a1fdd2d22c339e59874e4aa77232dce8d04f5",
+  "branch": "main",
+  "status": "?? logs/codex-20261027T1616403062430Z-0cfb95f753a8476ea7f0c37f2d141883.log\n?? logs/codex-20261027T1622194980844Z-de0ba5c888594b398a77c6585792e4a0.log\n?? logs/codex-20261027T1656432870936Z-51a5e947e47246b895026cb1cb5b118a.log\n?? logs/codex-20261027T1722337313520Z-cfc2101e90a04fd7867da22f677b5934.log\n?? logs/codex-20261027T1744025362225Z-5c397153e00f41e7888200ee2fd52bcf.log",
+  "index_sha256": "02d3409d353df068895e883b6848ec157163d92eba17fafcb9fde736f7ba54f4",
+  "files": {
+    ".github/workflows/linux-tests.yml": "ccd1316e3e55aeb6ec2942efbcb2d285741c3db761589344fc2b22f53e97bc3c",
+    ".gitignore": "2f5d5d95a1b03d0e94630e138e15982dea34e836c626a8ebfb52415012f27d3d",
+    ".vscode/settings.json": "bceb4f155f6ad2e45062f3bc40e28bce0d750f1fc464434b11f9e7dda7292e46",
+    ".vscode/tasks.json": "b5d6228e6642d634b4d32523df4d500e16fe562b1abcddd85ecffbe0c79683e6",
+    "README.md": "1105242e72dcad502e6375dd1f574d56d85ffbc69d8758fac74fe8466a46da96",
+    "about.html": "bd1dffbae9bd04386f70266c1da36ec22eb10f95f3712c6f9fb525540706cbb8",
+    "alembic.ini": "c72a8cc54828755974765ab8df60c03744cd448b7d16bed81b1157569548f736",
+    "assets/contact.js": "e95f416c1be5619e1527e463e17f7eacbff16732592e25ecb77f4fa34812ad1d",
+    "assets/email-confirmation.js": "451143bf08d35f0bbd8e8ae0b1d863fb990ee1d84799e55cb028f5d07498efd3",
+    "assets/images/gramanna-logo.png": "52063b300d78a645aca21a7209e6153b36987c9864d6a94978dbb534b89085f9",
+    "assets/images/hero-gifts.webp": "29497ebe32548a5e05238fe6bfb750df170784fc7009a538598e8a17f5ece885",
+    "assets/notification-management.js": "d22b46e8ae1101312ac69b6d47a9c7cb974a37b6c7dc2af8be9fa44055544a4b",
+    "assets/notifications.js": "b1724767a4f103a53e41fff7166635af291772181c8280195f53a7148e383a53",
+    "assets/state-requests.js": "06aae901fe95eac98c35647b68420644c569529f510ca07fb8e5827f04705a1f",
+    "config/database.example.toml": "5c83c5004d4a57a563c04479154f7875cffcfad67c9dcfccc5a3c96319b95a4a",
+    "confirm-email.html": "a38602a1c8e08c29dbaa827229232249bfbd854bb954064f93640066720c4e49",
+    "contact.html": "b4264bddf2f3b58cb9adb2f37a6a862430c1950d9652b9409c26036feb3cfcfb",
+    "docs/CONTACT.md": "4c260059129b29c7537f3e1de48e4f8e2971a89efe09b6680adcb09fd9ca7bf7",
+    "docs/CONTACT_SMTP_SETUP.md": "c3362f85cfb147fd8003403ef7c5f5102b928c440ca3723c8812678f6afd3b12",
+    "docs/DEVELOPMENT_CREDENTIAL_HANDOFF.md": "6c100142eebf8647d303c3ec889a16168152110921e67ea08ce003b1ec8ac203",
+    "docs/WEBSITE_PLAN.md": "305c3a88fddcb6608166b07b81b5160d7a6e7ac0fdd11029447e24efc14d447f",
+    "docs/WORKFLOW.md": "c9ba782441fa68f2469342208aa1b3e14a54c2747f210a83a0893c0854440326",
+    "faq.html": "69eee6e55b2ac6300fe8726bcd9d7fa33b1af074fe3710418784dba52c57b230",
+    "gramanna.html": "dcfa6c5abb661cf50e71de19c0ae9f9b8911c7adb86a4eb4ac07f7304041fd1e",
+    "index.html": "56e5cbec057e37366f076d178ccff05a43935cdc481565e04b01eb7cc3f9e8e9",
+    "manage-notifications.html": "7696f890ce21934b71e7feb71e85af124add3776c4a680c0592cf90be4cbe525",
+    "migrations/env.py": "09fcd94121f9ba0287d33d9b779f2b7845be56f23fea23aaafb5ae891fe661d4",
+    "migrations/manifest.json": "bda15ea8966bca7e7f31b60d9769458b65d1fe0e71d2b32bbd614effbc2bc9c9",
+    "migrations/script.py.mako": "ed31327e01d48ec1ba1e91f5dc5b347fed7e9a8c9733b50d49c8085e86815bdc",
+    "migrations/versions/0001_migration_baseline.py": "bb51b33f3e064a02b8463593440820d65d01537f48a46b487b7cc327f0ea89a3",
+    "migrations/versions/0002_state_requests.py": "c450ca44b71b8fa830e9fc231412f786952133d02ac8eb9db065fdb521fe01ad",
+    "migrations/versions/0003_notifications.py": "1c575d679981556a782c0f279097fd6f0fd47d6c2b7613d3a323424f0e61f452",
+    "migrations/versions/0004_notification_delivery.py": "314647d47e2eacaec8a1bc83e90f3dde7b249e049bb1d488c66e9d073c9ac5b8",
+    "migrations/versions/0005_confirmation_outbox.py": "923b78ae214ef702bf6c8cf781a64649c3eb8baac3618b932ba1b916a1995c3b",
+    "migrations/versions/0006_notification_management.py": "12c5721415d543cced10edf1c54028bbca675bff4db7e8cb8b36994543643801",
+    "migrations/versions/0007_release_approvals.py": "6b58dd04488d9863e3180142c082d0e7655cfb5ce6b2291400bb826d982289c6",
+    "migrations/versions/0008_web_launch.py": "7d7e2ddbe83c5ffceacffb871018601e6d3b340da5d2cc87f0d817245e8b5697",
+    "oaf_website/__init__.py": "ad4cfd8e9137a2e69abe6fdad18114a9918fccf918cbe59e181a9edd78436eb5",
+    "oaf_website/brevo.py": "9d3cbc5db23c3220b99c119ddff8e98ee5f393b0f9d04a4f5d574ded2ec3aa8b",
+    "oaf_website/brevo_unsubscribe.py": "6d04b7bccf181639656af0cb4b2050fa8b9d739ca0ef9c9dba25d3fc18ba1b89",
+    "oaf_website/confirmation_outbox.py": "f356c9dfdf2d239ede2e647e40005639f067cb21a65822d650c330dcd5cee5cf",
+    "oaf_website/confirmation_outbox_schema.py": "82bf813978acdafe87b6e0d802e0b5d4fca4fa71cac910bd14228cdb298fea47",
+    "oaf_website/confirmation_processor.py": "d467ec928fd7501ac7ee50c53e32b8cce76ce7f5d2bb36c3437ef40120a9fa90",
+    "oaf_website/confirmation_schedule.py": "9487ce168f4db0b7ffbe70a509df2de6516e0c8ebcf977f6129789332237402c",
+    "oaf_website/contact.py": "bd0bd53b8cbd3c11f9cdc8ccf34d0b16c0191185636394d68088ddc135c0cee0",
+    "oaf_website/contact_mail.py": "dd6faf4b31cac68ca6b58d5858d5670a3bc32c08256ebee050e20d54d1d1ba7e",
+    "oaf_website/database_config.py": "f5901b32c8db06dfa7743623ffff4f350ce88f28b0bfee33c6b6163cabb0119e",
+    "oaf_website/integrations.py": "4ca1d5a8ebac7721e5cc653ab82a012317c5ec1ad7f4c19a86e8d1554b22a0c2",
+    "oaf_website/interest_reporting.py": "ad6d613c1bca9c4cc81d4cfb02c0085d7f48710427a8c55e44f9635642a9c597",
+    "oaf_website/local_development.py": "f1876b2f368c90aa497393e7b0f4122699279249e4e980b353a4aedecafc00fd",
+    "oaf_website/local_testing.py": "889b139031d86c2e3ec7054c2e1ed37da92911409cfa5396ad55fd74f8e20a33",
+    "oaf_website/local_testing_https.py": "80fad7e0cf7c9be062551c6f3e14f90fbbfa3a514f83a3924405cb38a6ab0b53",
+    "oaf_website/migrate.py": "706a6fefaca086f43bd2729c1cafefdb5bfe3bbd2f71e7a404e2e922454ae1e0",
+    "oaf_website/migration_authority.py": "687bcf9fc29e27fdcaccc1a582eac87a1fea04c032e95ee3ecf293b1828281ea",
+    "oaf_website/migration_config.py": "9c537cceaed6c84b3050f4db0a2510e6588e4259e927b35322e86cab91ab3587",
+    "oaf_website/migration_validation.py": "a53036e6685a0a3a0e2a1349b1b1d223747ab428fe1f727d2f341b9bbcb3d92a",
+    "oaf_website/notification_delivery.py": "987bc059e76020d9275c65859500d5802b90ffd188683050e9b6a41a54d06740",
+    "oaf_website/notification_delivery_schema.py": "e9ade89429338037648922a06e96da77418556285a94ac4fb7e12c91b0928c92",
+    "oaf_website/notification_delivery_validation.py": "11998e7345129fb97fb0ded10fec5a0eac2280e123e752f4414356e006db33f1",
+    "oaf_website/notification_dispatch.py": "a251b0d85eac8d6a7af1d4a0539d27211dab3ed9905af8dd2f229122ca0b6d10",
+    "oaf_website/notification_management.py": "efd92dcdd280a7a718c48af49e92ce33b2896f625b8b82f7aab6cb39392e7ab0",
+    "oaf_website/notification_management_schema.py": "74de2a323ae9575e1d5546a12805578ca6db53f40796ab70660a54dd560d2b9f",
+    "oaf_website/notification_messages.py": "8964cbb2c0e5d921cc8d5db9d2ca30b55a447f756bf922a17f817c7e606f9853",
+    "oaf_website/notification_schema.py": "8609e44436663db7d7a99ec7964ebaec4658b0491412d366b17f4d7850bd77e4",
+    "oaf_website/notification_validation.py": "26dea44c3369c879af545478477fc99e4c29f780e6fe70f39305ed4a305a0638",
+    "oaf_website/notifications.py": "42cafdc0832a73ca7269d2910259a0bffa72e23350dac05285bf7f5ceacb397e",
+    "oaf_website/release_approval_schema.py": "94a2ac546c4f1cd19c368eb6829f72b1166d6af0ab9fb9bf1015e3ef9afae27b",
+    "oaf_website/state_request_schema.py": "440924c43651c6b7d1e5c8745de705dd0ceeb589eb10422e805131ede51f9647",
+    "oaf_website/state_request_validation.py": "a04e8a50bf353dd1de03a3f310445adb9392a33d0ae8c441ebd877d03d32db5d",
+    "oaf_website/state_requests.py": "f134803e30507106880aa6a05471014d6139b6bcd501055f79830d319d143939",
+    "oaf_website/web_launch_schema.py": "e3b9ccfbdf987ff4014c666cdaf0abbf689b52966ffedfd4666a9b2dc27751f2",
+    "oaf_website/webhook_guard.py": "8ceb8f15ba474ae00e0d9211a9affb41047b2255aff7b305a7b8b2ba25ee3921",
+    "ops/Invoke-NotificationLiveValidation.ps1": "8b3f5a19785c7cdc716ef523a0a44ba1e8e7fc10f2eb83604f131c52f78401b7",
+    "ops/Invoke-StateRequestLiveValidation.ps1": "54ae0b033dab82eac3307ea8f655d1dcfa9b0ebf31dcee27cc5d570b67d76ead",
+    "ops/Record-Development0002Prerequisites.ps1": "d1e3b59e54f7a37129b3bd1a17e1fb4063733c90ab626b19bce9a199df230292",
+    "ops/Record-Development0003Prerequisites.ps1": "bb6e3797c5814752d0e8c945e6d445c3fe99602cb890f6c0b9b8c12e38cba157",
+    "ops/Record-Testing0003Approvals.ps1": "558a7b85712162f859970da0dbb2f4d764cb6363ad46ef9d0a42b00783be5db3",
+    "ops/Record-Testing0003Reconciliation.ps1": "16af86d75a859514e7376def1e083018c09ab92d4dd010d0bb4441615e27bc57",
+    "ops/Set-DevelopmentContactSmtpCredential.ps1": "f50857ce311a6072e8ba19c8d3299c3df3fa5f2845c7a63cbea49278108706a4",
+    "ops/Set-DevelopmentIntegrationCredentials.ps1": "a32eae8b13d94adc0cd1903f520db873cdb9494ae0040fc7d402d68e9d9fc1ba",
+    "ops/Start-DevelopmentWebsite.ps1": "c244db6d73ad9382a7e59bf3a2134c3c27dac24f771753b7f23a8883df10da2c",
+    "ops/ci_pytest.py": "2f210faad33a3493400d5f87b842975fc66ffe08f88b24caf3790cfc183aa78a",
+    "ops/local_postgres_bootstrap/01_roles.sql": "cf314c1c946564282262564befb6831b49289f4280352d998a4da7bc7f0f0c3b",
+    "ops/local_postgres_bootstrap/02_dev_schema.sql": "8392d858d61cd609c97a3cd2211bcec005601accd87b2b162faa17db6a339338",
+    "ops/local_postgres_bootstrap/03_test_schema.sql": "e980a521e24d5b9f3c2642268029cd19a9156e9068243987fac6238fe687d7e2",
+    "ops/local_postgres_bootstrap/04_verify.sql": "848220a0bd24a4a8c1ee24aeb315728fba92ea23b0c309dbe47580e7af57427d",
+    "ops/local_postgres_bootstrap/05_activate_dev.py": "88223d93a4f53ac57793d82c72762aa2cce257e9e3fc44d30c98dd514a896dfb",
+    "ops/local_postgres_bootstrap/06_activate_test.py": "02886412b59b3f9eb3d0f061986586598eda275de4d11f47fb62765abe449498",
+    "ops/local_postgres_bootstrap/README.md": "476d3f3b80da7b716c9c6db7a88e1970be1bae7b822ee2a747aeb4fe13edfc9b",
+    "ops/notification_live_check.py": "f4814236a70e2718413283b33833b3afe4bac57ad1f8de3117c7ab7ba23e07c0",
+    "ops/state_request_live_check.py": "12dfbac2e1c6ebba38e9e2927415aa498fcda40a0bda3e76605276b260abc3ed",
+    "requirements-dev.txt": "71eadfdefb6fc1a7380cee6a8781c8c835065deecc81a52e4f774670001298e0",
+    "requirements-migrations.txt": "3154eef6a20748636332276d9a39e13b1d03585df55ab681b706362d294de33e",
+    "requirements.txt": "3f8e4f324231e88e0c7a9e1be05c9a26be0a1d5628a5b9947b2ee7794b96fb9d",
+    "styles.css": "b2f88532eac006e703c10acb8bf4a3dcc4d2e312481532e42b2b41bf8a2026ea",
+    "support.html": "f968331d16db91926328ccf52626fb1effa919213620d9228f1a3e19e1248abd",
+    "tests/Test-DevelopmentIntegrationCredentials.ps1": "eb920a5c8aee71053efb0ec0348a6ab3cb0ea0d844a973c7543025425a414a25",
+    "tests/confirmation_browser_check.py": "36de889e3dcbb494bdfeee4c737f225af18e3acbb28aef640311319de5d061e2",
+    "tests/conftest.py": "dfd544811f7010357d9fea8c3921ca892f4b2e1f1e700ab72a17a84411bf1967",
+    "tests/contact_browser_check.py": "8c44d3bde1d005d3bdffc3edc4a4b72e9880094ed5e55f3eed4f9737437cbd69",
+    "tests/fixtures/confirmation_once.py": "05024546e69b85770b6c2066657a5832f808ec2513fde93b513a2573cc37a1da",
+    "tests/fixtures/confirmation_supersession.py": "8784e0c6d717f85f931ec0b11fc501edd0a35adc98cd3c27973daad1d4f20d38",
+    "tests/fixtures/readonly_snapshot.py": "158014be3ec62116ea806826789fd6d522fcf78a2f4825e431fa1081f72da729",
+    "tests/migration_offline.py": "a22a8c7f1ce54321738fecc4e77c03141b12e8ac05b425f3a53c880b582f3583",
+    "tests/notification_browser_check.py": "d637d3a1eacc87b9b74821f7d08045fcafa6ce5ebb5d1b40c42d1120b3814958",
+    "tests/notification_live_browser.py": "b3b45288856323966274e00dff207a31271823190a093ec71f5272f16c04c48e",
+    "tests/notification_management_browser_check.py": "33fc3ed81decba345d703befabc79a265405579e4e48c36c02ac172208ce3053",
+    "tests/state_request_browser_check.py": "f0ce308927ff3d61b47d5ec5fb370259057185dc24c534a0f83eedfca8b8da81",
+    "tests/state_request_live_browser.py": "6b7272db5d159ee0930fa0cbcd78e7010c2895b7e68eae70e7c250d8faf8bf8d",
+    "tests/test_brevo.py": "433e16b3cbb72a17f65027feea96d8da702c069104f236634ec90e2ff7beaff6",
+    "tests/test_brevo_unsubscribe.py": "b7136bd01b26d0e9fc1e220ad25b5b905d63a5ce58da1e78a51fdaae4923436d",
+    "tests/test_confirmation_outbox.py": "17a9f8f084d0cde5a3e49a2a64250621eccea549590b4c59d92f4ec9278b4288",
+    "tests/test_confirmation_outbox_migration.py": "641d7910c417d10bc4b761ecd249f74f3e5e4108ca3c6f188f3e9c9eefb9a3de",
+    "tests/test_confirmation_processor.py": "e3751085c3385674f79bd3ae9ce648b40cd887b88b80f9920d0123d4ca30b5e8",
+    "tests/test_confirmation_schedule.py": "dd0e0296b8c568f41afe065392f57e60d2da5ee7fd1b97a724984fb9d3d925e2",
+    "tests/test_contact.py": "9e3d07d706bdf55f598bf429293adfe1d3cbd5fde5aae0a43ee8081e38ec5db6",
+    "tests/test_controlled_confirmation.py": "09d51512ca85e488a604fbd2c5859757956dbc2aeec0b43bbb2586225b192496",
+    "tests/test_database_config.py": "15e5fae6cd3f166f7608b02bd647483895094fb514f16fbacb060c025f664d03",
+    "tests/test_development_integrations.py": "fe894903b011b5380ac82b3dbaf1662bcb61e8ab7ac8229f1518732d40d4acc7",
+    "tests/test_failure_diagnostics.py": "2b70f77861df47f6a4417a6f555ce953455a24066842c8b935f530f2076fa883",
+    "tests/test_integrations.py": "420e70968a0662aa6ee8315d946942cfb4608af5e26557c6402d2e524dc06370",
+    "tests/test_migration_artifacts.py": "b98805f028820c7784eb9e137faa70c085f21d77e63ef4d54b5304d50f3bbf41",
+    "tests/test_migration_authorization.py": "8be243105f51ba3d6af84901bf4ac6b60dc6af8732b093738bfe9d0fb2f8f3b6",
+    "tests/test_migration_catalog.py": "3457d47554bb833d7c89b3b6031e22e8dda756dc472973c05c8cfeb0926cc422",
+    "tests/test_migration_config.py": "3e727719ec64233a35a43f1e853933efa33b7d29b9a255a6bee528f1a802d717",
+    "tests/test_migration_operational.py": "6224a97ebc8d9b02fbff12981439c6994c7ddb21c829b61203b141bc3aa12817",
+    "tests/test_migration_provenance.py": "6f73d0f09ae5c735a128d3cf0e0f6d33d8090898e680caed44c18cd8759330e2",
+    "tests/test_migration_runner.py": "03d3833f9d7fa7c239726c5de98710ae8d2ecccee624e4aa03427f215a758c2d",
+    "tests/test_notification_delivery.py": "b8be60f99645cade1af97b3196dd875dd2c202b42ff70075b458686e013e965e",
+    "tests/test_notification_delivery_migration.py": "fe8876fc663f176c313219880c5be96c26758fd505dcaec27e736e4b357ef681",
+    "tests/test_notification_dispatch.py": "10e362541edebe9dada72566a6a9e131bb579285d2e56f1b03b20bf60a53aa20",
+    "tests/test_notification_lifecycle_repair.py": "521fd82eaccec60fcad9727133054694359e2cb88389ea1b3fc5198dfa4fb944",
+    "tests/test_notification_management.py": "b5e7411397ff4570f4617639f1cdd289db5a96d28c9ebde5e5e6bb78b6b51f93",
+    "tests/test_notification_management_migration.py": "07e10fde8d73e6129520bd7a983fc42fb9f6caadca100938d484c32431c3d0b7",
+    "tests/test_notification_migration.py": "9ce566f96139a71ad6f8b71570c0fb6e5359ac2d1015b5dfe8af0a4ddb0955c1",
+    "tests/test_notifications.py": "953fb434f90db9844db68a535fd977e592251394b2ac02a3cec992c8daaede0a",
+    "tests/test_operational_safeguards.py": "595c1987fcc552a8fa04dd1507d4b678c1759373f94e98aabdc2320bc24345d5",
+    "tests/test_public_confirmation.py": "3b6b3f8815ce857c091b042288826688ce34ba4aca85e30feda03eec08f5b0a7",
+    "tests/test_state_request_migration.py": "8bc4794e3cf03439f6064d753dfeef0a1e4a133117cc0310369a97eb5724dfe0",
+    "tests/test_state_requests.py": "5bcb57dce96ddcd14018c8ff8913147fe853fe78a5e3b3ef9f3600b87994f048",
+    "tests/test_testing_https.py": "5e7e6ce6e19602caf06b0a740e1175a3491e288b82dc673cb9783e0e407a9293",
+    "tests/test_webhook_guard.py": "7f31e04906eecba5ff4cd872a7a7a549a887a1b3096f3485a53470040529fb72"
+  },
+  "owner_logs": {
+    "codex-20261027T1616403062430Z-0cfb95f753a8476ea7f0c37f2d141883.log": "d2094d77782dd28f295310b73fffdd3c0fd54d8adbab7da570608ad10d219ec0",
+    "codex-20261027T1622194980844Z-de0ba5c888594b398a77c6585792e4a0.log": "0ef9cd4c599653cc7674e2dceb76f9904c5a72652c9a7adbf0c5212421d77c6e",
+    "codex-20261027T1656432870936Z-51a5e947e47246b895026cb1cb5b118a.log": "dc1a0a04c8ce78e9bc3add10c8c42b04fd631fad4b9a4201c8bb9231fe6b1067",
+    "codex-20261027T1722337313520Z-cfc2101e90a04fd7867da22f677b5934.log": "6727d5e1346efe17f58994bb5ffaa08cd5a67493c775df0ace0866eb7a3f06e8"
+  },
+  "helper_sha256": "f447f0156322941536e17b9d871c61753edc27b95d71e8d87279d282b382b044"
+}
+EVIDENCE: candidate.json
+{
+  "utc": "2026-10-27T17:51:11.306927+00:00",
+  "head": "3259aaf787f97c34aa4a01c3d97ce19ea1dd2a61",
+  "branch": "main",
+  "files": {
+    ".github/workflows/linux-tests.yml": "ccd1316e3e55aeb6ec2942efbcb2d285741c3db761589344fc2b22f53e97bc3c",
+    ".gitignore": "2f5d5d95a1b03d0e94630e138e15982dea34e836c626a8ebfb52415012f27d3d",
+    ".vscode/settings.json": "bceb4f155f6ad2e45062f3bc40e28bce0d750f1fc464434b11f9e7dda7292e46",
+    ".vscode/tasks.json": "b5d6228e6642d634b4d32523df4d500e16fe562b1abcddd85ecffbe0c79683e6",
+    "README.md": "1105242e72dcad502e6375dd1f574d56d85ffbc69d8758fac74fe8466a46da96",
+    "about.html": "bd1dffbae9bd04386f70266c1da36ec22eb10f95f3712c6f9fb525540706cbb8",
+    "alembic.ini": "c72a8cc54828755974765ab8df60c03744cd448b7d16bed81b1157569548f736",
+    "assets/contact.js": "e95f416c1be5619e1527e463e17f7eacbff16732592e25ecb77f4fa34812ad1d",
+    "assets/email-confirmation.js": "451143bf08d35f0bbd8e8ae0b1d863fb990ee1d84799e55cb028f5d07498efd3",
+    "assets/images/gramanna-logo.png": "52063b300d78a645aca21a7209e6153b36987c9864d6a94978dbb534b89085f9",
+    "assets/images/hero-gifts.webp": "29497ebe32548a5e05238fe6bfb750df170784fc7009a538598e8a17f5ece885",
+    "assets/notification-management.js": "d22b46e8ae1101312ac69b6d47a9c7cb974a37b6c7dc2af8be9fa44055544a4b",
+    "assets/notifications.js": "b1724767a4f103a53e41fff7166635af291772181c8280195f53a7148e383a53",
+    "assets/state-requests.js": "06aae901fe95eac98c35647b68420644c569529f510ca07fb8e5827f04705a1f",
+    "config/database.example.toml": "5c83c5004d4a57a563c04479154f7875cffcfad67c9dcfccc5a3c96319b95a4a",
+    "confirm-email.html": "a38602a1c8e08c29dbaa827229232249bfbd854bb954064f93640066720c4e49",
+    "contact.html": "b4264bddf2f3b58cb9adb2f37a6a862430c1950d9652b9409c26036feb3cfcfb",
+    "docs/CONTACT.md": "4c260059129b29c7537f3e1de48e4f8e2971a89efe09b6680adcb09fd9ca7bf7",
+    "docs/CONTACT_SMTP_SETUP.md": "c3362f85cfb147fd8003403ef7c5f5102b928c440ca3723c8812678f6afd3b12",
+    "docs/DEVELOPMENT_CREDENTIAL_HANDOFF.md": "6c100142eebf8647d303c3ec889a16168152110921e67ea08ce003b1ec8ac203",
+    "docs/WEBSITE_PLAN.md": "305c3a88fddcb6608166b07b81b5160d7a6e7ac0fdd11029447e24efc14d447f",
+    "docs/WORKFLOW.md": "c9ba782441fa68f2469342208aa1b3e14a54c2747f210a83a0893c0854440326",
+    "faq.html": "69eee6e55b2ac6300fe8726bcd9d7fa33b1af074fe3710418784dba52c57b230",
+    "gramanna.html": "dcfa6c5abb661cf50e71de19c0ae9f9b8911c7adb86a4eb4ac07f7304041fd1e",
+    "index.html": "56e5cbec057e37366f076d178ccff05a43935cdc481565e04b01eb7cc3f9e8e9",
+    "manage-notifications.html": "7696f890ce21934b71e7feb71e85af124add3776c4a680c0592cf90be4cbe525",
+    "migrations/env.py": "09fcd94121f9ba0287d33d9b779f2b7845be56f23fea23aaafb5ae891fe661d4",
+    "migrations/manifest.json": "bda15ea8966bca7e7f31b60d9769458b65d1fe0e71d2b32bbd614effbc2bc9c9",
+    "migrations/script.py.mako": "ed31327e01d48ec1ba1e91f5dc5b347fed7e9a8c9733b50d49c8085e86815bdc",
+    "migrations/versions/0001_migration_baseline.py": "bb51b33f3e064a02b8463593440820d65d01537f48a46b487b7cc327f0ea89a3",
+    "migrations/versions/0002_state_requests.py": "c450ca44b71b8fa830e9fc231412f786952133d02ac8eb9db065fdb521fe01ad",
+    "migrations/versions/0003_notifications.py": "1c575d679981556a782c0f279097fd6f0fd47d6c2b7613d3a323424f0e61f452",
+    "migrations/versions/0004_notification_delivery.py": "314647d47e2eacaec8a1bc83e90f3dde7b249e049bb1d488c66e9d073c9ac5b8",
+    "migrations/versions/0005_confirmation_outbox.py": "923b78ae214ef702bf6c8cf781a64649c3eb8baac3618b932ba1b916a1995c3b",
+    "migrations/versions/0006_notification_management.py": "12c5721415d543cced10edf1c54028bbca675bff4db7e8cb8b36994543643801",
+    "migrations/versions/0007_release_approvals.py": "6b58dd04488d9863e3180142c082d0e7655cfb5ce6b2291400bb826d982289c6",
+    "migrations/versions/0008_web_launch.py": "7d7e2ddbe83c5ffceacffb871018601e6d3b340da5d2cc87f0d817245e8b5697",
+    "oaf_website/__init__.py": "ad4cfd8e9137a2e69abe6fdad18114a9918fccf918cbe59e181a9edd78436eb5",
+    "oaf_website/brevo.py": "9d3cbc5db23c3220b99c119ddff8e98ee5f393b0f9d04a4f5d574ded2ec3aa8b",
+    "oaf_website/brevo_unsubscribe.py": "6d04b7bccf181639656af0cb4b2050fa8b9d739ca0ef9c9dba25d3fc18ba1b89",
+    "oaf_website/confirmation_outbox.py": "f356c9dfdf2d239ede2e647e40005639f067cb21a65822d650c330dcd5cee5cf",
+    "oaf_website/confirmation_outbox_schema.py": "82bf813978acdafe87b6e0d802e0b5d4fca4fa71cac910bd14228cdb298fea47",
+    "oaf_website/confirmation_processor.py": "d467ec928fd7501ac7ee50c53e32b8cce76ce7f5d2bb36c3437ef40120a9fa90",
+    "oaf_website/confirmation_schedule.py": "9487ce168f4db0b7ffbe70a509df2de6516e0c8ebcf977f6129789332237402c",
+    "oaf_website/contact.py": "bd0bd53b8cbd3c11f9cdc8ccf34d0b16c0191185636394d68088ddc135c0cee0",
+    "oaf_website/contact_mail.py": "dd6faf4b31cac68ca6b58d5858d5670a3bc32c08256ebee050e20d54d1d1ba7e",
+    "oaf_website/database_config.py": "f5901b32c8db06dfa7743623ffff4f350ce88f28b0bfee33c6b6163cabb0119e",
+    "oaf_website/integrations.py": "4ca1d5a8ebac7721e5cc653ab82a012317c5ec1ad7f4c19a86e8d1554b22a0c2",
+    "oaf_website/interest_reporting.py": "ad6d613c1bca9c4cc81d4cfb02c0085d7f48710427a8c55e44f9635642a9c597",
+    "oaf_website/local_development.py": "f1876b2f368c90aa497393e7b0f4122699279249e4e980b353a4aedecafc00fd",
+    "oaf_website/local_testing.py": "889b139031d86c2e3ec7054c2e1ed37da92911409cfa5396ad55fd74f8e20a33",
+    "oaf_website/local_testing_https.py": "80fad7e0cf7c9be062551c6f3e14f90fbbfa3a514f83a3924405cb38a6ab0b53",
+    "oaf_website/migrate.py": "706a6fefaca086f43bd2729c1cafefdb5bfe3bbd2f71e7a404e2e922454ae1e0",
+    "oaf_website/migration_authority.py": "687bcf9fc29e27fdcaccc1a582eac87a1fea04c032e95ee3ecf293b1828281ea",
+    "oaf_website/migration_config.py": "9c537cceaed6c84b3050f4db0a2510e6588e4259e927b35322e86cab91ab3587",
+    "oaf_website/migration_validation.py": "a53036e6685a0a3a0e2a1349b1b1d223747ab428fe1f727d2f341b9bbcb3d92a",
+    "oaf_website/notification_delivery.py": "987bc059e76020d9275c65859500d5802b90ffd188683050e9b6a41a54d06740",
+    "oaf_website/notification_delivery_schema.py": "e9ade89429338037648922a06e96da77418556285a94ac4fb7e12c91b0928c92",
+    "oaf_website/notification_delivery_validation.py": "11998e7345129fb97fb0ded10fec5a0eac2280e123e752f4414356e006db33f1",
+    "oaf_website/notification_dispatch.py": "a251b0d85eac8d6a7af1d4a0539d27211dab3ed9905af8dd2f229122ca0b6d10",
+    "oaf_website/notification_management.py": "efd92dcdd280a7a718c48af49e92ce33b2896f625b8b82f7aab6cb39392e7ab0",
+    "oaf_website/notification_management_schema.py": "74de2a323ae9575e1d5546a12805578ca6db53f40796ab70660a54dd560d2b9f",
+    "oaf_website/notification_messages.py": "8964cbb2c0e5d921cc8d5db9d2ca30b55a447f756bf922a17f817c7e606f9853",
+    "oaf_website/notification_schema.py": "8609e44436663db7d7a99ec7964ebaec4658b0491412d366b17f4d7850bd77e4",
+    "oaf_website/notification_validation.py": "26dea44c3369c879af545478477fc99e4c29f780e6fe70f39305ed4a305a0638",
+    "oaf_website/notifications.py": "42cafdc0832a73ca7269d2910259a0bffa72e23350dac05285bf7f5ceacb397e",
+    "oaf_website/release_approval_schema.py": "94a2ac546c4f1cd19c368eb6829f72b1166d6af0ab9fb9bf1015e3ef9afae27b",
+    "oaf_website/state_request_schema.py": "440924c43651c6b7d1e5c8745de705dd0ceeb589eb10422e805131ede51f9647",
+    "oaf_website/state_request_validation.py": "a04e8a50bf353dd1de03a3f310445adb9392a33d0ae8c441ebd877d03d32db5d",
+    "oaf_website/state_requests.py": "f134803e30507106880aa6a05471014d6139b6bcd501055f79830d319d143939",
+    "oaf_website/web_launch_schema.py": "e3b9ccfbdf987ff4014c666cdaf0abbf689b52966ffedfd4666a9b2dc27751f2",
+    "oaf_website/webhook_guard.py": "8ceb8f15ba474ae00e0d9211a9affb41047b2255aff7b305a7b8b2ba25ee3921",
+    "ops/Invoke-NotificationLiveValidation.ps1": "8b3f5a19785c7cdc716ef523a0a44ba1e8e7fc10f2eb83604f131c52f78401b7",
+    "ops/Invoke-StateRequestLiveValidation.ps1": "54ae0b033dab82eac3307ea8f655d1dcfa9b0ebf31dcee27cc5d570b67d76ead",
+    "ops/Record-Development0002Prerequisites.ps1": "d1e3b59e54f7a37129b3bd1a17e1fb4063733c90ab626b19bce9a199df230292",
+    "ops/Record-Development0003Prerequisites.ps1": "bb6e3797c5814752d0e8c945e6d445c3fe99602cb890f6c0b9b8c12e38cba157",
+    "ops/Record-Testing0003Approvals.ps1": "558a7b85712162f859970da0dbb2f4d764cb6363ad46ef9d0a42b00783be5db3",
+    "ops/Record-Testing0003Reconciliation.ps1": "16af86d75a859514e7376def1e083018c09ab92d4dd010d0bb4441615e27bc57",
+    "ops/Set-DevelopmentContactSmtpCredential.ps1": "f50857ce311a6072e8ba19c8d3299c3df3fa5f2845c7a63cbea49278108706a4",
+    "ops/Set-DevelopmentIntegrationCredentials.ps1": "a32eae8b13d94adc0cd1903f520db873cdb9494ae0040fc7d402d68e9d9fc1ba",
+    "ops/Start-DevelopmentWebsite.ps1": "c244db6d73ad9382a7e59bf3a2134c3c27dac24f771753b7f23a8883df10da2c",
+    "ops/ci_pytest.py": "2f210faad33a3493400d5f87b842975fc66ffe08f88b24caf3790cfc183aa78a",
+    "ops/local_postgres_bootstrap/01_roles.sql": "cf314c1c946564282262564befb6831b49289f4280352d998a4da7bc7f0f0c3b",
+    "ops/local_postgres_bootstrap/02_dev_schema.sql": "8392d858d61cd609c97a3cd2211bcec005601accd87b2b162faa17db6a339338",
+    "ops/local_postgres_bootstrap/03_test_schema.sql": "e980a521e24d5b9f3c2642268029cd19a9156e9068243987fac6238fe687d7e2",
+    "ops/local_postgres_bootstrap/04_verify.sql": "848220a0bd24a4a8c1ee24aeb315728fba92ea23b0c309dbe47580e7af57427d",
+    "ops/local_postgres_bootstrap/05_activate_dev.py": "88223d93a4f53ac57793d82c72762aa2cce257e9e3fc44d30c98dd514a896dfb",
+    "ops/local_postgres_bootstrap/06_activate_test.py": "02886412b59b3f9eb3d0f061986586598eda275de4d11f47fb62765abe449498",
+    "ops/local_postgres_bootstrap/README.md": "476d3f3b80da7b716c9c6db7a88e1970be1bae7b822ee2a747aeb4fe13edfc9b",
+    "ops/notification_live_check.py": "f4814236a70e2718413283b33833b3afe4bac57ad1f8de3117c7ab7ba23e07c0",
+    "ops/state_request_live_check.py": "12dfbac2e1c6ebba38e9e2927415aa498fcda40a0bda3e76605276b260abc3ed",
+    "requirements-dev.txt": "71eadfdefb6fc1a7380cee6a8781c8c835065deecc81a52e4f774670001298e0",
+    "requirements-migrations.txt": "3154eef6a20748636332276d9a39e13b1d03585df55ab681b706362d294de33e",
+    "requirements.txt": "3f8e4f324231e88e0c7a9e1be05c9a26be0a1d5628a5b9947b2ee7794b96fb9d",
+    "styles.css": "b2f88532eac006e703c10acb8bf4a3dcc4d2e312481532e42b2b41bf8a2026ea",
+    "support.html": "f968331d16db91926328ccf52626fb1effa919213620d9228f1a3e19e1248abd",
+    "tests/Test-DevelopmentIntegrationCredentials.ps1": "eb920a5c8aee71053efb0ec0348a6ab3cb0ea0d844a973c7543025425a414a25",
+    "tests/confirmation_browser_check.py": "36de889e3dcbb494bdfeee4c737f225af18e3acbb28aef640311319de5d061e2",
+    "tests/conftest.py": "dfd544811f7010357d9fea8c3921ca892f4b2e1f1e700ab72a17a84411bf1967",
+    "tests/contact_browser_check.py": "8c44d3bde1d005d3bdffc3edc4a4b72e9880094ed5e55f3eed4f9737437cbd69",
+    "tests/fixtures/confirmation_once.py": "05024546e69b85770b6c2066657a5832f808ec2513fde93b513a2573cc37a1da",
+    "tests/fixtures/confirmation_supersession.py": "8784e0c6d717f85f931ec0b11fc501edd0a35adc98cd3c27973daad1d4f20d38",
+    "tests/fixtures/readonly_snapshot.py": "158014be3ec62116ea806826789fd6d522fcf78a2f4825e431fa1081f72da729",
+    "tests/migration_offline.py": "a22a8c7f1ce54321738fecc4e77c03141b12e8ac05b425f3a53c880b582f3583",
+    "tests/notification_browser_check.py": "d637d3a1eacc87b9b74821f7d08045fcafa6ce5ebb5d1b40c42d1120b3814958",
+    "tests/notification_live_browser.py": "b3b45288856323966274e00dff207a31271823190a093ec71f5272f16c04c48e",
+    "tests/notification_management_browser_check.py": "33fc3ed81decba345d703befabc79a265405579e4e48c36c02ac172208ce3053",
+    "tests/state_request_browser_check.py": "f0ce308927ff3d61b47d5ec5fb370259057185dc24c534a0f83eedfca8b8da81",
+    "tests/state_request_live_browser.py": "6b7272db5d159ee0930fa0cbcd78e7010c2895b7e68eae70e7c250d8faf8bf8d",
+    "tests/test_brevo.py": "433e16b3cbb72a17f65027feea96d8da702c069104f236634ec90e2ff7beaff6",
+    "tests/test_brevo_unsubscribe.py": "b7136bd01b26d0e9fc1e220ad25b5b905d63a5ce58da1e78a51fdaae4923436d",
+    "tests/test_confirmation_outbox.py": "17a9f8f084d0cde5a3e49a2a64250621eccea549590b4c59d92f4ec9278b4288",
+    "tests/test_confirmation_outbox_migration.py": "641d7910c417d10bc4b761ecd249f74f3e5e4108ca3c6f188f3e9c9eefb9a3de",
+    "tests/test_confirmation_processor.py": "e3751085c3385674f79bd3ae9ce648b40cd887b88b80f9920d0123d4ca30b5e8",
+    "tests/test_confirmation_schedule.py": "dd0e0296b8c568f41afe065392f57e60d2da5ee7fd1b97a724984fb9d3d925e2",
+    "tests/test_contact.py": "9e3d07d706bdf55f598bf429293adfe1d3cbd5fde5aae0a43ee8081e38ec5db6",
+    "tests/test_controlled_confirmation.py": "09d51512ca85e488a604fbd2c5859757956dbc2aeec0b43bbb2586225b192496",
+    "tests/test_database_config.py": "15e5fae6cd3f166f7608b02bd647483895094fb514f16fbacb060c025f664d03",
+    "tests/test_development_integrations.py": "fe894903b011b5380ac82b3dbaf1662bcb61e8ab7ac8229f1518732d40d4acc7",
+    "tests/test_failure_diagnostics.py": "2b70f77861df47f6a4417a6f555ce953455a24066842c8b935f530f2076fa883",
+    "tests/test_integrations.py": "420e70968a0662aa6ee8315d946942cfb4608af5e26557c6402d2e524dc06370",
+    "tests/test_migration_artifacts.py": "b98805f028820c7784eb9e137faa70c085f21d77e63ef4d54b5304d50f3bbf41",
+    "tests/test_migration_authorization.py": "8be243105f51ba3d6af84901bf4ac6b60dc6af8732b093738bfe9d0fb2f8f3b6",
+    "tests/test_migration_catalog.py": "3457d47554bb833d7c89b3b6031e22e8dda756dc472973c05c8cfeb0926cc422",
+    "tests/test_migration_config.py": "3e727719ec64233a35a43f1e853933efa33b7d29b9a255a6bee528f1a802d717",
+    "tests/test_migration_operational.py": "6224a97ebc8d9b02fbff12981439c6994c7ddb21c829b61203b141bc3aa12817",
+    "tests/test_migration_provenance.py": "6f73d0f09ae5c735a128d3cf0e0f6d33d8090898e680caed44c18cd8759330e2",
+    "tests/test_migration_runner.py": "03d3833f9d7fa7c239726c5de98710ae8d2ecccee624e4aa03427f215a758c2d",
+    "tests/test_notification_delivery.py": "36c9cb8e825ab70bf446c2a8b1c845cfe02f470e28c6c54e757f94ff59ca518d",
+    "tests/test_notification_delivery_migration.py": "fe8876fc663f176c313219880c5be96c26758fd505dcaec27e736e4b357ef681",
+    "tests/test_notification_dispatch.py": "10e362541edebe9dada72566a6a9e131bb579285d2e56f1b03b20bf60a53aa20",
+    "tests/test_notification_lifecycle_repair.py": "521fd82eaccec60fcad9727133054694359e2cb88389ea1b3fc5198dfa4fb944",
+    "tests/test_notification_management.py": "b5e7411397ff4570f4617639f1cdd289db5a96d28c9ebde5e5e6bb78b6b51f93",
+    "tests/test_notification_management_migration.py": "07e10fde8d73e6129520bd7a983fc42fb9f6caadca100938d484c32431c3d0b7",
+    "tests/test_notification_migration.py": "9ce566f96139a71ad6f8b71570c0fb6e5359ac2d1015b5dfe8af0a4ddb0955c1",
+    "tests/test_notifications.py": "953fb434f90db9844db68a535fd977e592251394b2ac02a3cec992c8daaede0a",
+    "tests/test_operational_safeguards.py": "595c1987fcc552a8fa04dd1507d4b678c1759373f94e98aabdc2320bc24345d5",
+    "tests/test_public_confirmation.py": "3b6b3f8815ce857c091b042288826688ce34ba4aca85e30feda03eec08f5b0a7",
+    "tests/test_state_request_migration.py": "8bc4794e3cf03439f6064d753dfeef0a1e4a133117cc0310369a97eb5724dfe0",
+    "tests/test_state_requests.py": "5bcb57dce96ddcd14018c8ff8913147fe853fe78a5e3b3ef9f3600b87994f048",
+    "tests/test_testing_https.py": "5e7e6ce6e19602caf06b0a740e1175a3491e288b82dc673cb9783e0e407a9293",
+    "tests/test_webhook_guard.py": "7f31e04906eecba5ff4cd872a7a7a549a887a1b3096f3485a53470040529fb72"
+  },
+  "candidate_inventory_sha256": "6a696031906a17d8c85d8f26b3b4a1fd04b7040972976d4a90b0a95c0b6a00f4",
+  "patch_sha256": "23f012490776d174b6b9ae08e026d3962834a8aeadff688eff65b4239383dcd3",
+  "index_sha256": "02d3409d353df068895e883b6848ec157163d92eba17fafcb9fde736f7ba54f4",
+  "changed": [
+    "tests/test_notification_delivery.py"
+  ],
+  "preserved_unchanged_inputs": 141,
+  "owner_logs_preserved": 4,
+  "security_autonomy": "PASS; one strict unsupported-platform rejection case; no production changes, weakening or new operational dependency",
+  "activation": "OFF",
+  "git_delivery": "NOT_RUN"
+}
+EVIDENCE: verification-final.json
+{
+  "utc": "2026-10-27T17:56:29.157647+00:00",
+  "status": "PASS",
+  "repository": "C:\\Users\\ovisa\\Documents\\OAF_App\\Development\\OAF Website",
+  "branch": "main",
+  "head": "3259aaf787f97c34aa4a01c3d97ce19ea1dd2a61",
+  "base_tree": "7d7a1fdd2d22c339e59874e4aa77232dce8d04f5",
+  "candidate_inventory_sha256": "6a696031906a17d8c85d8f26b3b4a1fd04b7040972976d4a90b0a95c0b6a00f4",
+  "patch_sha256": "23f012490776d174b6b9ae08e026d3962834a8aeadff688eff65b4239383dcd3",
+  "candidate_drift": [],
+  "changed": [
+    "tests/test_notification_delivery.py"
+  ],
+  "change": "One added strict unsupported-platform negative case; exact one-line raw-file insertion verified",
+  "focused_passed": 15,
+  "canonical_shards_passed": [
+    1958,
+    1957
+  ],
+  "canonical_total_exactly_once": 3915,
+  "failures": 0,
+  "errors": 0,
+  "unexpected_external_access_attempts": 0,
+  "statements": {
+    "covered": 5932,
+    "total": 5932,
+    "missing": 0
+  },
+  "branches": {
+    "covered": 2138,
+    "total": 2138,
+    "missing": 0
+  },
+  "native_exits": {
+    "initial_dependency_probe": 1,
+    "resolved_dependency_probe": 0,
+    "baseline_shards": [
+      0,
+      0
+    ],
+    "baseline_combine": 1,
+    "focused": 0,
+    "corrected_shards": [
+      0,
+      0
+    ],
+    "corrected_combine": 0,
+    "initial_final_metadata_verification": 1
+  },
+  "thresholds_and_exclusions": "unchanged",
+  "unchanged_owner_inputs": 141,
+  "owner_logs_preserved": 4,
+  "index_byte_preserved": true,
+  "helper_byte_preserved": true,
+  "security_autonomy": "PASS; changed behavior limited to testing existing deterministic fail-closed fallback",
+  "activation": "OFF",
+  "remaining_required_dependent_NOT_RUN": [],
+  "git_delivery": "NOT_RUN by instruction",
+  "outer_reporting_defect": "Existing Invoke-OAFCodex hardcodes GRAMANNA APP; not changed; authoritative repository and original report OAF WEBSITE",
+  "reporting_delivery": "Final clipboard, ordinal read-back and alert remain owned by active outer helper after this Codex final; not observed yet; no interim delivery or replacement",
+  "evidence_sha256": {
+    ".pytest_cache/ci/run/shard-0/manifest.json": "a8119196d71d03011d95c1691a5b7bea80f2fe1f0a6081179f7bc7ef2de4870e",
+    ".pytest_cache/ci/run/shard-0/arcs.json": "35dc052fdd38eded45b7b9eaba62883689f302e8792908ae0665600f4bc3e0e7",
+    ".pytest_cache/ci/run/shard-1/manifest.json": "90cf41eaf191a1e27cfe1317993b08a614e861aa151f1fed6ac851e0eb1cea02",
+    ".pytest_cache/ci/run/shard-1/arcs.json": "be3e0b87422d7f7b837d602915574bd844c16ed3441e5026bdacf2c5b91c4f31",
+    ".pytest_cache/ci/coverage.json": "8c72ec2154d727e888a6c3d6436e8e7b1c30588bc5576d3a804d52a91d284088",
+    ".pytest_cache/ci/.coverage": "cf7a7bd90bb7f5d829f09ed43ec789d3ee218ea208b975906cafb43653d1f47b"
+  },
+  "git_status": "M tests/test_notification_delivery.py\n?? logs/codex-20261027T1616403062430Z-0cfb95f753a8476ea7f0c37f2d141883.log\n?? logs/codex-20261027T1622194980844Z-de0ba5c888594b398a77c6585792e4a0.log\n?? logs/codex-20261027T1656432870936Z-51a5e947e47246b895026cb1cb5b118a.log\n?? logs/codex-20261027T1722337313520Z-cfc2101e90a04fd7867da22f677b5934.log\n?? logs/codex-20261027T1744025362225Z-5c397153e00f41e7888200ee2fd52bcf.log"
+}
+EVIDENCE: finalization-reconciliation.json
+{
+  "stage": "final_preservation_and_evidence_binding",
+  "started_utc": "2026-10-27T17:55:59.8535433Z",
+  "finished_utc": "2026-10-27T17:56:00.2508966Z",
+  "native_exit": 1,
+  "expected": "read stored PowerShell log",
+  "observed": "UnicodeDecodeError: UTF-8 reader on UTF-16 BOM log",
+  "resolution": "Recognize UTF-16 BOM; metadata-only verification repeated; candidate unchanged and tests not repeated",
+  "resolved": true,
+  "dependent_NOT_RUN_at_stop": [
+    "final_acceptance"
+  ],
+  "remaining_required_dependent_NOT_RUN": []
+}
+EVIDENCE: security-autonomy.json
+{
+  "scope": "Only added unsupported-platform case in existing strict reference compatibility matrix",
+  "changed_application_logic": false,
+  "assertion": "official_release_reference(platform, identity, url) is valid",
+  "new_case": "desktop with otherwise valid Android identity and official URL must return False",
+  "security": "Existing fail-closed fallback enforced; no weakened assertions, authentication, eligibility or provider uncertainty behavior",
+  "autonomy": "Existing deterministic dispatch preserved; no AI or manual operational dependency added",
+  "thresholds_and_exclusions": "Unchanged; baseline default coverage exclusions 5",
+  "activation": "OFF",
+  "prohibited_operations": "No migrations/live DB/provider/email/approval/integration/credential/activation/scheduler/service/deployment/GraManna modifications or Git delivery",
+  "reporting": "Existing active Invoke-OAFCodex alone owns logging/final clipboard/read-back/alert; hardcoded GRAMANNA APP outer-heading defect unchanged"
+}
+EVIDENCE: focused-result.json
+{
+    "stage":  "focused_reference_validation",
+    "finished_utc":  "2026-10-27T17:50:43.3451756Z",
+    "exit_code":  0,
+    "expected":  "15 strict compatibility cases; zero unexpected external access",
+    "status":  "PASS"
+}
+EVIDENCE: corrected-combine-result.json
+{
+    "stage":  "corrected_coverage_combine",
+    "started_utc":  "2026-10-27T17:55:22.8069917Z",
+    "finished_utc":  "2026-10-27T17:55:25.5228491Z",
+    "native_exit":  0,
+    "status":  "PASS"
+}
+System.Management.Automation.RemoteException
+ succeeded in 3296ms:
+C:/Users/ovisa/Documents/OAF_App/Development/OAF Website
+NATIVE_EXIT(repository): 0
+main
+NATIVE_EXIT(branch): 0
+3259aaf787f97c34aa4a01c3d97ce19ea1dd2a61
+NATIVE_EXIT(head): 0
+ M tests/test_notification_delivery.py
+?? logs/codex-20261027T1616403062430Z-0cfb95f753a8476ea7f0c37f2d141883.log
+?? logs/codex-20261027T1622194980844Z-de0ba5c888594b398a77c6585792e4a0.log
+?? logs/codex-20261027T1656432870936Z-51a5e947e47246b895026cb1cb5b118a.log
+?? logs/codex-20261027T1722337313520Z-cfc2101e90a04fd7867da22f677b5934.log
+?? logs/codex-20261027T1744025362225Z-5c397153e00f41e7888200ee2fd52bcf.log
+?? logs/codex-20261027T1803263448665Z-5ce8b14724d940bcac07893a5ac55aa7.log
+?? logs/codex-20261027T1822142331059Z-8bad35896cb744cfbb13b5c5085e38e9.log
+NATIVE_EXIT(status): 0
+NATIVE_EXIT(index): 0
+warning: in the working copy of 'tests/test_notification_delivery.py', LF will be replaced by CRLF the next time Git touches it
+diff --git a/tests/test_notification_delivery.py b/tests/test_notification_delivery.py
+index cce4c10..93c7b3e 100644
+--- a/tests/test_notification_delivery.py
++++ b/tests/test_notification_delivery.py
+@@ -511,6 +511,7 @@ def changed_release(model, **overrides):
+     ("android", "a" * 151, "https://play.google.com/store/apps/details?id=" + "a" * 151, False),
+     ("ios", "123456789", "x" * 301, False),
+     ("web", "org.oaf.gramanna", "https://example.invalid", False),
++    ("desktop", "org.oaf.gramanna", "https://play.google.com/store/apps/details?id=org.oaf.gramanna", False),
+ ])
+ def test_official_reference_compatibility_is_strict(platform, identity, url, valid):
+     assert service.official_release_reference(platform, identity, url) is valid
+NATIVE_EXIT(candidate-diff): 0
+NATIVE_EXIT(tracked-instructions): 0
+System.Management.Automation.RemoteException
+Name                                                                  CommandType Source                               
+----                                                                  ----------- ------                               
+codex.ps1                                                          ExternalScript C:\Users\ovisa\AppData\Roaming\npm...
+codex-20261027T1822142331059Z-8bad35896cb744cfbb13b5c5085e38e9.log                                                     
+codex-20261027T1803263448665Z-5ce8b14724d940bcac07893a5ac55aa7.log                                                     
+codex-20261027T1744025362225Z-5c397153e00f41e7888200ee2fd52bcf.log                                                     
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$latestLog = Get-ChildItem -LiteralPath '"'logs' -Filter 'codex-*.log' | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+Write-Output \"LATEST_LOG: "'$($latestLog.FullName)"
+Get-Content -LiteralPath $latestLog.FullName -TotalCount 20
+Get-Content -LiteralPath $latestLog.FullName -Tail 16
+$candidateEvidence = Get-Content -LiteralPath '"'.pytest_cache\\wu2-local-20261027T174600Z\\candidate.json' -Raw | ConvertFrom-Json
+"'$candidateEvidence | Select-Object utc,head,branch,candidate_inventory_sha256,patch_sha256,index_sha256,changed,preserved_unchanged_inputs,owner_logs_preserved | ConvertTo-Json -Depth 4
+Get-Content -LiteralPath '"'docs\\WORKFLOW.md' -TotalCount 180" in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+ succeeded in 1840ms:
+LATEST_LOG: C:\Users\ovisa\Documents\OAF_App\Development\OAF Website\logs\codex-20261027T1822142331059Z-8bad35896cb744cfbb13b5c5085e38e9.log
+PROJECT: GRAMANNA APP
+TASK: WU2 - Corrective Git Delivery for Coverage
+STATUS: INCOMPLETE
+UTC: 2026-10-27T18:22:14.2068477Z
+Mode: SOL / EXTRA HIGH
+Model: gpt-6.1-sol
+Reasoning: xhigh
+Sandbox: workspace-write
+Codex is running...
+OpenAI Codex v0.164.0
+--------
+workdir: C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+model: gpt-6.1-sol
+provider: openai
+approval: on-request
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 01a17e99-4319-7912-bef5-1d85e9e0fa76
+--------
+----                                                                  ----------- ------                               
+codex.ps1                                                          ExternalScript C:\Users\ovisa\AppData\Roaming\npm...
+codex-20261027T1822142331059Z-8bad35896cb744cfbb13b5c5085e38e9.log                                                     
+codex-20261027T1803263448665Z-5ce8b14724d940bcac07893a5ac55aa7.log                                                     
+codex-20261027T1744025362225Z-5c397153e00f41e7888200ee2fd52bcf.log                                                     
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$latestLog = Get-ChildItem -LiteralPath '"'logs' -Filter 'codex-*.log' | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+Write-Output \"LATEST_LOG: "'$($latestLog.FullName)"
+Get-Content -LiteralPath $latestLog.FullName -TotalCount 20
+Get-Content -LiteralPath $latestLog.FullName -Tail 16
+$candidateEvidence = Get-Content -LiteralPath '"'.pytest_cache\\wu2-local-20261027T174600Z\\candidate.json' -Raw | ConvertFrom-Json
+"'$candidateEvidence | Select-Object utc,head,branch,candidate_inventory_sha256,patch_sha256,index_sha256,changed,preserved_unchanged_inputs,owner_logs_preserved | ConvertTo-Json -Depth 4
+Get-Content -LiteralPath '"'docs\\WORKFLOW.md' -TotalCount 180" in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+{
+    "utc":  "2026-10-27T17:51:11.306927+00:00",
+    "head":  "3259aaf787f97c34aa4a01c3d97ce19ea1dd2a61",
+    "branch":  "main",
+    "candidate_inventory_sha256":  "6a696031906a17d8c85d8f26b3b4a1fd04b7040972976d4a90b0a95c0b6a00f4",
+    "patch_sha256":  "23f012490776d174b6b9ae08e026d3962834a8aeadff688eff65b4239383dcd3",
+    "index_sha256":  "02d3409d353df068895e883b6848ec157163d92eba17fafcb9fde736f7ba54f4",
+    "changed":  [
+                    "tests/test_notification_delivery.py"
+                ],
+    "preserved_unchanged_inputs":  141,
+    "owner_logs_preserved":  4
+}
+## Codex Execution Workflow
+System.Management.Automation.RemoteException
+- Codex work for the OAF Website must be launched from the OAF Website repository so the website and GraManna workstreams remain isolated.
+- Codex prompts should normally be provided as a one-step PowerShell block that the owner can paste directly into the OAF Website terminal.
+- Use `Invoke-OAFCodex` for normal website Codex runs.
+- In the current PowerShell helper configuration, `Invoke-OAFCodex` copies Codex's final report to the clipboard automatically after a successful run.
+- `Invoke-OAFCodexClipboard` is not required merely to receive output on the clipboard; use it only when the prompt itself is being supplied through the clipboard.
+- Do not default to the VS Code F4 shortcut for website work unless the owner specifically requests it.
+- Every Codex prompt must clearly state that it is working only in the current OAF Website repository.
+- Codex must not commit or push changes unless an explicit approved commit checkpoint has been reached.
+System.Management.Automation.RemoteException
+### Current Supported Codex Modes
+System.Management.Automation.RemoteException
+The current `Invoke-OAFCodex` helper accepts these modes:
+System.Management.Automation.RemoteException
+- `SOL / HIGH`
+- `SOL / EXTRA HIGH`
+- `SOL / MAX`
+- `ASTRA / EXTRA HIGH`
+- `ASTRA / MAX`
+System.Management.Automation.RemoteException
+Do not request unsupported modes such as `SOL / MEDIUM` unless the PowerShell helper is later updated to support them.
+System.Management.Automation.RemoteException
+### Mandatory First-Failure Capture and Immediate Owner Reporting (Standing Rule)
+System.Management.Automation.RemoteException
+This **permanent workflow requirement** applies to future OAF Website Codex work,
+PowerShell/Python helpers, tests, migrations, integrations, scheduled jobs, and
+approved operational runs, including the OAF Website side of shared services.
+It supplements stricter feature-specific audit, privacy, authorization and
+recovery contracts. A generic `BLOCKED`, `FAILED`, exception or exit code is
+**not** a sufficient final diagnosis when a more specific result was observable.
+Implement diagnostic capture **before** asking the owner to execute a new or
+materially changed workflow; keep the implementation proportional to the task.
+System.Management.Automation.RemoteException
+- **Prepare evidence before risky operations.** Establish the approved
+  owner-controlled destination, a unique run/attempt identity, exclusively
+  created evidence files, and live terminal plus simultaneous complete
+  sanitized logging *before* the first step that could fail or cause side
+  effects. Initialize the established OAF visual alert/reporting capability
+  early enough to cover preflight failures. Never truncate, overwrite, or
+  silently merge historical runs. If evidence initialization fails, stop
+  safely and disclose the reporting limitation through any available channel.
+- **Record exactly where execution stopped.** Emit and flush a `STARTED` record
+  before each material gate or operation; finish it with `PASS`, `BLOCKED`
+  (evaluated and rejected), `ERROR` (could not evaluate), or `NOT_RUN` (not
+  reached because of a stated dependency). Include UTC timestamps, run and
+  package/artifact identity, stage, stable operation/predicate identifier and
+  relevant source/function. An unfinished `STARTED` record after interruption
+  means `INTERRUPTED/UNKNOWN`, **not** success or proof of no side effects.
+- **Retain actionable, sanitized details.** For every failed or blocked check,
+  record the expected condition and observed condition or `UNAVAILABLE`, the
+  exact constituent conflict code(s) rather than only an aggregate rejection,
+  and a safe exception class plus SQLSTATE, HRESULT or exit code when present.
+  Identify which prior checks passed, which dependent checks were not run, and
+  which operational boundaries were reached: task/process actions, database
+  mutation/commit certainty, provider submission/acceptance uncertainty, and
+  cleanup. Distinguish verified facts, hypotheses, and missing visibility.
+- **Persist before propagating failure.** Preserve reached-check results and
+  known side effects in bounded structured evidence, flush/synchronize using
+  the established durability mechanism, **then** raise or return the failure.
+  A nonzero Python/child exit must not hide already-published validated safe
+  diagnostics from its PowerShell/parent reporter. Validate evidence identity,
+  source, format and privacy before consuming it. Missing or malformed evidence
+  remains a failure with an explicit evidence gap, never implied success.
+- **Report immediately to the owner.** At the end of **every** Codex, test, or
+  authorized operational run, present a concise first-failure/blocked-step
+  summary directly in the visible terminal and Codex final report. Preserve
+  the complete sanitized simultaneous log and structured evidence location;
+  automatically copy the report to the clipboard with read-back verification
+  and display the existing OAF success/failure visual alert. Include run ID,
+  exact stopped stage/predicate, reason, safe expected/observed information,
+  completed/not-run steps, known or uncertain side effects, evidence path,
+  and the **single next safe checkpoint**. Do not announce success until the
+  required terminal evidence, log/transcript finalization and reporting checks
+  are complete. If clipboard, alert or logging fails, show a safe fallback and
+  explicitly label reporting **INCOMPLETE**; do not falsely claim delivery.
+- **Protect confidential data.** Never put passwords, tokens, API/DPAPI keys,
+  private capabilities/URLs, raw subscriber records, secret-bearing connection
+  strings, raw SQL parameters, unrestricted process arguments/environment
+  values, or unredacted exception text into terminal, clipboard, alerts, or
+  ordinary logs. Use fixed codes, bounded metadata, fingerprints and restricted
+  evidence locations where needed. Protect existing private evidence and ACLs.
+- **Fail closed; keep authority separate.** Recording a failure or finishing a
+  diagnostic collection does **not** authorize a retry, migration, worker,
+  provider send, task change, or reuse of consumed authority. Preserve claims,
+  outcomes, markers and uncertainty. Stop unsafe dependent operations, while
+  allowing only separately safe read-only checks approved by the current
+  contract. Do not fabricate missing observations or rewrite past failures.
+- **Validate the real reporting boundary before approval.** Test the actual
+  producer -> evidence writer -> child/parent consumer -> terminal/log/clipboard/
+  alert path, including early initialization failures, aggregate rejects,
+  nonzero child exits, partial logs, interrupted operations, publication errors
+  and finalization failure. Mocks may isolate genuine operational side effects,
+  but must not substitute away the reporting interface under test. An offline
+  PASS is not live readiness. Use focused, proportionate checks; avoid a new
+  framework, repeated broad test campaigns, or separate diagnosis for each
+  successive error.
+- **Codex instructions are mandatory.** Every future Codex prompt that builds,
+  changes or runs executable workflows must carry these requirements forward.
+  Review the captured diagnostic evidence immediately after a stop and supply
+  its actual first blocking reason in the final clipboard report; if the exact
+  cause is unknowable, identify the evidence gap and the smallest safe next
+  observation instead of declaring a root cause. Continue one approved prompt
+  and checkpoint at a time, without silently changing the established
+  PowerShell/Codex execution method.
+System.Management.Automation.RemoteException
+### End-to-End Deterministic Autonomy
+System.Management.Automation.RemoteException
+This permanent rule applies to all current and future OAF Website features, including frontend and backend functionality, across every page and program.
+System.Management.Automation.RemoteException
+- Design all website features for deterministic autonomy wherever practical. Prefer explicit server-side rules, registries, templates, state transitions, validation constraints, thresholds, scheduled jobs, and event-triggered processing.
+- Ordinary operations must not require continuous manual intervention or AI participation.
+- Frontend behavior must be deterministic, accessible, and consistent with authoritative backend decisions.
+- Security, eligibility, validation, abuse prevention, duplicate controls, and data integrity must not depend solely on frontend enforcement.
+- Implement autonomous lifecycle handling where applicable, including submission, confirmation, acceptance, rejection, expiry, dispatch, retries, suppression, and recovery.
+- Provide appropriate audit logging, monitoring, and deterministic failure handling.
+- Preserve authorized Foundation administrative authority for exceptional corrections, policy changes, geographic availability decisions, and announcement approvals.
+- AI may optionally assist with recommendations, summaries, or improvements, but must not be an operational dependency unless explicitly authorized in a separate contract.
+System.Management.Automation.RemoteException
+#### Deterministic Autonomy Review and Validation
+System.Management.Automation.RemoteException
+- Before a feature design is considered near-final, perform a deterministic autonomy review identifying all decisions, governance areas, lifecycle transitions, failure paths, and operational dependencies.
+- Confirm that each area is autonomous wherever practical. Document justified exceptions and required administrative controls.
+- Validate autonomous behavior through deterministic tests, including negative cases, failure handling, and recovery. Use the automated browser validation guidance below for browser checks, with validation proportional to the change.
+System.Management.Automation.RemoteException
+### Migration Authority, Approval Gates, and Operational Evidence
+System.Management.Automation.RemoteException
+#### Standing migration troubleshooting and PostgreSQL catalog lessons ├óΓé¼ΓÇ¥ 2026-10-17
+System.Management.Automation.RemoteException
+These lessons apply to future OAF Website migrations and unexplained migration
+failures. They supplement the existing migration authority, audit, approval and
+recovery policies (A├óΓé¼ΓÇ£D); they do **not** grant execution authority or create a
+new mandatory framework. The dated checkpoint entries below retain their
+historical scope and status.
+System.Management.Automation.RemoteException
+- **Start with the actual failed run.** Inspect the authorized run, claim,
+  published terminal completion and existing source path. Distinguish the
+  failure phase, PostgreSQL/database classification, commit certainty, rollback
+  and cleanup. A PowerShell exit or success-colored message is not a substitute
+  for `applied_and_verified` and acknowledged postcommit evidence. Do not
+  automatically retry a failed or consumed authorization.
+- **Make the first failure diagnosable, without exposing private data.** Where
+  the approved evidence mechanism allows it, capture a stable validator
+  operation/predicate identifier, sanitized exception class and SQLSTATE
+  (including a wrapped driver's `.orig.sqlstate`), and narrowly bounded
+  expected-versus-observed catalog metadata. Never log credentials, connection
+  strings, raw SQL parameters, subscriber data or unredacted exceptions. If the
+  failed operation was not captured, state that the historical cause remains
+  unconfirmed; use a separately authorized bounded diagnostic rather than
+  inventing or retroactively rewriting audit evidence.
+- **Follow the real execution path.** Compare the actual SQLAlchemy `text()`
+  binding and psycopg execution with the validator's SQL; direct-driver or
+  synthetic probes can behave differently. In the `0004` incident, reusing one
+  `:table` parameter in both `regclass` and `regtype` contexts reproduced
+  PostgreSQL SQLSTATE `42846` (`CannotCoerce`). Explicitly converting the
+  parameter through `text` before the separate catalog lookups fixed that
+  incompatibility while retaining the exact Boolean identity assertion.
+- **Validate PostgreSQL-generated metadata when it matters.** Offline tests
+  built from expected catalog graphs cannot independently prove what PostgreSQL
+  generates. The `0004` incident exposed an internal TOAST relation for
+  `notification_release_events` and a `pg_depend` edge absent from the
+  validator's expected labels. Recognize such an edge only through positive
+  catalog checks: exact `pg_class` identities, the managed parent's
+  `reltoastrelid`, internal whole-object dependency (`deptype='i'`, subobject
+  numbers zero), and required ownership, persistence and ACL properties.
+  Never broadly ignore unknown `pg_toast` objects or relax ordinary dependency
+  comparison.
+- **Use the smallest decisive reproduction.** If real generated objects are
+  needed and existing TESTING state cannot supply them, use an expressly
+  authorized, isolated local PostgreSQL instance with current schema/role
+  parity. Run the relevant DDL and unchanged validation within an uncommitted
+  transaction; observe the **first** failing predicate, then verify rollback,
+  shutdown and cleanup. Do not turn this into a standing requirement for every
+  small migration or introduce paid infrastructure.
+- **Keep diagnostics reliable and proportional.** On Windows, descendants may
+  retain captured subprocess output pipes after a PostgreSQL launcher exits;
+  use appropriately bounded waits and file-backed output for such launchers.
+  Check exact disposable instance identity before touching its processes or
+  files. Prefer one focused harness correction and a few relevant tests over
+  repeated broad investigations or new process-management frameworks.
+System.Management.Automation.RemoteException
+codex
+The repository is on `main` at the expected HEAD, the index is empty, and the working diff contains the approved one-line test addition. The active helperΓÇÖs log begins `PROJECT: GRAMANNA APP`, although the helper saved on disk is corrected. This is the first genuine blocker under the reporting requirement, so IΓÇÖve stopped before staging, committing or pushing.
+System.Management.Automation.RemoteException
+codex
+PROJECT: OAF WEBSITE
+TASK: WU2 - Corrective Git Delivery for Coverage
+STATUS: BLOCKED
+System.Management.Automation.RemoteException
+First blocker: the active Invoke-OAFCodex invocation emitted `PROJECT: GRAMANNA APP`. The saved helper is corrected, but this invocation used the old heading. Observed during this run; no extra invocation performed.
+System.Management.Automation.RemoteException
+- Repository, `main`, and expected HEAD confirmed. Git preflight exits: `0`.
+- Index empty. Working diff contains the approved unsupported-platform rejection case.
+- Staged-diff review and fingerprint verification: NOT_RUN after blocker.
+- Accepted validation preserved; no tests rerun.
+- Stage, commit, push and remote verification: NOT_RUN.
+- Owner work, evidence and reporting machinery preserved.
+System.Management.Automation.RemoteException
+Evidence: [active execution log](<C:/Users/ovisa/Documents/OAF_App/Development/OAF Website/logs/codex-20261027T1822142331059Z-8bad35896cb744cfbb13b5c5085e38e9.log>).
+System.Management.Automation.RemoteException
+Next safe checkpoint: reload the corrected helper in the ownerΓÇÖs PowerShell session, then relaunch this authorized delivery.
+System.Management.Automation.RemoteException
+Final logging, native-exit reporting, clipboard/read-back and alert remain with the active outer helper; their completion is not yet observable.
+tokens used
+37,036
+PROJECT: OAF WEBSITE
+TASK: WU2 - Corrective Git Delivery for Coverage
+STATUS: BLOCKED
+
+First blocker: the active Invoke-OAFCodex invocation emitted `PROJECT: GRAMANNA APP`. The saved helper is corrected, but this invocation used the old heading. Observed during this run; no extra invocation performed.
+
+- Repository, `main`, and expected HEAD confirmed. Git preflight exits: `0`.
+- Index empty. Working diff contains the approved unsupported-platform rejection case.
+- Staged-diff review and fingerprint verification: NOT_RUN after blocker.
+- Accepted validation preserved; no tests rerun.
+- Stage, commit, push and remote verification: NOT_RUN.
+- Owner work, evidence and reporting machinery preserved.
+
+Evidence: [active execution log](<C:/Users/ovisa/Documents/OAF_App/Development/OAF Website/logs/codex-20261027T1822142331059Z-8bad35896cb744cfbb13b5c5085e38e9.log>).
+
+Next safe checkpoint: reload the corrected helper in the ownerΓÇÖs PowerShell session, then relaunch this authorized delivery.
+
+Final logging, native-exit reporting, clipboard/read-back and alert remain with the active outer helper; their completion is not yet observable.
+PROJECT: GRAMANNA APP
+TASK: WU2 - Corrective Git Delivery for Coverage
+STATUS: BLOCKED
+UTC: 2026-10-27T18:22:14.2068477Z
+EXECUTION: PASS
+NATIVE_EXIT: 0
+FIRST_FAILURE: operation=codex-report code=TASK_BLOCKED utc=2026-10-27T18:22:14.2068477Z; see original report
+REPORTING_FAILURES: 
+EVIDENCE: C:\Users\ovisa\Documents\OAF_App\Development\OAF Website\logs\codex-20261027T1822142331059Z-8bad35896cb744cfbb13b5c5085e38e9.log
+
+ORIGINAL CODEX REPORT:
+PROJECT: OAF WEBSITE
+TASK: WU2 - Corrective Git Delivery for Coverage
+STATUS: BLOCKED
+
+First blocker: the active Invoke-OAFCodex invocation emitted `PROJECT: GRAMANNA APP`. The saved helper is corrected, but this invocation used the old heading. Observed during this run; no extra invocation performed.
+
+- Repository, `main`, and expected HEAD confirmed. Git preflight exits: `0`.
+- Index empty. Working diff contains the approved unsupported-platform rejection case.
+- Staged-diff review and fingerprint verification: NOT_RUN after blocker.
+- Accepted validation preserved; no tests rerun.
+- Stage, commit, push and remote verification: NOT_RUN.
+- Owner work, evidence and reporting machinery preserved.
+
+Evidence: [active execution log](<C:/Users/ovisa/Documents/OAF_App/Development/OAF Website/logs/codex-20261027T1822142331059Z-8bad35896cb744cfbb13b5c5085e38e9.log>).
+
+Next safe checkpoint: reload the corrected helper in the ownerΓÇÖs PowerShell session, then relaunch this authorized delivery.
+
+Final logging, native-exit reporting, clipboard/read-back and alert remain with the active outer helper; their completion is not yet observable.
+DONE - VERIFIED - new output is on the clipboard. Exact ordinal full-content read-back PASS.

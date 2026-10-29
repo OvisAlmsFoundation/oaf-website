@@ -1,0 +1,797 @@
+PROJECT: OAF WEBSITE
+TASK: WU3 — Correct Confirmed CI Migration History Test
+STATUS: INCOMPLETE
+UTC: 2026-10-29T02:44:20.2695599Z
+Mode: SOL / EXTRA HIGH
+Model: gpt-6.1-sol
+Reasoning: xhigh
+Sandbox: workspace-write
+Codex is running...
+OpenAI Codex v0.164.0
+--------
+workdir: C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+model: gpt-6.1-sol
+provider: openai
+approval: on-request
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 01a1858b-49ae-7220-ae91-dae7f0752b3b
+--------
+user
+PROJECT: OAF WEBSITE
+TASK: WU3 ? Correct Confirmed CI Migration History Test
+STATUS: INCOMPLETE
+System.Management.Automation.RemoteException
+PHASE: FOCUSED IMPLEMENTATION
+System.Management.Automation.RemoteException
+CONFIRMED SOURCE:
+tests/test_migration_authorization.py
+Function:
+test_stage5_installed_alembic_schema_transaction_and_history
+System.Management.Automation.RemoteException
+Commit: 197dd75
+The test still expects 0008_web_launch as the Alembic
+head and omits 0009_state_availability from its history.
+System.Management.Automation.RemoteException
+OBJECTIVE:
+Correct only the outdated test expectations.
+System.Management.Automation.RemoteException
+INSTRUCTIONS:
+1. Verify the identified test and current migration chain.
+2. Update the expected head to 0009_state_availability.
+3. Include 0009 in the expected revision history.
+4. Preserve all existing historical migration assertions.
+5. Run only the directly affected focused test.
+6. Preserve application code, migrations and owner work.
+7. Report the correction and focused test result.
+System.Management.Automation.RemoteException
+PROHIBITED:
+No full canonical or broad tests.
+No database or migration execution.
+No unrelated changes.
+No Git operations.
+No additional investigation campaign.
+System.Management.Automation.RemoteException
+STOP CONDITION:
+One corrected test with focused validation PASS,
+or the first actionable blocker.
+System.Management.Automation.RemoteException
+5P: SIMPLE. DIRECT. SUFFICIENT. EFFICIENT. SAFE.
+System.Management.Automation.RemoteException
+codex
+IΓÇÖll check the named test and migration chain, update its outdated expectations, and run only that focused test.
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-ChildItem -Path . -Filter AGENTS.md -Force; Get-ChildItem -Path tests -Filter AGENTS.md -Force; Get-ChildItem -Path .. -Filter AGENTS.md -Force; Get-ChildItem -Path ..\\.. -Filter AGENTS.md -Force; Get-ChildItem -Path ..\\..\\.. -Filter AGENTS.md -Force" in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+ succeeded in 164ms:
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg -n -A 180 -B 15 'def test_stage5_installed_alembic_schema_transaction_and_history' tests/test_migration_authorization.py; rg --files -g '*0008*' -g '*0009*' -g 'pytest.ini' -g 'pyproject.toml' -g 'conftest.py' -g 'alembic.ini'" in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+ succeeded in 67ms:
+105-    with s.issue() as runner:
+106-        s.config.attributes["oaf_runner"] = runner
+107-        s.env()
+108-    s.execute.assert_called_once()
+109-    kwargs = s.configure.call_args.kwargs
+110-    assert kwargs["connection"] is s.conn
+111-    assert kwargs["version_table_schema"] == "oaf_website"
+112-    assert kwargs["version_table"] == "alembic_version" and kwargs["version_table_pk"]
+113-    assert kwargs["transactional_ddl"] is True
+114-    assert kwargs["transaction_per_migration"] is False
+115-    assert s.conn.get_transaction() is s.transaction
+116-    assert s.conn.commits == 0
+117-
+118-
+119-@pytest.mark.parametrize("context_setup", c.IDENTITIES, indirect=True)
+120:def test_stage5_installed_alembic_schema_transaction_and_history(context_setup):
+121-    """Compile only: real Alembic/SQLAlchemy, synthetic session, no SQL dispatch."""
+122-    s = context_setup
+123-    with s.issue() as runner:
+124-        s.config.attributes["oaf_runner"] = runner
+125-        s.env()
+126-    options = dict(s.configure.call_args.kwargs)
+127-    assert options.pop("connection") is s.conn
+128-    assert options["target_metadata"] is None  # Explicit revisions; no autogeneration.
+129-    s.conn.dialect = postgresql.dialect()
+130-    migration = MigrationContext.configure(connection=s.conn, opts=options)
+131-    before = list(s.conn.calls)
+132-    with migration.begin_transaction():
+133-        assert s.conn.get_transaction() is s.transaction
+134-    assert s.conn.calls == before  # Alembic does not begin/commit the owner's transaction.
+135-    assert s.transaction.is_active and s.conn.commits == 0
+136-    # Compile the installed implementation's version table, never execute it.
+137-    ddl = str(CreateTable(migration._version).compile(dialect=s.conn.dialect))
+138-    assert ' '.join(ddl.split()) == (
+139-        'CREATE TABLE oaf_website.alembic_version ( version_num VARCHAR(32) NOT NULL, '
+140-        'CONSTRAINT alembic_version_pkc PRIMARY KEY (version_num) )')
+141-    script = ScriptDirectory.from_config(Config(str(ROOT / "alembic.ini")))
+142-    assert script.get_bases() == [v.BASELINE]
+143-    assert script.get_heads() == [v.WEB_LAUNCH]
+144-    assert [(r.revision, r.down_revision) for r in script.walk_revisions()] == [
+145-        (v.WEB_LAUNCH, v.RELEASE_APPROVALS),
+146-        (v.RELEASE_APPROVALS, v.MANAGEMENT),
+147-        (v.MANAGEMENT, v.OUTBOX),
+148-        (v.OUTBOX, v.DELIVERY),
+149-        (v.DELIVERY, v.NOTIFICATIONS),
+150-        (v.NOTIFICATIONS, v.STATE_REQUESTS),
+151-        (v.STATE_REQUESTS, v.BASELINE), (v.BASELINE, None)]
+152-
+153-
+154-@pytest.mark.parametrize("case", ["offline", "missing", "fabricated", "transaction", "inactive", "nested",
+155-    "url", "cmd_opts", "x", "tag", "target", "start", "lock", "owner", "artifact", "environment"])
+156-def test_alembic_env_rejects_unsupported_context_before_execution(context_setup, monkeypatch, case):
+157-    s = context_setup
+158-    with s.issue() as runner:
+159-        s.config.attributes["oaf_runner"] = runner
+160-        if case == "offline":
+161-            context.is_offline_mode.return_value = True
+162-        elif case == "missing":
+163-            s.config.attributes.clear()
+164-        elif case == "fabricated":
+165-            s.config.attributes["oaf_runner"] = SimpleNamespace(**runner.__dict__)
+166-        elif case == "transaction":
+167-            s.conn.transaction = object()
+168-        elif case == "inactive":
+169-            s.transaction.is_active = False
+170-        elif case == "nested":
+171-            monkeypatch.setattr(s.conn, "in_nested_transaction", lambda: True)
+172-        elif case == "url":
+173-            s.config.set_main_option("sqlalchemy.url", "synthetic-only")
+174-        elif case == "cmd_opts":
+175-            s.config.cmd_opts = object()
+176-        elif case in {"x", "tag", "target"}:
+177-            getattr(context, {"x": "get_x_argument", "tag": "get_tag_argument", "target": "get_revision_argument"}[case]).return_value = "wrong"
+178-        elif case == "start":
+179-            v.catalog_state.return_value = v.BASELINE
+180-        elif case == "lock":
+181-            s.conn.lock = False
+182-        elif case == "owner":
+183-            v.verify_identity.side_effect = c.MigrationError(c.Failure.WRONG_IDENTITY)
+184-        elif case == "artifact":
+185-            monkeypatch.setattr(v, "validate_artifacts", Mock(side_effect=c.MigrationError(c.Failure.ARTIFACT_HASH)))
+186-        else:
+187-            s.e.request = replace(s.e.request, environment="development")
+188-        with pytest.raises(c.MigrationError):
+189-            s.env()
+190-    s.execute.assert_not_called()
+191-
+192-
+193-@pytest.mark.parametrize("code,expected", [("57014", c.Failure.STATEMENT_TIMEOUT),
+194-    ("40P01", c.Failure.DEADLOCK), ("40001", c.Failure.SERIALIZATION),
+195-    ("08006", c.Failure.CONNECTION), (None, c.Failure.TRANSACTION)])
+196-def test_alembic_env_driver_failure_classification(context_setup, code, expected):
+197-    s = context_setup
+198-    s.execute.side_effect = DriverError(code)
+199-    with s.issue() as runner:
+200-        s.config.attributes["oaf_runner"] = runner
+201-        with pytest.raises(c.MigrationError, match=expected) as caught:
+202-            s.env()
+203-        assert SECRET not in "".join(traceback.format_exception(caught.value))
+204-
+205-
+206-@pytest.mark.parametrize("code,expected", [
+207-    ("55P03", c.Failure.LOCK_BUSY), ("57014", c.Failure.STATEMENT_TIMEOUT),
+208-    ("40P01", c.Failure.DEADLOCK), ("40001", c.Failure.SERIALIZATION),
+209-    ("08001", c.Failure.CONNECTION), ("08006", c.Failure.CONNECTION),
+210-    ("ZZ999", c.Failure.DATABASE),
+211-])
+212-def test_j7_sqlalchemy_wrapped_error_through_alembic_and_runner(
+213-        runner, context_setup, monkeypatch, capsys, caplog, code, expected):
+214-    import json
+215-    from dataclasses import asdict
+216-    from test_migration_runner import failed
+217-
+218-    s = context_setup
+219-    raw_sql = "SELECT STAGE3_SENSITIVE_RAW_SQL"
+220-    driver = DriverError(code)
+221-    wrapped = DBAPIError(raw_sql, {"private_parameter": SECRET}, driver,
+222-                        connection_invalidated=code.startswith("08"))
+223-    assert wrapped.orig is driver and wrapped.orig.sqlstate == code
+224-    s.execute.side_effect = wrapped
+225-    observed = []
+226-
+227-    def alembic_upgrade(config, target):
+228-        assert target == v.BASELINE
+229-        # The real runner's _execute_revision issues the single-use context;
+230-        # the actual env.py consumes it and classifies the SQLAlchemy exception.
+231-        monkeypatch.setattr(context, "config", config)
+232-        try:
+233-            s.env()
+234-        except c.MigrationError as error:
+235-            observed.append(error.classification)
+236-            assert SECRET not in "".join(traceback.format_exception(error))
+237-            assert raw_sql not in "".join(traceback.format_exception(error))
+238-            raise
+239-
+240-    upgrade = Mock(side_effect=alembic_upgrade)
+241-    monkeypatch.setattr(command, "upgrade", upgrade)
+242-    monkeypatch.setattr(m, "_execute_revision", runner.real_execute_revision)
+243-    result = failed(runner, expected)
+244-    assert observed == [expected]  # Category survives both real boundaries.
+245-    assert result["classification"] == expected and result["failed_phase"] == "revision"
+246-    assert wrapped.orig.sqlstate == code
+247-    upgrade.assert_called_once()
+248-    s.execute.assert_called_once()  # No automatic retry at Alembic or runner.
+249-    assert "commit" not in runner.connection.calls
+250-    assert result["commit_certainty"] == "not_invoked"
+251-    assert result["transaction_outcome"] == "rollback_confirmed"
+252-    assert result["cleanup_attempts"]["rollback"] == ["confirmed_successful"] * 3
+253-    assert result["lock_outcome"] == "release_confirmed"
+254-    assert not result["database_commit_confirmed"]
+255-    assert not result["secondary_failures"]
+256-    evidence = json.dumps({"result": result,
+257-        "audit": [asdict(e) for e in runner.sink.write_attempts],
+258-        "terminal": [asdict(e) for e in runner.sink.final_attempts]})
+259-    assert SECRET not in evidence and raw_sql not in evidence
+260-    assert "private_parameter" not in evidence
+261-    assert runner.sink.final_events[0].failure == expected
+262-    assert capsys.readouterr() == ("", "")
+263-    assert not caplog.records
+264-    assert not v._ACTIVE_RUNNERS
+265-
+266-
+267-def test_env_requires_transaction_survive_revision(context_setup):
+268-    s = context_setup
+269-    s.execute.side_effect = lambda: setattr(s.transaction, "is_active", False)
+270-    with s.issue() as runner:
+271-        s.config.attributes["oaf_runner"] = runner
+272-        with pytest.raises(c.MigrationError, match=c.Failure.TRANSACTION):
+273-            s.env()
+274-
+275-
+276-def test_runner_calls_only_exact_upgrade_and_revokes_context(context_setup, monkeypatch):
+277-    s = context_setup
+278-    seen = []
+279-    def upgrade(config, target):
+280-        seen.append(config)
+281-        assert target == v.BASELINE
+282-        assert v.consume_runner_context(config.attributes["oaf_runner"])
+283-        raise DriverError("40P01")
+284-    monkeypatch.setattr(command, "upgrade", upgrade)
+285-    with pytest.raises(DriverError):
+286-        m._execute_revision(s.conn, s.i, s.a, s.transaction, s.e, s.sink, s.authority, 701)
+287-    assert "oaf_runner" not in seen[0].attributes
+288-    assert not v._ACTIVE_RUNNERS
+289-
+290-
+291-def test_direct_alembic_invocation_without_runner_denied(context_setup):
+292-    with pytest.raises(c.MigrationError, match=c.Failure.OPERATIONAL_GATE):
+293-        context_setup.env()
+294-
+295-
+296-def test_exact_class_fabricated_context_not_registered(context_setup):
+297-    s = context_setup
+298-    with s.issue() as runner:
+299-        fabricated = replace(runner)
+300-        with pytest.raises(c.MigrationError, match=c.Failure.OPERATIONAL_GATE):
+alembic.ini
+tests\conftest.py
+migrations\versions\0009_state_availability.py
+migrations\versions\0008_web_launch.py
+System.Management.Automation.RemoteException
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Item -LiteralPath C:\\AGENTS.md,C:\\Users\\AGENTS.md,C:\\Users\\ovisa\\AGENTS.md,C:\\Users\\ovisa\\Documents\\AGENTS.md -ErrorAction SilentlyContinue; Get-ChildItem -Path . -Force -Name; Get-Command python,pytest -ErrorAction SilentlyContinue | Select-Object Name,Source" in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content tests/test_migration_authorization.py -TotalCount 100; Get-Content tests/conftest.py; Get-Content alembic.ini; Get-Content migrations/versions/0009_state_availability.py -TotalCount 85; Get-Content migrations/versions/0008_web_launch.py -TotalCount 45; rg -n '"'^(revision|down_revision)'"\\s*[:=]' migrations/versions; rg -n 'STATE_AVAILABILITY|WEB_LAUNCH|BASELINE' tools/migration_validation.py scripts/migration_validation.py" in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+ succeeded in 197ms:
+.git
+.github
+.pytest_cache
+.venv
+.vscode
+assets
+config
+docs
+instance
+logs
+migrations
+oaf_website
+ops
+tests
+.gitignore
+about.html
+alembic.ini
+confirm-email.html
+contact.html
+faq.html
+gramanna.html
+index.html
+manage-notifications.html
+README.md
+requirements-dev.txt
+requirements-migrations.txt
+requirements.txt
+styles.css
+support.html
+System.Management.Automation.RemoteException
+Name       Source                                                                           
+----       ------                                                                           
+python.exe C:\Users\ovisa\Documents\OAF_App\Development\OAF Website\.venv\Scripts\python.exe
+pytest.exe C:\Users\ovisa\Documents\OAF_App\Development\OAF Website\.venv\Scripts\pytest.exe
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+ exited 1 in 201ms:
+"""J1 single-use runner context and Alembic environment's independent gates."""
+System.Management.Automation.RemoteException
+import migration_offline as isolation
+isolation.require_early_registration()
+System.Management.Automation.RemoteException
+from contextlib import nullcontext
+from dataclasses import replace
+import runpy
+import traceback
+from types import SimpleNamespace
+from unittest.mock import Mock
+System.Management.Automation.RemoteException
+from alembic import context, command
+from alembic.config import Config
+from alembic.migration import MigrationContext
+from alembic.script import ScriptDirectory
+import pytest
+from sqlalchemy.dialects import postgresql
+from sqlalchemy.exc import DBAPIError
+from sqlalchemy.schema import CreateTable
+System.Management.Automation.RemoteException
+from migration_offline import ROOT, SECRET, FakeConnection, DriverError, artifacts
+from oaf_website import migrate as m, migration_validation as v, migration_config as c
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+@pytest.fixture
+def context_setup(monkeypatch, request):
+    a = artifacts()
+    i = c.IDENTITIES[getattr(request, "param", "testing")]
+    conn = FakeConnection()
+    transaction = conn.begin()
+    conn.lock = True
+    authority, sink = object(), object()
+    request = m.Request("upgrade", i.environment, a.expected_start, a.target, a.manifest_hash, a.revision_hash)
+    evidence = m._Evidence(request, i, "synthetic-run")
+    for key, value in dict(authorized=True, audit_acknowledged=True, verified=True,
+        session_lock_verified=True, phase="revision", validation="preflight_passed",
+        observed_start=a.expected_start, operational_authority=authority, audit_sink=sink,
+        verified_connection=conn, verified_transaction=transaction, session_lock_backend=701).items():
+        setattr(evidence, key, value)
+    config = Config()
+    monkeypatch.setattr(context, "config", config, raising=False)
+    for key, value in {"is_offline_mode": False, "get_x_argument": [], "get_tag_argument": None,
+                       "get_revision_argument": a.target}.items():
+        monkeypatch.setattr(context, key, Mock(return_value=value))
+    configure, execute = Mock(), Mock()
+    monkeypatch.setattr(context, "configure", configure)
+    monkeypatch.setattr(context, "begin_transaction", lambda: nullcontext())
+    monkeypatch.setattr(context, "run_migrations", execute)
+    monkeypatch.setattr(m, "_require_operational_adapter", Mock())
+    monkeypatch.setattr(v, "verify_identity", Mock())
+    monkeypatch.setattr(v, "verify_authority", Mock())
+    monkeypatch.setattr(v, "catalog_state", Mock(return_value=v.BASE))
+    return SimpleNamespace(a=a, i=i, conn=conn, transaction=transaction, e=evidence,
+                           authority=authority, sink=sink, config=config, configure=configure,
+                           execute=execute,
+                           issue=lambda: v._runner_execution(conn, i, a, transaction, evidence, sink, authority, 701),
+                           env=lambda: runpy.run_path(str(ROOT / "migrations/env.py")))
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+def test_valid_single_use_context_rejected_after_consumption_and_scope(context_setup):
+    s = context_setup
+    with s.issue() as runner:
+        assert v.consume_runner_context(runner) is runner
+        with pytest.raises(c.MigrationError, match=c.Failure.OPERATIONAL_GATE):
+            v.consume_runner_context(runner)
+    with pytest.raises(c.MigrationError, match=c.Failure.OPERATIONAL_GATE):
+        v.consume_runner_context(runner)
+    assert not v._ACTIVE_RUNNERS
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+@pytest.mark.parametrize("value", [None, {}, object(), SimpleNamespace(authorized=True)])
+def test_missing_fabricated_context_rejected(value):
+    with pytest.raises(c.MigrationError, match=c.Failure.OPERATIONAL_GATE):
+        v.consume_runner_context(value)
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+@pytest.mark.parametrize("field,value", [
+    ("authorized", False), ("audit_acknowledged", False), ("verified", False),
+    ("session_lock_verified", False), ("session_lock_backend", 702),
+    ("audit_sink", None), ("operational_authority", None), ("verified_connection", object()),
+    ("verified_transaction", object()), ("phase", "precommit"), ("validation", "failed"),
+    ("commit", "confirmed"), ("observed_start", "wrong"), ("identity", c.IDENTITIES["development"]),
+])
+def test_context_evidence_binding_rejects_mismatch(context_setup, field, value):
+    s = context_setup
+    setattr(s.e, field, value)
+    with s.issue() as runner:
+        with pytest.raises(c.MigrationError, match=c.Failure.OPERATIONAL_GATE):
+            v.consume_runner_context(runner)
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+@pytest.mark.parametrize("field,value", [("environment", "development"), ("action", "verify"),
+    ("target", "head"), ("expected_start", "wrong"), ("manifest_hash", "0"*64), ("revision_hash", "0"*64)])
+def test_context_binds_request_to_exact_artifact_and_transition(context_setup, field, value):
+    s = context_setup
+    s.e.request = replace(s.e.request, **{field: value})
+    with s.issue() as runner:
+        with pytest.raises(c.MigrationError, match=c.Failure.OPERATIONAL_GATE):
+            v.consume_runner_context(runner)
+"""Offline suite: deny real credential access and database/network connections."""
+System.Management.Automation.RemoteException
+import socket
+import sys
+from types import ModuleType
+System.Management.Automation.RemoteException
+import psycopg
+import pytest
+import sqlalchemy
+import sqlalchemy.engine.create
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+@pytest.fixture(autouse=True)
+def isolate_external_access(monkeypatch):
+    def denied(*args, **kwargs):
+        raise AssertionError("Unit tests must not access credentials or connections.")
+System.Management.Automation.RemoteException
+    # Even accidental imports cannot reach an installed keyring or its plugins.
+    for name in ("keyring", "keyring.backends", "keyring.backends.Windows"):
+        module = ModuleType(name)
+        module.__path__ = []
+        module.get_keyring = denied
+        module.get_password = denied
+        module.get_credential = denied
+        module.set_password = denied
+        module.delete_password = denied
+        module.WinVaultKeyring = denied
+        monkeypatch.setitem(sys.modules, name, module)
+    monkeypatch.setattr(psycopg, "connect", denied)
+    monkeypatch.setattr(psycopg.Connection, "connect", denied)
+    monkeypatch.setattr(sqlalchemy, "create_engine", denied)
+    monkeypatch.setattr(sqlalchemy.engine.create, "create_engine", denied)
+    monkeypatch.setattr(socket, "create_connection", denied)
+    monkeypatch.setattr(socket.socket, "connect", denied)
+    monkeypatch.setenv("OAF_ENV", "testing")
+[alembic]
+script_location = %(here)s/migrations
+prepend_sys_path = %(here)s
+path_separator = os
+# No URL or logging configuration. Use python -m oaf_website.migrate.
+"""State-specific availability in the existing authenticated release inventory."""
+System.Management.Automation.RemoteException
+from alembic import op
+from oaf_website.state_availability_schema import upgrade_state_availability
+System.Management.Automation.RemoteException
+revision = "0009_state_availability"
+down_revision = "0008_web_launch"
+branch_labels = None
+depends_on = None
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+def upgrade():
+    upgrade_state_availability(op.get_bind())
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+def downgrade():
+    raise RuntimeError("Ordinary migration downgrade is prohibited.")
+"""Typed web launch in the existing event contract; no new tables or grants."""
+System.Management.Automation.RemoteException
+from alembic import op
+from oaf_website.web_launch_schema import upgrade_web_launch
+System.Management.Automation.RemoteException
+revision = "0008_web_launch"
+down_revision = "0007_release_approvals"
+branch_labels = None
+depends_on = None
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+def upgrade():
+    upgrade_web_launch(op.get_bind())
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+def downgrade():
+    raise RuntimeError("Ordinary migration downgrade is prohibited.")
+migrations/versions\0002_state_requests.py:6:revision = "0002_state_requests"
+migrations/versions\0002_state_requests.py:7:down_revision = "0001_migration_baseline"
+migrations/versions\0001_migration_baseline.py:3:revision = "0001_migration_baseline"
+migrations/versions\0001_migration_baseline.py:4:down_revision = None
+migrations/versions\0005_confirmation_outbox.py:6:revision = "0005_confirmation_outbox"
+migrations/versions\0005_confirmation_outbox.py:7:down_revision = "0004_notification_delivery"
+migrations/versions\0009_state_availability.py:6:revision = "0009_state_availability"
+migrations/versions\0009_state_availability.py:7:down_revision = "0008_web_launch"
+migrations/versions\0004_notification_delivery.py:6:revision = "0004_notification_delivery"
+migrations/versions\0004_notification_delivery.py:7:down_revision = "0003_notifications"
+migrations/versions\0008_web_launch.py:6:revision = "0008_web_launch"
+migrations/versions\0008_web_launch.py:7:down_revision = "0007_release_approvals"
+migrations/versions\0003_notifications.py:6:revision = "0003_notifications"
+migrations/versions\0003_notifications.py:7:down_revision = "0002_state_requests"
+migrations/versions\0007_release_approvals.py:6:revision = "0007_release_approvals"
+migrations/versions\0007_release_approvals.py:7:down_revision = "0006_notification_management"
+migrations/versions\0006_notification_management.py:6:revision = "0006_notification_management"
+migrations/versions\0006_notification_management.py:7:down_revision = "0005_confirmation_outbox"
+rg: tools/migration_validation.py: The system cannot find the path specified. (os error 3)
+rg: scripts/migration_validation.py: The system cannot find the path specified. (os error 3)
+System.Management.Automation.RemoteException
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg -n 'STATE_AVAILABILITY|WEB_LAUNCH' oaf_website/migration_validation.py; Get-Content tests/migration_offline.py -TotalCount 155; rg -n 'pytest|migration_offline' .github/workflows" in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+ succeeded in 146ms:
+24:from .web_launch_schema import WEB_LAUNCH, TABLES as WEB_TABLES, EDGES as WEB_EDGES, ADDED_EDGES as WEB_ADDED_EDGES
+25:from .state_availability_schema import (STATE_AVAILABILITY, TABLES as STATE_TABLES, EDGES as STATE_EDGES,
+55:WEB_REVISION_FILE = f"migrations/versions/{WEB_LAUNCH}.py"
+56:STATE_REVISION_FILE = f"migrations/versions/{STATE_AVAILABILITY}.py"
+84:STATE_CONTRACT[WEB_LAUNCH] = {"revision": WEB_LAUNCH, "managed_objects": STATE_CONTRACT[RELEASE_APPROVALS]["managed_objects"]}
+85:STATE_CONTRACT[STATE_AVAILABILITY] = {"revision": STATE_AVAILABILITY,
+86:    "managed_objects": [obj for obj in STATE_CONTRACT[WEB_LAUNCH]["managed_objects"]
+283:                               (RELEASE_APPROVALS, WEB_LAUNCH), (WEB_LAUNCH, WEB_LAUNCH),
+284:                               (WEB_LAUNCH, STATE_AVAILABILITY), (STATE_AVAILABILITY, STATE_AVAILABILITY)}:
+337:        "id": WEB_LAUNCH, "parent": RELEASE_APPROVALS, "file": WEB_REVISION_FILE,
+339:        "target_state": WEB_LAUNCH, "grants": [],
+341:        "id": STATE_AVAILABILITY, "parent": WEB_LAUNCH, "file": STATE_REVISION_FILE,
+342:        "sha256": revisions[8].get("sha256"), "starting_state": WEB_LAUNCH,
+343:        "target_state": STATE_AVAILABILITY, "grants": [],
+761:        if marker in ([{"version_num": WEB_LAUNCH}], [{"version_num": STATE_AVAILABILITY}]):
+765:    if state in {STATE_REQUESTS, NOTIFICATIONS, DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY}:
+767:    if state in {NOTIFICATIONS, DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY}:
+769:    if state in {DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY}:
+772:    if state in {OUTBOX, MANAGEMENT, RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY}:
+775:    if state in {MANAGEMENT, RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY}:
+778:    if state in {RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY}:
+781:    if state == STATE_AVAILABILITY:
+786:    if state in {DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY}:
+789:    if state in {OUTBOX, MANAGEMENT, RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY}:
+792:    if state in {MANAGEMENT, RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY}:
+795:    if state in {RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY}:
+813:        if state in {STATE_REQUESTS, NOTIFICATIONS, DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY}:
+815:        if state in {NOTIFICATIONS, DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY}:
+817:        if state in {DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY}:
+820:        if state in {OUTBOX, MANAGEMENT, RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY}:
+823:        if state in {MANAGEMENT, RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY}:
+826:        if state in {RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY}:
+846:        if state in {STATE_REQUESTS, NOTIFICATIONS, DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY}:
+849:        if state in {NOTIFICATIONS, DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY}:
+851:            if state in {MANAGEMENT, RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY}:
+855:    if state in {DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY}:
+857:        if state in {OUTBOX, MANAGEMENT, RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY}:
+860:            delivery_tables = STATE_TABLES if state == STATE_AVAILABILITY else WEB_TABLES if state == WEB_LAUNCH else DELIVERY_TABLES
+864:            if state in {MANAGEMENT, RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY}:
+869:            if state in {RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY}:
+1000:    if state in {STATE_REQUESTS, NOTIFICATIONS, DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY}:
+1003:    if state in {NOTIFICATIONS, DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY}:
+1005:    if state in {DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY}:
+1006:        expected_labels |= {edge[0] for edge in (STATE_EDGES if state == STATE_AVAILABILITY else DELIVERY_EDGES)}
+1007:    if state in {OUTBOX, MANAGEMENT, RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY}:
+1009:    if state in {MANAGEMENT, RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY}:
+1011:    if state in {RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY}:
+1068:    if state in {STATE_REQUESTS, NOTIFICATIONS, DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY}:
+1070:    if state in {NOTIFICATIONS, DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY}:
+1072:    if state in {DELIVERY, OUTBOX, MANAGEMENT, RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY}:
+1073:        expected.update(tuple(edge) for edge in (STATE_EDGES if state == STATE_AVAILABILITY else WEB_EDGES if state == WEB_LAUNCH else DELIVERY_EDGES))
+1074:    if state in {OUTBOX, MANAGEMENT, RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY}:
+1076:    if state in {MANAGEMENT, RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY}:
+1078:    if state in {RELEASE_APPROVALS, WEB_LAUNCH, STATE_AVAILABILITY}:
+"""Stage 3 test-only plugin, explicitly loaded BEFORE collection with -p.
+System.Management.Automation.RemoteException
+Supported PowerShell invocation (from the website root):
+  $env:PYTEST_DISABLE_PLUGIN_AUTOLOAD='1'; $env:PYTHONPATH="$PWD;$PWD/tests"
+  $env:PYTEST_ADDOPTS=''; $env:PYTEST_PLUGINS=''
+  .venv/Scripts/python.exe -B -m pytest -p migration_offline -q <APPROVED_TESTS>
+APPROVED_TESTS below is the exact bounded file inventory; --collect-only is safe.
+System.Management.Automation.RemoteException
+Guards cover the declared Python APIs, exposed native Psycopg aliases, native
+wrapper imports, ctypes loading/symbol lookup and private file opens. All
+connections/credentials in these tests must be synthetic. Operational records
+are confined to test temporary directories. This is NOT OS isolation: malicious native code, cached
+native function pointers or arbitrary alternate FFI are outside this trusted
+test scope. Never extend the scope to those interfaces without separate review.
+"""
+System.Management.Automation.RemoteException
+import os
+import asyncio
+import ctypes
+import importlib.abc
+from pathlib import Path
+import socket
+import sqlite3
+import sqlite3.dbapi2
+import _sqlite3
+import ssl
+import subprocess
+import sys
+from types import ModuleType, SimpleNamespace
+from unittest.mock import Mock
+System.Management.Automation.RemoteException
+import psycopg
+import pytest
+import sqlalchemy
+import sqlalchemy.engine.create
+from sqlalchemy.engine import Engine
+System.Management.Automation.RemoteException
+# pytest's trusted Windows console adapter resolves kernel32 symbols on import.
+# Load it before denying new FFI access; it has no credential/database interface.
+if sys.platform == "win32":
+    import colorama
+    # Flask's pinned Click console adapter also resolves kernel32 console
+    # symbols on import. Preload this trusted UI dependency before the same
+    # FFI denial; it has no credential/database interface.
+    import click
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+ROOT = Path(__file__).resolve().parents[1]
+SECRET = "STAGE3-SYNTHETIC-NOT-A-DATABASE-PASSWORD:@/├â╞Æ├é┬⌐"
+ATTEMPTS = []
+EARLY_REGISTERED = False
+PRODUCTION_IMPORTS = []
+APPROVED_TESTS = frozenset({
+    "tests/test_failure_diagnostics.py",
+    "tests/test_database_config.py", "tests/test_migration_config.py",
+    "tests/test_migration_artifacts.py", "tests/test_migration_authorization.py",
+    "tests/test_migration_catalog.py", "tests/test_migration_runner.py",
+    "tests/test_migration_provenance.py",
+    "tests/test_migration_operational.py",
+    "tests/test_state_requests.py", "tests/test_state_request_migration.py",
+    "tests/test_notifications.py", "tests/test_notification_migration.py",
+    "tests/test_public_confirmation.py",
+    "tests/test_notification_lifecycle_repair.py", "tests/test_webhook_guard.py",
+    "tests/test_confirmation_processor.py",
+    "tests/test_confirmation_schedule.py",
+    "tests/test_notification_management.py", "tests/test_brevo_unsubscribe.py",
+    "tests/test_notification_management_migration.py",
+    "tests/test_controlled_confirmation.py", "tests/test_testing_https.py",
+    "tests/test_operational_safeguards.py",
+    "tests/test_integrations.py",
+    "tests/test_development_integrations.py",
+    "tests/test_contact.py",
+    "tests/test_notification_delivery.py", "tests/test_notification_delivery_migration.py",
+    "tests/test_confirmation_outbox.py", "tests/test_confirmation_outbox_migration.py",
+    "tests/test_brevo.py", "tests/test_notification_dispatch.py",
+})
+_guard = pytest.MonkeyPatch()
+_REAL_AUDIT = str(Path(os.environ.get('LOCALAPPDATA', 'C:/unavailable')) /
+                  'OAF Website' / 'BootstrapAudit').replace('\\', '/').lower()
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+class OfflineAccess(BaseException):
+    """Cannot be swallowed by production's ordinary exception classification."""
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+def denied(*args, **kwargs):
+    ATTEMPTS.append("external access denied")
+    raise OfflineAccess("Stage 3 offline isolation denied external access")
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+def _private(path):
+    if not isinstance(path, (str, bytes, os.PathLike)):
+        return False
+    value = "/" + os.fsdecode(path).replace("\\", "/").lower()
+    return ("/config/local/" in value or "/secrets/" in value
+            or _REAL_AUDIT in value
+            or "/.aws/" in value or "/.ssh/" in value
+            or Path(value).name.startswith(".env")
+            or Path(value).name in {"keyringrc.cfg", "credentials", "pgpass.conf", ".pgpass"})
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+def _audit_guard(event, args):
+    if event in {"socket.connect", "socket.bind", "socket.getaddrinfo",
+                 "socket.gethostbyname", "socket.gethostbyaddr", "socket.getnameinfo",
+                 "socket.sendto", "socket.sendmsg", "subprocess.Popen", "os.system",
+                 "os.exec", "os.posix_spawn", "os.spawn", "os.fork", "os.forkpty",
+                 "os.startfile", "os.startfile/2", "sqlite3.connect",
+                 "ctypes.dlopen", "ctypes.dlsym", "ctypes.dlsym/handle"}:
+        denied()
+    if event == "open" and _private(args[0]):
+        denied()
+    if event in {'os.listdir', 'os.scandir'} and args and _private(args[0]):
+        denied()
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+if any(name == "oaf_website" or name.startswith("oaf_website.") for name in sys.modules):
+    raise pytest.UsageError("Offline plugin loaded after production imports")
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+class _ImportGuard(importlib.abc.MetaPathFinder):
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname == "oaf_website" or fullname.startswith("oaf_website."):
+            require_early_registration()
+            PRODUCTION_IMPORTS.append(fullname)
+        # Alternate libpq/credential wrappers are unsupported; deny BEFORE load.
+        if fullname.startswith(("psycopg.pq.pq_ctypes", "psycopg.pq._pq_ctypes",
+                                "psycopg_c", "win32ctypes.core", "cffi")):
+            denied()
+        return None
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+class _DeniedNativeConnection:
+    def __new__(cls, *args, **kwargs):
+        denied()
+    connect = connect_start = connect_poll = reset = reset_start = reset_poll = ping = staticmethod(denied)
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+# Native types are immutable in the installed binary distribution. Replace
+# every exposed alias instead of pretending setattr on the C type succeeded.
+for native_name in ("PGconn", "PGcancel", "PGcancelConn"):
+    native = getattr(psycopg.pq, native_name)
+    for module in tuple(sys.modules.values()):
+        if module is not None and getattr(module, "__name__", "").startswith("psycopg"):
+            if vars(module).get(native_name) is native:
+                _guard.setattr(module, native_name, _DeniedNativeConnection)
+del native
+System.Management.Automation.RemoteException
+GUARDED_APIS = [
+    (psycopg, "connect"), (psycopg.Connection, "connect"),
+    (psycopg.AsyncConnection, "connect"), (psycopg.pq, "import_from_libpq"),
+    (psycopg.generators, "connect"), (psycopg.generators, "_connect"),
+    (sqlalchemy, "create_engine"), (sqlalchemy.engine.create, "create_engine"),
+    (Engine, "connect"), (Engine, "raw_connection"),
+]
+# The binary generator can call libpq directly, bypassing pq.PGconn's alias.
+.github/workflows\linux-tests.yml:39:        run: .venv/bin/python -B ops/ci_pytest.py shard --shard ${{ matrix.shard }}
+.github/workflows\linux-tests.yml:46:            .pytest_cache/ci/run/shard-${{ matrix.shard }}/manifest.json
+.github/workflows\linux-tests.yml:47:            .pytest_cache/ci/run/shard-${{ matrix.shard }}/arcs.json
+.github/workflows\linux-tests.yml:68:          path: .pytest_cache/ci/downloads
+.github/workflows\linux-tests.yml:70:        run: python -B ops/ci_pytest.py combine
+System.Management.Automation.RemoteException
+codex
+The chain ends at `0009_state_availability`, whose parent is `0008_web_launch`. IΓÇÖll update the expected head and add that history entry, preserving every existing assertion, then run the focused test with the offline guard.
+apply patch
+patch: completed
+C:\Users\ovisa\Documents\OAF_App\Development\OAF Website\tests\test_migration_authorization.py
+diff --git a/tests/test_migration_authorization.py b/tests/test_migration_authorization.py
+index 04699d0db11ecf17b98c5757ff753fd0ddaa8e0a..9b16376d8af508787178d7eb83714697c9551a13
+--- a/tests/test_migration_authorization.py
++++ b/tests/test_migration_authorization.py
+@@ -140,8 +140,9 @@
+         'CONSTRAINT alembic_version_pkc PRIMARY KEY (version_num) )')
+     script = ScriptDirectory.from_config(Config(str(ROOT / "alembic.ini")))
+     assert script.get_bases() == [v.BASELINE]
+-    assert script.get_heads() == [v.WEB_LAUNCH]
++    assert script.get_heads() == [v.STATE_AVAILABILITY]
+     assert [(r.revision, r.down_revision) for r in script.walk_revisions()] == [
++        (v.STATE_AVAILABILITY, v.WEB_LAUNCH),
+         (v.WEB_LAUNCH, v.RELEASE_APPROVALS),
+         (v.RELEASE_APPROVALS, v.MANAGEMENT),
+         (v.MANAGEMENT, v.OUTBOX),
+System.Management.Automation.RemoteException
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$env:PYTEST_DISABLE_PLUGIN_AUTOLOAD = '"'1'
+"'$env:PYTHONPATH = "$PWD;$PWD/tests"
+$env:PYTEST_ADDOPTS = '"''
+"'$env:PYTEST_PLUGINS = '"''
+.venv/Scripts/python.exe -B -m pytest -p migration_offline -q tests/test_migration_authorization.py::test_stage5_installed_alembic_schema_transaction_and_history" in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+ succeeded in 2087ms:
+..                                                                       [100%]Stage 3 isolation: zero unexpected external-access attempts
+System.Management.Automation.RemoteException
+2 passed in 0.57s
+System.Management.Automation.RemoteException
+codex
+Corrected [the test expectations](<C:/Users/ovisa/Documents/OAF_App/Development/OAF Website/tests/test_migration_authorization.py:143>):
+System.Management.Automation.RemoteException
+- Expected head: `0009_state_availability`.
+- Added `0009 ΓåÆ 0008` to history, preserving all historical assertions.
+System.Management.Automation.RemoteException
+Focused validation: **PASS ΓÇö 2 parameterized cases**, zero unexpected external-access attempts.
+System.Management.Automation.RemoteException
+Application code and migrations remained unchanged. No database execution, broad tests, or Git operations.
+tokens used
+16,903
+Corrected [the test expectations](<C:/Users/ovisa/Documents/OAF_App/Development/OAF Website/tests/test_migration_authorization.py:143>):
+
+- Expected head: `0009_state_availability`.
+- Added `0009 ΓåÆ 0008` to history, preserving all historical assertions.
+
+Focused validation: **PASS ΓÇö 2 parameterized cases**, zero unexpected external-access attempts.
+
+Application code and migrations remained unchanged. No database execution, broad tests, or Git operations.
+PROJECT: OAF WEBSITE
+TASK: WU3 — Correct Confirmed CI Migration History Test
+STATUS: PASS
+UTC: 2026-10-29T02:44:20.2695599Z
+EXECUTION: PASS
+NATIVE_EXIT: 0
+FIRST_FAILURE: NONE
+REPORTING_FAILURES: 
+EVIDENCE: C:\Users\ovisa\Documents\OAF_App\Development\OAF Website\logs\codex-20261029T0244202705588Z-387612ae924c4bf58da7e18ce97c0c2d.log
+
+ORIGINAL CODEX REPORT:
+Corrected [the test expectations](<C:/Users/ovisa/Documents/OAF_App/Development/OAF Website/tests/test_migration_authorization.py:143>):
+
+- Expected head: `0009_state_availability`.
+- Added `0009 ΓåÆ 0008` to history, preserving all historical assertions.
+
+Focused validation: **PASS ΓÇö 2 parameterized cases**, zero unexpected external-access attempts.
+
+Application code and migrations remained unchanged. No database execution, broad tests, or Git operations.
+DONE - VERIFIED - new output is on the clipboard. Exact ordinal full-content read-back PASS.

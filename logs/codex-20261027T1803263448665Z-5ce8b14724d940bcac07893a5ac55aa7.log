@@ -1,0 +1,559 @@
+PROJECT: GRAMANNA APP
+TASK: Correct Invoke-OAFCodex Project Reporting
+STATUS: INCOMPLETE
+UTC: 2026-10-27T18:03:26.3448665Z
+Mode: SOL / EXTRA HIGH
+Model: gpt-6.1-sol
+Reasoning: xhigh
+Sandbox: workspace-write
+Codex is running...
+OpenAI Codex v0.164.0
+--------
+workdir: C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+model: gpt-6.1-sol
+provider: openai
+approval: on-request
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 01a17e88-080f-7a21-8f89-f8a2bad0d085
+--------
+user
+PROJECT: OAF WEBSITE
+TASK: Correct Invoke-OAFCodex Project Reporting
+STATUS: INCOMPLETE
+System.Management.Automation.RemoteException
+OBJECTIVE
+System.Management.Automation.RemoteException
+Correct the recurring incorrect GRAMANNA APP heading
+in OAF Website executions.
+System.Management.Automation.RemoteException
+Use the existing authoritative Invoke-OAFCodex
+implementation. Do not create another launcher.
+System.Management.Automation.RemoteException
+MANDATORY 5P
+System.Management.Automation.RemoteException
+SIMPLE. DIRECT. SUFFICIENT. EFFICIENT. SAFE.
+System.Management.Automation.RemoteException
+SCOPE
+System.Management.Automation.RemoteException
+1. Locate the actual authoritative Invoke-OAFCodex
+   definition and its existing project-label logic.
+System.Management.Automation.RemoteException
+2. Inspect only the code controlling the project
+   heading and necessary reporting consumers.
+System.Management.Automation.RemoteException
+3. Confirm the cause of the hardcoded or incorrectly
+   selected GRAMANNA APP label.
+System.Management.Automation.RemoteException
+4. Make the smallest correction so project identity
+   comes from the verified execution repository:
+System.Management.Automation.RemoteException
+   OAF Website -> OAF WEBSITE
+   GraManna    -> GRAMANNA APP
+System.Management.Automation.RemoteException
+5. Preserve all existing:
+   - Invocation parameters and execution behavior
+   - Live terminal progress
+   - Simultaneous complete logging
+   - Native exit codes
+   - Final clipboard delivery and exact read-back
+   - Existing completion alert
+   - Error handling and authorization boundaries
+System.Management.Automation.RemoteException
+6. Ensure the three-line PROJECT/TASK/STATUS
+   heading is consistent across the existing
+   terminal report, log, clipboard and alert.
+System.Management.Automation.RemoteException
+7. Verify both repository identity cases through
+   proportional offline tests without launching
+   nested Codex jobs or operational processes.
+System.Management.Automation.RemoteException
+   Do not require visual-alert verification.
+System.Management.Automation.RemoteException
+SAFETY
+System.Management.Automation.RemoteException
+If the authoritative launcher resides outside the
+authorized writable workspace, do not bypass
+sandbox restrictions or modify it indirectly.
+System.Management.Automation.RemoteException
+Report its exact source location and the smallest
+required authorized correction.
+System.Management.Automation.RemoteException
+Preserve all owner work, files and configuration.
+No Git staging, commit, push, reset or clean.
+No OAF/GraManna application changes.
+No database, credential, service or scheduler actions.
+No notification activation.
+System.Management.Automation.RemoteException
+STOP CONDITION
+System.Management.Automation.RemoteException
+Stop when the existing helper's project selection
+is corrected and both identities are verified,
+or at the first genuine authorization or source
+blocker.
+System.Management.Automation.RemoteException
+REPORTING
+System.Management.Automation.RemoteException
+Begin the ORIGINAL Codex report with:
+System.Management.Automation.RemoteException
+PROJECT: OAF WEBSITE
+TASK: Correct Invoke-OAFCodex Project Reporting
+STATUS: PASS / BLOCKED / ERROR / INCOMPLETE
+System.Management.Automation.RemoteException
+Report the source, exact correction, validation,
+preserved behavior and any remaining dependency.
+System.Management.Automation.RemoteException
+Explicitly distinguish the original Codex heading
+from the outer helper heading until independently
+verified.
+System.Management.Automation.RemoteException
+One consolidated report. No extra reporting tools.
+No interim clipboard writes or alerts.
+System.Management.Automation.RemoteException
+5P: FIX THE EXISTING SOURCE. VERIFY BOTH PROJECTS.
+System.Management.Automation.RemoteException
+codex
+IΓÇÖll locate the authoritative `Invoke-OAFCodex` definition, inspect its project-heading logic and reporting consumers, and check whether the source is within the authorized workspace.
+System.Management.Automation.RemoteException
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Location
+rg --files --hidden -g AGENTS.md -g '*OAFCodex*' -g '*profile*' -g '"'!node_modules'"' -g '"'!.git'"' -g '"'!dist'"' -g '"'!build'"'
+Get-Command Invoke-OAFCodex -All -ErrorAction SilentlyContinue | Select-Object CommandType, Name, Source, ModuleName, Definition | Format-List
+"'$PROFILE | Select-Object * | Format-List' in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+ succeeded in 249ms:
+System.Management.Automation.RemoteException
+Path                                                    
+----                                                    
+C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+AllUsersAllHosts       : C:\Windows\System32\WindowsPowerShell\v1.0\profile.ps1
+AllUsersCurrentHost    : C:\Windows\System32\WindowsPowerShell\v1.0\Microsoft.PowerShell_profile.ps1
+CurrentUserAllHosts    : C:\Users\ovisa\Documents\WindowsPowerShell\profile.ps1
+CurrentUserCurrentHost : C:\Users\ovisa\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1
+Length                 : 75
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$taskDirectory = Get-Item -LiteralPath (Get-Location).Path
+while ($null -ne $taskDirectory) {
+  $taskInstructions = Join-Path $taskDirectory.FullName '"'AGENTS.md'
+  if (Test-Path -LiteralPath "'$taskInstructions) { Write-Output "INSTRUCTIONS: $taskInstructions"; Get-Content -LiteralPath $taskInstructions }
+  $taskDirectory = $taskDirectory.Parent
+}
+Get-ChildItem -LiteralPath . -Force | Select-Object Mode, Name
+Get-Command rg, pwsh, powershell -ErrorAction SilentlyContinue | Select-Object Name, Source' in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$taskProfilePaths = @(
+  '"'C:\\Users\\ovisa\\Documents\\WindowsPowerShell\\profile.ps1',
+  'C:\\Users\\ovisa\\Documents\\WindowsPowerShell\\Microsoft.PowerShell_profile.ps1',
+  'C:\\Users\\ovisa\\Documents\\PowerShell\\profile.ps1',
+  'C:\\Users\\ovisa\\Documents\\PowerShell\\Microsoft.PowerShell_profile.ps1',
+  'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\profile.ps1',
+  'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\Microsoft.PowerShell_profile.ps1'
+)
+foreach ("'$taskProfilePath in $taskProfilePaths) {
+  if (Test-Path -LiteralPath $taskProfilePath) {
+    Get-Item -LiteralPath $taskProfilePath | Select-Object FullName, Length
+    rg -n -i '"'Invoke-OAFCodex|GRAMANNA|OAF|\\.\\s+[\"\\x27]|Import-Module|Join-Path|\\.ps1' -- "'$taskProfilePath
+  }
+}
+rg -n --hidden -g '"'*.ps1' -g '*.psm1' -g '*.psd1' -g '"'!node_modules'"' -g '"'!.git'"' -g '"'!dist'"' -g '"'!build'"' 'Invoke-OAFCodex|GRAMANNA APP' ." in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+ exited 1 in 319ms:
+System.Management.Automation.RemoteException
+Mode   Name                       
+----   ----                       
+d--h-- .git                       
+d----- .github                    
+d----- .pytest_cache              
+d----- .venv                      
+d----- .vscode                    
+d----- assets                     
+d----- config                     
+d----- docs                       
+d----- instance                   
+d----- logs                       
+d----- migrations                 
+d----- oaf_website                
+d----- ops                        
+d----- tests                      
+-a---- .gitignore                 
+-a---- about.html                 
+-a---- alembic.ini                
+-a---- confirm-email.html         
+-a---- contact.html               
+-a---- faq.html                   
+-a---- gramanna.html              
+-a---- index.html                 
+-a---- manage-notifications.html  
+-a---- README.md                  
+-a---- requirements-dev.txt       
+-a---- requirements-migrations.txt
+-a---- requirements.txt           
+-a---- styles.css                 
+-a---- support.html               
+       rg.exe                     
+       powershell.exe             
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+ exited 1 in 247ms:
+System.Management.Automation.RemoteException
+rg: regex parse error:
+    (?:Invoke-OAFCodex|GRAMANNA|OAF|\.\s+[\x27]|Import-Module|Join-Path|\.ps1 -- C:\Users\ovisa\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1)
+                                                                                     ^
+error: invalid hexadecimal digit
+FullName                                                                    Length
+--------                                                                    ------
+C:\Users\ovisa\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1  15594
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$taskProfilePath = '"'C:\\Users\\ovisa\\Documents\\WindowsPowerShell\\Microsoft.PowerShell_profile.ps1'
+rg -n -i 'Invoke-OAFCodex|GRAMANNA|OAF|Import-Module|Join-Path|\\.ps1|PROJECT:|TASK:|STATUS:|Clipboard|MessageBox|Toast|NotifyIcon|Tee-Object' -- "'$taskProfilePath
+rg --files --hidden -g '"'*.ps1' -g '*.psm1' -g '*.psd1' -g '"'!node_modules'"' -g '"'!.git'"' -g '"'!.venv'"' -g '"'!dist'"' -g '"'!build'"' ." in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+ succeeded in 281ms:
+1:function Show-OAFPowerShellAlert {
+7:        [string]$Title = 'OAF PowerShell',
+18:                $Message = 'PowerShell task completed successfully. Output is ready on the clipboard.'
+143:function Show-OAFCodexAlert {
+151:        Show-OAFPowerShellAlert `
+153:            -Title 'OAF CODEX COMPLETE' `
+154:            -Message 'Codex finished successfully. The final report is on the clipboard.'
+157:        Show-OAFPowerShellAlert `
+159:            -Title 'OAF CODEX NEEDS ATTENTION' `
+164:function Invoke-OAFCodex {
+206:            Show-OAFCodexAlert -Status failure
+214:    if ($Prompt -match '(?m)^TASK:[ \t]*(.+)') { $task = $Matches[1].Trim() }
+215:    $heading = "PROJECT: GRAMANNA APP`nTASK: $task`nSTATUS: INCOMPLETE"
+242:        $logDirectory = Join-Path (Get-Location).Path 'logs'
+244:        $logPath = Join-Path $logDirectory "codex-$([DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffffffZ'))-$([Guid]::NewGuid().ToString('N')).log"
+316:        elseif ($originalReport -match '(?m)^STATUS:[ \t]*(PASS|BLOCKED|ERROR|INCOMPLETE)[ \t]*\r?$') {
+327:        "PROJECT: GRAMANNA APP`nTASK: $task`nSTATUS: $status`nUTC: $utc`nEXECUTION: $technical`nNATIVE_EXIT: $($state.NativeExit)`nFIRST_FAILURE: $first`nREPORTING_FAILURES: $($state.Reporting -join '; ')`nEVIDENCE: $logPath`n`nORIGINAL CODEX REPORT:`n$originalReport"
+341:    $clipboardVerified = $false
+342:    $deliveryOperation = 'clipboard-clear'
+346:        if ($clearExit -ne 0) { throw [System.InvalidOperationException]::new('Clipboard clear failed.') }
+347:        $deliveryOperation = 'clipboard-write'
+348:        Set-Clipboard -Value $report -ErrorAction Stop
+349:        $deliveryOperation = 'clipboard-readback'
+350:        $verify = Get-Clipboard -Raw -ErrorAction Stop
+351:        $deliveryOperation = 'clipboard-compare'
+353:            throw [System.InvalidOperationException]::new('Clipboard content mismatch.')
+355:        $clipboardVerified = $true
+356:        $receipt = 'DONE - VERIFIED - new output is on the clipboard. Exact ordinal full-content read-back PASS.'
+359:        $receipt = "ERROR - clipboard did not update correctly. Do not Ctrl+V yet. operation=$deliveryOperation code=$($_.Exception.GetType().Name) utc=$([DateTime]::UtcNow.ToString('o')); EXECUTION=$technical; NATIVE_EXIT=$($state.NativeExit)"
+373:        $alertStatus = if ($status -eq 'PASS' -and $clipboardVerified -and $state.Reporting.Count -eq 0) { 'success' } else { 'failure' }
+374:        Show-OAFCodexAlert -Status $alertStatus
+380:function Invoke-OAFCodexClipboard {
+391:    $promptText = Get-Clipboard -Raw
+394:        Write-Host 'ERROR ΓÇö Clipboard prompt is empty.'
+395:        Show-OAFCodexAlert -Status failure
+399:    Invoke-OAFCodex `
+.\tests\Test-DevelopmentIntegrationCredentials.ps1
+.\ops\Start-DevelopmentWebsite.ps1
+.\ops\Set-DevelopmentIntegrationCredentials.ps1
+.\ops\Set-DevelopmentContactSmtpCredential.ps1
+.\ops\Record-Testing0003Reconciliation.ps1
+.\ops\Record-Testing0003Approvals.ps1
+.\ops\Record-Development0003Prerequisites.ps1
+.\ops\Record-Development0002Prerequisites.ps1
+.\ops\Invoke-StateRequestLiveValidation.ps1
+.\ops\Invoke-NotificationLiveValidation.ps1
+System.Management.Automation.RemoteException
+codex
+The default PowerShell profile contains `Invoke-OAFCodex`, with `GRAMANNA APP` hardcoded in both report headings. That file is outside the authorized writable workspace. IΓÇÖll leave it unchanged and read the relevant reporting code to identify the smallest required correction.
+System.Management.Automation.RemoteException
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$taskSourcePath = '"'C:\\Users\\ovisa\\Documents\\WindowsPowerShell\\Microsoft.PowerShell_profile.ps1'
+"'$taskSourceLines = Get-Content -LiteralPath $taskSourcePath
+$taskReadRanges = @(@(143,240), @(290,378))
+foreach ($taskReadRange in $taskReadRanges) {
+  for ($taskLineNumber = $taskReadRange[0]; $taskLineNumber -le $taskReadRange[1]; $taskLineNumber++) {
+    '"'{0}: {1}' -f "'$taskLineNumber, $taskSourceLines[$taskLineNumber - 1]
+  }
+}
+$taskSourceItem = Get-Item -LiteralPath $taskSourcePath
+$taskWorkspacePath = (Get-Item -LiteralPath (Get-Location).Path).FullName.TrimEnd('"'\\') + '\\'
+[pscustomobject]@{ Source = "'$taskSourceItem.FullName; LinkType = $taskSourceItem.LinkType; LinkTarget = $taskSourceItem.Target; InsideAuthorizedWorkspace = $taskSourceItem.FullName.StartsWith($taskWorkspacePath, [System.StringComparison]::OrdinalIgnoreCase) } | Format-List' in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+ succeeded in 274ms:
+143: function Show-OAFCodexAlert {
+144:     param(
+145:         [Parameter(Mandatory = $true)]
+146:         [ValidateSet('success', 'failure')]
+147:         [string]$Status
+148:     )
+149: 
+150:     if ($Status -eq 'success') {
+151:         Show-OAFPowerShellAlert `
+152:             -Status success `
+153:             -Title 'OAF CODEX COMPLETE' `
+154:             -Message 'Codex finished successfully. The final report is on the clipboard.'
+155:     }
+156:     else {
+157:         Show-OAFPowerShellAlert `
+158:             -Status failure `
+159:             -Title 'OAF CODEX NEEDS ATTENTION' `
+160:             -Message 'Codex did not complete successfully. Check the terminal.'
+161:     }
+162: }
+163: 
+164: function Invoke-OAFCodex {
+165:     param(
+166:         [Parameter(Mandatory = $true)]
+167:         [string]$Prompt,
+168: 
+169:         [Parameter(Mandatory = $true)]
+170:         [ValidateSet('SOL / HIGH', 'SOL / EXTRA HIGH', 'SOL / MAX', 'ASTRA / EXTRA HIGH', 'ASTRA / MAX')]
+171:         [string]$Mode,
+172: 
+173:         [Parameter(Mandatory = $true)]
+174:         [ValidateSet('read-only', 'workspace-write')]
+175:         [string]$Sandbox
+176:     )
+177: 
+178:     switch ($Mode) {
+179:         'SOL / HIGH' {
+180:             $model = 'gpt-6.1-sol'
+181:             $reasoning = 'high'
+182:         }
+183: 
+184:         'SOL / EXTRA HIGH' {
+185:             $model = 'gpt-6.1-sol'
+186:             $reasoning = 'xhigh'
+187:         }
+188: 
+189:         'SOL / MAX' {
+190:             $model = 'gpt-6.1-sol'
+191:             $reasoning = 'max'
+192:         }
+193: 
+194:         'ASTRA / EXTRA HIGH' {
+195:             $model = 'gpt-6-astra'
+196:             $reasoning = 'xhigh'
+197:         }
+198: 
+199:         'ASTRA / MAX' {
+200:             $model = 'gpt-6-astra'
+201:             $reasoning = 'max'
+202:         }
+203: 
+204:         default {
+205:             Write-Host "ERROR ΓÇö Unsupported CODEX MODE: $Mode"
+206:             Show-OAFCodexAlert -Status failure
+207:             return
+208:         }
+209:     }
+210: 
+211:     $ErrorActionPreference = 'Stop'
+212:     $utc = [DateTime]::UtcNow.ToString('o')
+213:     $task = 'Codex execution'
+214:     if ($Prompt -match '(?m)^TASK:[ \t]*(.+)') { $task = $Matches[1].Trim() }
+215:     $heading = "PROJECT: GRAMANNA APP`nTASK: $task`nSTATUS: INCOMPLETE"
+216:     $state = @{
+217:         NativeExit = $null
+218:         ExecutionFailure = $null
+219:         Reporting = [System.Collections.Generic.List[string]]::new()
+220:         Stdout = [System.Collections.Generic.List[string]]::new()
+221:         Writer = $null
+222:     }
+223:     $logPath = $null
+224:     $writer = $null
+225:     Write-Host "$heading`nUTC: $utc`nMode: $Mode`nModel: $model`nReasoning: $reasoning`nSandbox: $Sandbox"
+226: 
+227:     # Keep live output and the complete combined native streams together.
+228:     # Logging failures are secondary evidence; they must not stop native capture.
+229:     $emit = {
+230:         param([string]$Text)
+231:         Write-Host $Text
+232:         if ($null -ne $state.Writer) {
+233:             try { $state.Writer.WriteLine($Text) }
+234:             catch {
+235:                 $state.Reporting.Add("operation=log-write code=$($_.Exception.GetType().Name) utc=$([DateTime]::UtcNow.ToString('o'))")
+236:                 $state.Writer = $null
+237:             }
+238:         }
+239:     }
+240: 
+290:                 }
+291:             } | ForEach-Object {
+292:                 $line = [string]$_
+293:                 if ($_ -isnot [System.Management.Automation.ErrorRecord]) { $state.Stdout.Add($line) }
+294:                 & $emit $line
+295:             }
+296:         }
+297:         catch {
+298:             $state.ExecutionFailure = "operation=codex code=$($_.Exception.GetType().Name) utc=$([DateTime]::UtcNow.ToString('o'))"
+299:         }
+300:     }
+301: 
+302:     if ($null -ne $writer) {
+303:         try { $writer.Dispose() }
+304:         catch { $state.Reporting.Add("operation=log-close code=$($_.Exception.GetType().Name) utc=$([DateTime]::UtcNow.ToString('o'))") }
+305:         $state.Writer = $null
+306:     }
+307: 
+308:     $technical = if ($null -eq $state.NativeExit) { 'NOT_RUN' } elseif ($state.NativeExit -ne 0) { 'ERROR' } else { 'PASS' }
+309:     $originalReport = $state.Stdout -join [Environment]::NewLine
+310:     $status = $technical
+311:     if ($technical -eq 'PASS') {
+312:         if ([string]::IsNullOrWhiteSpace($originalReport)) {
+313:             $status = 'INCOMPLETE'
+314:             $state.Reporting.Add("operation=report code=EMPTY_STDOUT utc=$([DateTime]::UtcNow.ToString('o'))")
+315:         }
+316:         elseif ($originalReport -match '(?m)^STATUS:[ \t]*(PASS|BLOCKED|ERROR|INCOMPLETE)[ \t]*\r?$') {
+317:             $status = $Matches[1]
+318:         }
+319:     }
+320:     elseif ($technical -eq 'NOT_RUN') { $status = 'ERROR' }
+321:     if ($status -eq 'PASS' -and $state.Reporting.Count -gt 0) { $status = 'ERROR' }
+322:     $buildReport = {
+323:         $first = $state.ExecutionFailure
+324:         if (-not $first -and $state.Reporting.Count -gt 0) { $first = $state.Reporting[0] }
+325:         if (-not $first -and $status -ne 'PASS') { $first = "operation=codex-report code=TASK_$status utc=$utc; see original report" }
+326:         if (-not $first) { $first = 'NONE' }
+327:         "PROJECT: GRAMANNA APP`nTASK: $task`nSTATUS: $status`nUTC: $utc`nEXECUTION: $technical`nNATIVE_EXIT: $($state.NativeExit)`nFIRST_FAILURE: $first`nREPORTING_FAILURES: $($state.Reporting -join '; ')`nEVIDENCE: $logPath`n`nORIGINAL CODEX REPORT:`n$originalReport"
+328:     }
+329:     $report = & $buildReport
+330:     if ($logPath -and [System.IO.File]::Exists($logPath)) {
+331:         try { Add-Content -LiteralPath $logPath -Value $report -Encoding UTF8 -ErrorAction Stop }
+332:         catch {
+333:             $state.Reporting.Add("operation=report-log code=$($_.Exception.GetType().Name) utc=$([DateTime]::UtcNow.ToString('o'))")
+334:             if ($status -eq 'PASS') { $status = 'ERROR' }
+335:             $report = & $buildReport
+336:         }
+337:     }
+338: 
+339:     # The one completed payload precedes the one authoritative delivery attempt.
+340:     Write-Host $report
+341:     $clipboardVerified = $false
+342:     $deliveryOperation = 'clipboard-clear'
+343:     try {
+344:         '' | & "$env:SystemRoot\System32\clip.exe"
+345:         $clearExit = $global:LASTEXITCODE
+346:         if ($clearExit -ne 0) { throw [System.InvalidOperationException]::new('Clipboard clear failed.') }
+347:         $deliveryOperation = 'clipboard-write'
+348:         Set-Clipboard -Value $report -ErrorAction Stop
+349:         $deliveryOperation = 'clipboard-readback'
+350:         $verify = Get-Clipboard -Raw -ErrorAction Stop
+351:         $deliveryOperation = 'clipboard-compare'
+352:         if (-not [string]::Equals($verify, $report, [StringComparison]::Ordinal)) {
+353:             throw [System.InvalidOperationException]::new('Clipboard content mismatch.')
+354:         }
+355:         $clipboardVerified = $true
+356:         $receipt = 'DONE - VERIFIED - new output is on the clipboard. Exact ordinal full-content read-back PASS.'
+357:     }
+358:     catch {
+359:         $receipt = "ERROR - clipboard did not update correctly. Do not Ctrl+V yet. operation=$deliveryOperation code=$($_.Exception.GetType().Name) utc=$([DateTime]::UtcNow.ToString('o')); EXECUTION=$technical; NATIVE_EXIT=$($state.NativeExit)"
+360:         $state.Reporting.Add($receipt)
+361:     }
+362:     Write-Host $receipt
+363:     if ($logPath -and [System.IO.File]::Exists($logPath)) {
+364:         try { Add-Content -LiteralPath $logPath -Value $receipt -Encoding UTF8 -ErrorAction Stop }
+365:         catch {
+366:             $state.Reporting.Add("operation=delivery-log code=$($_.Exception.GetType().Name) utc=$([DateTime]::UtcNow.ToString('o'))")
+367:             Write-Host "REPORTING_FAILURE: $($state.Reporting[$state.Reporting.Count - 1]); EXECUTION=$technical; NATIVE_EXIT=$($state.NativeExit)"
+368:         }
+369:     }
+370: 
+371:     # The existing alert remains best-effort. Its appearance is not a task gate.
+372:     try {
+373:         $alertStatus = if ($status -eq 'PASS' -and $clipboardVerified -and $state.Reporting.Count -eq 0) { 'success' } else { 'failure' }
+374:         Show-OAFCodexAlert -Status $alertStatus
+375:     }
+376:     catch { Write-Host "ALERT: best-effort unavailable; EXECUTION=$technical; NATIVE_EXIT=$($state.NativeExit)" }
+377:     finally { $global:LASTEXITCODE = if ($null -eq $state.NativeExit) { 1 } else { $state.NativeExit } }
+378: }
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+Source                    : C:\Users\ovisa\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1
+LinkType                  : 
+LinkTarget                : {}
+InsideAuthorizedWorkspace : False
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+codex
+PROJECT: OAF WEBSITE
+TASK: Correct Invoke-OAFCodex Project Reporting
+STATUS: BLOCKED
+System.Management.Automation.RemoteException
+The existing definition is in [Microsoft.PowerShell_profile.ps1](C:/Users/ovisa/Documents/WindowsPowerShell/Microsoft.PowerShell_profile.ps1:164), outside the authorized writable workspace. No changes were made.
+System.Management.Automation.RemoteException
+Source inspection confirms:
+System.Management.Automation.RemoteException
+- Lines **215 and 327** hardcode `PROJECT: GRAMANNA APP`.
+- Terminal, log and clipboard consume the final `$report`.
+- The existing alert receives only success/failure and contains no project heading.
+System.Management.Automation.RemoteException
+The smallest required authorized correction is to verify the execution repository root, map `OAF Website` ΓåÆ `OAF WEBSITE` and `GraManna` ΓåÆ `GRAMANNA APP`, replace both hardcoded labels with that resolved identity, and pass the final three-line heading into the existing alert.
+System.Management.Automation.RemoteException
+Validation stopped at the authorization boundary. Neither repository identity has been tested against corrected source. No nested Codex jobs, clipboard writes, alerts, application changes or Git mutations were performed.
+System.Management.Automation.RemoteException
+Invocation parameters, execution, live progress, complete logging, native exit codes, clipboard delivery/read-back, completion alerts and error handling remain unchanged.
+System.Management.Automation.RemoteException
+This is the **original Codex heading**. The **outer helper heading remains uncorrected**; its runtime output was not independently verified.
+System.Management.Automation.RemoteException
+Remaining dependency: write authorization for the exact profile above.
+tokens used
+20,241
+PROJECT: OAF WEBSITE
+TASK: Correct Invoke-OAFCodex Project Reporting
+STATUS: BLOCKED
+
+The existing definition is in [Microsoft.PowerShell_profile.ps1](C:/Users/ovisa/Documents/WindowsPowerShell/Microsoft.PowerShell_profile.ps1:164), outside the authorized writable workspace. No changes were made.
+
+Source inspection confirms:
+
+- Lines **215 and 327** hardcode `PROJECT: GRAMANNA APP`.
+- Terminal, log and clipboard consume the final `$report`.
+- The existing alert receives only success/failure and contains no project heading.
+
+The smallest required authorized correction is to verify the execution repository root, map `OAF Website` ΓåÆ `OAF WEBSITE` and `GraManna` ΓåÆ `GRAMANNA APP`, replace both hardcoded labels with that resolved identity, and pass the final three-line heading into the existing alert.
+
+Validation stopped at the authorization boundary. Neither repository identity has been tested against corrected source. No nested Codex jobs, clipboard writes, alerts, application changes or Git mutations were performed.
+
+Invocation parameters, execution, live progress, complete logging, native exit codes, clipboard delivery/read-back, completion alerts and error handling remain unchanged.
+
+This is the **original Codex heading**. The **outer helper heading remains uncorrected**; its runtime output was not independently verified.
+
+Remaining dependency: write authorization for the exact profile above.
+PROJECT: GRAMANNA APP
+TASK: Correct Invoke-OAFCodex Project Reporting
+STATUS: BLOCKED
+UTC: 2026-10-27T18:03:26.3448665Z
+EXECUTION: PASS
+NATIVE_EXIT: 0
+FIRST_FAILURE: operation=codex-report code=TASK_BLOCKED utc=2026-10-27T18:03:26.3448665Z; see original report
+REPORTING_FAILURES: 
+EVIDENCE: C:\Users\ovisa\Documents\OAF_App\Development\OAF Website\logs\codex-20261027T1803263448665Z-5ce8b14724d940bcac07893a5ac55aa7.log
+
+ORIGINAL CODEX REPORT:
+PROJECT: OAF WEBSITE
+TASK: Correct Invoke-OAFCodex Project Reporting
+STATUS: BLOCKED
+
+The existing definition is in [Microsoft.PowerShell_profile.ps1](C:/Users/ovisa/Documents/WindowsPowerShell/Microsoft.PowerShell_profile.ps1:164), outside the authorized writable workspace. No changes were made.
+
+Source inspection confirms:
+
+- Lines **215 and 327** hardcode `PROJECT: GRAMANNA APP`.
+- Terminal, log and clipboard consume the final `$report`.
+- The existing alert receives only success/failure and contains no project heading.
+
+The smallest required authorized correction is to verify the execution repository root, map `OAF Website` ΓåÆ `OAF WEBSITE` and `GraManna` ΓåÆ `GRAMANNA APP`, replace both hardcoded labels with that resolved identity, and pass the final three-line heading into the existing alert.
+
+Validation stopped at the authorization boundary. Neither repository identity has been tested against corrected source. No nested Codex jobs, clipboard writes, alerts, application changes or Git mutations were performed.
+
+Invocation parameters, execution, live progress, complete logging, native exit codes, clipboard delivery/read-back, completion alerts and error handling remain unchanged.
+
+This is the **original Codex heading**. The **outer helper heading remains uncorrected**; its runtime output was not independently verified.
+
+Remaining dependency: write authorization for the exact profile above.
+DONE - VERIFIED - new output is on the clipboard. Exact ordinal full-content read-back PASS.

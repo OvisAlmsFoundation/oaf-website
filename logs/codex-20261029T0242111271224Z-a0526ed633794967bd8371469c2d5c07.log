@@ -1,0 +1,254 @@
+PROJECT: OAF WEBSITE
+TASK: WU3 — Resolve Obsolete CI Migration Test
+STATUS: INCOMPLETE
+UTC: 2026-10-29T02:42:11.1240254Z
+Mode: SOL / EXTRA HIGH
+Model: gpt-6.1-sol
+Reasoning: xhigh
+Sandbox: read-only
+Codex is running...
+OpenAI Codex v0.164.0
+--------
+workdir: C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+model: gpt-6.1-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 01a18589-5172-7ca3-ae6c-27ca820eaddf
+--------
+user
+PROJECT: OAF WEBSITE
+TASK: WU3 ? Resolve Obsolete CI Migration Test
+STATUS: INCOMPLETE
+System.Management.Automation.RemoteException
+PHASE: TARGETED INSPECTION ONLY
+System.Management.Automation.RemoteException
+FACTS:
+- GitHub CI for commit 197dd75 fails in both shards.
+- Failing test expects migration 0008 as the latest head.
+- Migration 0009 is now the verified correct head.
+- The failing test is absent locally.
+- Prior inspection found no local generator or test inclusion.
+- Accepted local validation and coverage remain valid.
+System.Management.Automation.RemoteException
+OBJECTIVE:
+Identify the direct reason CI executes this obsolete test.
+System.Management.Automation.RemoteException
+INSTRUCTIONS:
+1. Reuse previous findings; do not repeat investigations.
+2. Inspect only the exact CI test-selection path and
+   relevant committed files for commit 197dd75.
+3. Identify the first demonstrated source of the
+   obsolete test or stale assertion.
+4. Determine whether removing it is safe or whether
+   correcting one assertion is necessary.
+5. Recommend the smallest exact correction.
+6. Stop if the source cannot be established directly.
+System.Management.Automation.RemoteException
+PROHIBITED:
+No broad repository search or historical investigation.
+No canonical or other test execution.
+No source modifications or Git operations.
+No migration or database operations.
+No new scripts, frameworks or safeguards.
+System.Management.Automation.RemoteException
+DELIVERABLE:
+One concise finding, exact source location if found,
+and one minimal corrective action.
+System.Management.Automation.RemoteException
+STOP CONDITION:
+Identify the cause or report the first missing fact.
+No speculative investigation loops.
+System.Management.Automation.RemoteException
+5P: SIMPLE. DIRECT. SUFFICIENT. EFFICIENT. SAFE.
+System.Management.Automation.RemoteException
+codex
+IΓÇÖll trace the CI test-selection path for `197dd75` using only the relevant committed files, then stop at the demonstrated cause or first missing fact.
+System.Management.Automation.RemoteException
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-ChildItem -Force -Name' in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content -LiteralPath 'AGENTS.md'" in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+ succeeded in 166ms:
+.git
+.github
+.pytest_cache
+.venv
+.vscode
+assets
+config
+docs
+instance
+logs
+migrations
+oaf_website
+ops
+tests
+.gitignore
+about.html
+alembic.ini
+confirm-email.html
+contact.html
+faq.html
+gramanna.html
+index.html
+manage-notifications.html
+README.md
+requirements-dev.txt
+requirements-migrations.txt
+requirements.txt
+styles.css
+support.html
+System.Management.Automation.RemoteException
+ exited 1 in 223ms:
+Get-Content : Cannot find path 'AGENTS.md' because it does not exist.
+At line:2 char:1
++ Get-Content -LiteralPath 'AGENTS.md'
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (AGENTS.md:String) [Get-Content], ItemNotFoundException
+    + FullyQualifiedErrorId : PathNotFound,Microsoft.PowerShell.Commands.GetContentCommand
+ 
+System.Management.Automation.RemoteException
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content -LiteralPath '.git/config'" in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'rg --files --hidden .github' in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+ succeeded in 123ms:
+.github\workflows\linux-tests.yml
+System.Management.Automation.RemoteException
+ succeeded in 241ms:
+[core]
+	repositoryformatversion = 0
+	filemode = false
+	bare = false
+	logallrefupdates = true
+	symlinks = false
+	ignorecase = true
+[remote "origin"]
+	url = https://github.com/OvisAlmsFoundation/oaf-website.git
+	fetch = +refs/heads/*:refs/remotes/origin/*
+[branch "main"]
+	remote = origin
+	merge = refs/heads/main
+	vscode-merge-base = origin/main
+System.Management.Automation.RemoteException
+web search: 
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$lineNumber = 0; Get-Content -LiteralPath '"'.github/workflows/linux-tests.yml' | ForEach-Object { "'$lineNumber++; '"'{0,4}: {1}' -f "'$lineNumber, $_ }' in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+ succeeded in 117ms:
+   1: name: Linux tests
+   2: 
+   3: on:
+   4:   push:
+   5:   pull_request:
+   6:   workflow_dispatch:
+   7: 
+   8: permissions:
+   9:   contents: read
+  10: 
+  11: jobs:
+  12:   tests:
+  13:     name: Pytest shard ${{ matrix.shard }}
+  14:     runs-on: ubuntu-24.04
+  15:     timeout-minutes: 20
+  16:     strategy:
+  17:       fail-fast: false
+  18:       max-parallel: 2
+  19:       matrix:
+  20:         shard: [0, 1]
+  21:     env:
+  22:       PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+  23:       PYTEST_ADDOPTS: ""
+  24:       PYTEST_PLUGINS: ""
+  25:       PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/tests
+  26:       OAF_ENV: testing
+  27:     steps:
+  28:       - uses: actions/checkout@v4
+  29:         with:
+  30:           persist-credentials: false
+  31:       - uses: actions/setup-python@v5
+  32:         with:
+  33:           python-version: "3.11"
+  34:       - name: Install canonical dependencies in website environment
+  35:         run: |
+  36:           python -m venv .venv
+  37:           .venv/bin/python -m pip install -r requirements-dev.txt -r requirements-migrations.txt
+  38:       - name: Run disjoint canonical shard with branch coverage
+  39:         run: .venv/bin/python -B ops/ci_pytest.py shard --shard ${{ matrix.shard }}
+  40:       - name: Upload only synthetic test inventory and coverage arcs
+  41:         if: always()
+  42:         uses: actions/upload-artifact@v4
+  43:         with:
+  44:           name: linux-shard-${{ matrix.shard }}
+  45:           path: |
+  46:             .pytest_cache/ci/run/shard-${{ matrix.shard }}/manifest.json
+  47:             .pytest_cache/ci/run/shard-${{ matrix.shard }}/arcs.json
+  48:           include-hidden-files: true
+  49:           if-no-files-found: error
+  50:           retention-days: 7
+  51: 
+  52:   coverage:
+  53:     name: Combined statement and branch coverage
+  54:     needs: tests
+  55:     runs-on: ubuntu-24.04
+  56:     timeout-minutes: 10
+  57:     steps:
+  58:       - uses: actions/checkout@v4
+  59:         with:
+  60:           persist-credentials: false
+  61:       - uses: actions/setup-python@v5
+  62:         with:
+  63:           python-version: "3.11"
+  64:       - run: python -m pip install -r requirements-dev.txt
+  65:       - uses: actions/download-artifact@v4
+  66:         with:
+  67:           pattern: linux-shard-*
+  68:           path: .pytest_cache/ci/downloads
+  69:       - name: Verify complete disjoint suite and enforce exact 100% coverage
+  70:         run: python -B ops/ci_pytest.py combine
+System.Management.Automation.RemoteException
+web search: https://raw.githubusercontent.com/OvisAlmsFoundation/oaf-website/197dd75/.github/workflows/linux-tests.yml
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "gh api 'repos/OvisAlmsFoundation/oaf-website/contents/.github/workflows/linux-tests.yml?ref=197dd75' --header 'Accept: application/vnd.github.raw+json'" in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+ exited 1 in 198ms:
+gh : The term 'gh' is not recognized as the name of a cmdlet, function, script file, or operable program. Check the 
+spelling of the name, or if a path was included, verify that the path is correct and try again.
+At line:2 char:1
++ gh api 'repos/OvisAlmsFoundation/oaf-website/contents/.github/workflo ...
++ ~~
+    + CategoryInfo          : ObjectNotFound: (gh:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+System.Management.Automation.RemoteException
+codex
+Cause remains unestablished. The local [workflow](/C:/Users/ovisa/Documents/OAF_App/Development/OAF%20Website/.github/workflows/linux-tests.yml:39) invokes `ops/ci_pytest.py shard`, but commit-pinned contents at `197dd75` could not be retrieved.
+System.Management.Automation.RemoteException
+First missing fact: the CI test-selection source at that commit.
+System.Management.Automation.RemoteException
+Minimal next action: provide `197dd75` versions of `.github/workflows/linux-tests.yml` and `ops/ci_pytest.py`. Neither deletion nor an assertion correction is justified yet. Stopped here.
+tokens used
+12,789
+Cause remains unestablished. The local [workflow](/C:/Users/ovisa/Documents/OAF_App/Development/OAF%20Website/.github/workflows/linux-tests.yml:39) invokes `ops/ci_pytest.py shard`, but commit-pinned contents at `197dd75` could not be retrieved.
+
+First missing fact: the CI test-selection source at that commit.
+
+Minimal next action: provide `197dd75` versions of `.github/workflows/linux-tests.yml` and `ops/ci_pytest.py`. Neither deletion nor an assertion correction is justified yet. Stopped here.
+PROJECT: OAF WEBSITE
+TASK: WU3 — Resolve Obsolete CI Migration Test
+STATUS: PASS
+UTC: 2026-10-29T02:42:11.1240254Z
+EXECUTION: PASS
+NATIVE_EXIT: 0
+FIRST_FAILURE: NONE
+REPORTING_FAILURES: 
+EVIDENCE: C:\Users\ovisa\Documents\OAF_App\Development\OAF Website\logs\codex-20261029T0242111271224Z-a0526ed633794967bd8371469c2d5c07.log
+
+ORIGINAL CODEX REPORT:
+Cause remains unestablished. The local [workflow](/C:/Users/ovisa/Documents/OAF_App/Development/OAF%20Website/.github/workflows/linux-tests.yml:39) invokes `ops/ci_pytest.py shard`, but commit-pinned contents at `197dd75` could not be retrieved.
+
+First missing fact: the CI test-selection source at that commit.
+
+Minimal next action: provide `197dd75` versions of `.github/workflows/linux-tests.yml` and `ops/ci_pytest.py`. Neither deletion nor an assertion correction is justified yet. Stopped here.
+DONE - VERIFIED - new output is on the clipboard. Exact ordinal full-content read-back PASS.

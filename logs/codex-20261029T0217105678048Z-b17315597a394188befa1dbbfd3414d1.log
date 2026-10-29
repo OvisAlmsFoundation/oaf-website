@@ -1,0 +1,378 @@
+PROJECT: OAF WEBSITE
+TASK: WU3 — Correct Stale Alembic Head Test Expectation
+STATUS: INCOMPLETE
+UTC: 2026-10-29T02:17:10.5652825Z
+Mode: SOL / EXTRA HIGH
+Model: gpt-6.1-sol
+Reasoning: xhigh
+Sandbox: workspace-write
+Codex is running...
+OpenAI Codex v0.164.0
+--------
+workdir: C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+model: gpt-6.1-sol
+provider: openai
+approval: on-request
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 01a18572-6bc3-79f3-a531-ddd93cd1b121
+--------
+user
+PROJECT: OAF WEBSITE
+TASK: WU3 ? Correct Stale Alembic Head Test Expectation
+STATUS: INCOMPLETE
+System.Management.Automation.RemoteException
+PHASE: FOCUSED IMPLEMENTATION
+System.Management.Automation.RemoteException
+CI FAILURE:
+Commit 197dd75.
+Both CI shards fail at:
+tests/test_migration_authority.py:143
+System.Management.Automation.RemoteException
+Expected: 0008_web_launch
+Actual: 0009_state_availability
+System.Management.Automation.RemoteException
+OBJECTIVE:
+Correct the demonstrated stale migration-head expectation.
+System.Management.Automation.RemoteException
+INSTRUCTIONS:
+1. Inspect only the failing test and directly relevant
+   migration revision definitions.
+2. Confirm that 0009 is the intended current head.
+3. Make the smallest necessary test correction.
+4. Preserve historical migration assertions.
+5. Run only the affected focused tests.
+6. Reuse accepted WU3 implementation and migration evidence.
+7. Preserve all owner work and Git state.
+8. Report changed files and focused validation results.
+System.Management.Automation.RemoteException
+PROHIBITED:
+No full canonical or broad test campaign.
+No application or migration artifact modifications.
+No database migration execution.
+No unrelated changes.
+No Git staging, commit or push.
+No additional review campaign.
+System.Management.Automation.RemoteException
+STOP CONDITION:
+Correct the demonstrated test failure, validate it
+with focused tests, and stop.
+System.Management.Automation.RemoteException
+5P: SIMPLE. DIRECT. SUFFICIENT. EFFICIENT. SAFE.
+System.Management.Automation.RemoteException
+codex
+IΓÇÖll inspect the failing test and relevant migration revisions, correct the stale head expectation, and run only the affected focused tests.
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Location; rg --files -g AGENTS.md -g '*migration_authority*' -g '*0008*' -g '*0009*' -g 'pytest.ini' -g 'pyproject.toml' -g 'setup.cfg'; git status --short" in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+ succeeded in 201ms:
+System.Management.Automation.RemoteException
+oaf_website\migration_authority.py
+migrations\versions\0009_state_availability.py
+migrations\versions\0008_web_launch.py
+?? logs/
+Path                                                    
+----                                                    
+C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$paths = @('"'tests/test_migration_authority.py', 'migrations/versions/0008_web_launch.py', 'migrations/versions/0009_state_availability.py'); foreach ("'$path in $paths) { Write-Output "File: $path"; $line = 0; Get-Content -LiteralPath $path | ForEach-Object { $line++; '"'{0,4}: {1}' -f "'$line, $_ } }' in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$paths = @('"'C:\\AGENTS.md', 'C:\\Users\\AGENTS.md', 'C:\\Users\\ovisa\\AGENTS.md', 'C:\\Users\\ovisa\\Documents\\AGENTS.md', 'C:\\Users\\ovisa\\Documents\\OAF_App\\AGENTS.md', 'C:\\Users\\ovisa\\Documents\\OAF_App\\Development\\AGENTS.md', '.\\AGENTS.md', '.\\tests\\AGENTS.md', '.\\migrations\\AGENTS.md', '.\\migrations\\versions\\AGENTS.md'); foreach ("'$path in $paths) { if (Test-Path -LiteralPath $path) { Write-Output "Instructions: $path"; Get-Content -LiteralPath $path } }' in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+ succeeded in 138ms:
+ succeeded in 355ms:
+File: tests/test_migration_authority.py
+Get-Content : Cannot find path 'tests/test_migration_authority.py' because it does not exist.
+At line:2 char:209
++ ... tput "File: $path"; $line = 0; Get-Content -LiteralPath $path | ForEa ...
++                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (tests/test_migration_authority.py:String) [Get-Content], ItemNotFoundEx 
+   ception
+    + FullyQualifiedErrorId : PathNotFound,Microsoft.PowerShell.Commands.GetContentCommand
+ 
+File: migrations/versions/0008_web_launch.py
+   1: """Typed web launch in the existing event contract; no new tables or grants."""
+   2: 
+   3: from alembic import op
+   4: from oaf_website.web_launch_schema import upgrade_web_launch
+   5: 
+   6: revision = "0008_web_launch"
+   7: down_revision = "0007_release_approvals"
+   8: branch_labels = None
+   9: depends_on = None
+  10: 
+  11: 
+  12: def upgrade():
+  13:     upgrade_web_launch(op.get_bind())
+  14: 
+  15: 
+  16: def downgrade():
+  17:     raise RuntimeError("Ordinary migration downgrade is prohibited.")
+File: migrations/versions/0009_state_availability.py
+   1: """State-specific availability in the existing authenticated release inventory."""
+   2: 
+   3: from alembic import op
+   4: from oaf_website.state_availability_schema import upgrade_state_availability
+   5: 
+   6: revision = "0009_state_availability"
+   7: down_revision = "0008_web_launch"
+   8: branch_labels = None
+   9: depends_on = None
+  10: 
+  11: 
+  12: def upgrade():
+  13:     upgrade_state_availability(op.get_bind())
+  14: 
+  15: 
+  16: def downgrade():
+  17:     raise RuntimeError("Ordinary migration downgrade is prohibited.")
+System.Management.Automation.RemoteException
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "git ls-files '*test_migration_authority.py' '*AGENTS.md' '*pytest*' 'pyproject.toml' 'setup.cfg' 'requirements*.txt' 'migrations/versions/*.py'" in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-ChildItem -Force -Name; rg --files --hidden -g '*test_migration_authority.py' -g '"'!.git'"' -g '"'!node_modules'"' -g '"'!.venv'"' -g '"'!venv'"' -g '"'!logs'"' --no-ignore" in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+ succeeded in 120ms:
+migrations/versions/0001_migration_baseline.py
+migrations/versions/0002_state_requests.py
+migrations/versions/0003_notifications.py
+migrations/versions/0004_notification_delivery.py
+migrations/versions/0005_confirmation_outbox.py
+migrations/versions/0006_notification_management.py
+migrations/versions/0007_release_approvals.py
+migrations/versions/0008_web_launch.py
+migrations/versions/0009_state_availability.py
+ops/ci_pytest.py
+requirements-dev.txt
+requirements-migrations.txt
+requirements.txt
+System.Management.Automation.RemoteException
+ exited 1 in 1273ms:
+.git
+.github
+.pytest_cache
+.venv
+.vscode
+assets
+config
+docs
+instance
+logs
+migrations
+oaf_website
+ops
+tests
+.gitignore
+about.html
+alembic.ini
+confirm-email.html
+contact.html
+faq.html
+gramanna.html
+index.html
+manage-notifications.html
+README.md
+requirements-dev.txt
+requirements-migrations.txt
+requirements.txt
+styles.css
+support.html
+rg: ./instance\step5-sealed-handoff-offline-93a58f8659064cc382a360247091c505: Access is denied. (os error 5)
+rg: ./instance\step5-confirmation-run-516bddfe8e4b4536bd0a806c1d915242: Access is denied. (os error 5)
+rg: ./instance\step5-sealed-handoff-offline-5156dab541ec4390b6e5a063fcb833e5: Access is denied. (os error 5)
+rg: ./instance\step5-confirmation-run-1e664261c11440bf94ecec044946dc11: Access is denied. (os error 5)
+rg: ./instance\step5-readonly-checkpoint-run-be42c2b4c22d4c098d2cdf763c2a5410: Access is denied. (os error 5)
+rg: ./instance\step5-confirmation-run-1248216361a543a6be37c93d561ce4ce: Access is denied. (os error 5)
+rg: ./instance\step5-readonly-checkpoint-run-6f735f8229474a71a3360c232d4738df: Access is denied. (os error 5)
+rg: ./instance\step5-original-binding-b143c3389ba54b7d96991f9b23ab2976: Access is denied. (os error 5)
+rg: ./instance\step5-confirmation-delivery-67892e38e20f45f3a5ead8d305c3f9a4: Access is denied. (os error 5)
+rg: ./instance\step5-original-binding-b0daa962f62c45b1a95acc921f43a248: Access is denied. (os error 5)
+rg: ./instance\step5-confirmation-authority-b143c3389ba54b7d96991f9b23ab2976: Access is denied. (os error 5)
+rg: ./instance\step5-original-binding-92176895094547c3930505fee1859ae5: Access is denied. (os error 5)
+rg: ./instance\step3-fresh-observation-77a48ed62be24f5295f34b5e69a44332: Access is denied. (os error 5)
+rg: ./instance\step5-original-binding-918f16fc6d804f629780a14ce70035b9: Access is denied. (os error 5)
+rg: ./instance\step3-final-unsubscribe-0f2dae0f9be24b4aa95976aaf8415506: Access is denied. (os error 5)
+rg: ./instance\step5-original-binding-8bf0279d2e9e4066875c81702b4f9ec8: Access is denied. (os error 5)
+rg: ./instance\step5-original-binding-594c753a5b284c21a88cd4a9e6c0602d: Access is denied. (os error 5)
+rg: ./instance\step5-original-binding-0a0dd0fec0b24f7489e2e79139a0efba: Access is denied. (os error 5)
+rg: ./instance\step5-original-binding-075aeb224a0c4b5fbaf7a17cab4aa504: Access is denied. (os error 5)
+rg: ./instance\step5-original-binding-05ec61f991a9485dbe4d7c7026bbe551: Access is denied. (os error 5)
+rg: ./instance\step5-original-binding-04639b3b4c9e463aa79bb673c5d67ac7: Access is denied. (os error 5)
+rg: ./instance\step5-handoff-offline-v2-633b83ce43a348e782afc2dcbfdd61ff: Access is denied. (os error 5)
+rg: ./instance\step5-fresh-signup-a830460bd27b4cb1893a29a83e0f92fd: Access is denied. (os error 5)
+rg: ./instance\step5-execution-preflight-b05ddb531f74465d5d0182b3eac0a96f: Access is denied. (os error 5)
+rg: ./instance\step5-eligibility-dcea19bf76ba41e2bdcafcea7a55bdf7: Access is denied. (os error 5)
+rg: ./instance\step5-confirmation-run-daeed0869f96438daa76ea82f257e4f7: Access is denied. (os error 5)
+rg: ./instance\step5-confirmation-run-913d3425d8f04975ae94d421fd009730: Access is denied. (os error 5)
+rg: ./instance\step5-confirmation-run-6024a72bf59f4cf5a6885c58292c388f: Access is denied. (os error 5)
+rg: ./.pytest_cache\r47-step3-xml-drift-20261020T171813Z-bae319870c1e4e05935f710eb4116cfe: Access is denied. (os error 5)
+rg: ./.pytest_cache\step5-confirmation-scope-observer-v4-20261023: Access is denied. (os error 5)
+rg: ./.pytest_cache\step5-confirmation-scope-observer-v3-20261023: Access is denied. (os error 5)
+rg: ./.pytest_cache\step5-live-r47-review-v1-20261023\observation-6d3d48e2eb224ab0a13bede4d22bcd0a\private: Access is denied. (os error 5)
+rg: ./.pytest_cache\step5-three-process-conflicts-v1-20261023\private: Access is denied. (os error 5)
+rg: ./.pytest_cache\step5-original-signup-identity-v2-20261023: Access is denied. (os error 5)
+System.Management.Automation.RemoteException
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-ChildItem -LiteralPath tests -Force | Select-Object Mode, Name; git rev-parse --show-toplevel HEAD; git ls-tree --name-only HEAD tests; git check-ignore -v tests/test_migration_authority.py; Test-Path -LiteralPath '.venv/Scripts/python.exe'" in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "git cat-file -e '197dd75"'^{commit}'"'; git ls-tree --name-only 197dd75 tests; git show '197dd75:tests/test_migration_authority.py'" in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+ exited 1 in 207ms:
+tests
+fatal: path 'tests/test_migration_authority.py' does not exist in '197dd75'
+System.Management.Automation.RemoteException
+ succeeded in 320ms:
+System.Management.Automation.RemoteException
+C:/Users/ovisa/Documents/OAF_App/Development/OAF Website
+197dd75514faf6f868aac6e62000be9f5102686b
+tests
+Mode   Name                                      
+----   ----                                      
+d----- fixtures                                  
+d----- __pycache__                               
+-a---- confirmation_browser_check.py             
+-a---- conftest.py                               
+-a---- contact_browser_check.py                  
+-a---- migration_offline.py                      
+-a---- notification_browser_check.py             
+-a---- notification_live_browser.py              
+-a---- notification_management_browser_check.py  
+-a---- state_request_browser_check.py            
+-a---- state_request_live_browser.py             
+-a---- Test-DevelopmentIntegrationCredentials.ps1
+-a---- test_brevo.py                             
+-a---- test_brevo_unsubscribe.py                 
+-a---- test_confirmation_outbox.py               
+-a---- test_confirmation_outbox_migration.py     
+-a---- test_confirmation_processor.py            
+-a---- test_confirmation_schedule.py             
+-a---- test_contact.py                           
+-a---- test_controlled_confirmation.py           
+-a---- test_database_config.py                   
+-a---- test_development_integrations.py          
+-a---- test_failure_diagnostics.py               
+-a---- test_integrations.py                      
+-a---- test_migration_artifacts.py               
+-a---- test_migration_authorization.py           
+-a---- test_migration_catalog.py                 
+-a---- test_migration_config.py                  
+-a---- test_migration_operational.py             
+-a---- test_migration_provenance.py              
+-a---- test_migration_runner.py                  
+-a---- test_notifications.py                     
+-a---- test_notification_delivery.py             
+-a---- test_notification_delivery_migration.py   
+-a---- test_notification_dispatch.py             
+-a---- test_notification_lifecycle_repair.py     
+-a---- test_notification_management.py           
+-a---- test_notification_management_migration.py 
+-a---- test_notification_migration.py            
+-a---- test_operational_safeguards.py            
+-a---- test_public_confirmation.py               
+-a---- test_state_requests.py                    
+-a---- test_state_request_migration.py           
+-a---- test_testing_https.py                     
+-a---- test_webhook_guard.py                     
+True
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+codex
+Revision `0009_state_availability` explicitly follows `0008_web_launch`. The checkout is at `197dd75`, but `tests/test_migration_authority.py` is absent from both the working tree and that commit. IΓÇÖm locating the stale assertion before making any change.
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg -n '"'^revision'"\\s*=|"'^down_revision'"\\s*=' migrations/versions; Get-Item -LiteralPath tests | Format-List FullName, Attributes, LinkType, Target" in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg -n '0008_web_launch|0009_state_availability|test_migration_authority' tests .github; git ls-tree -r --name-only HEAD -- tests/test_migration_authority.py tests/test_migration_catalog.py tests/test_migration_runner.py; git status --short" in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+ succeeded in 234ms:
+migrations/versions\0001_migration_baseline.py:3:revision = "0001_migration_baseline"
+migrations/versions\0001_migration_baseline.py:4:down_revision = None
+migrations/versions\0002_state_requests.py:6:revision = "0002_state_requests"
+migrations/versions\0002_state_requests.py:7:down_revision = "0001_migration_baseline"
+migrations/versions\0003_notifications.py:6:revision = "0003_notifications"
+migrations/versions\0003_notifications.py:7:down_revision = "0002_state_requests"
+migrations/versions\0004_notification_delivery.py:6:revision = "0004_notification_delivery"
+migrations/versions\0004_notification_delivery.py:7:down_revision = "0003_notifications"
+migrations/versions\0005_confirmation_outbox.py:6:revision = "0005_confirmation_outbox"
+migrations/versions\0005_confirmation_outbox.py:7:down_revision = "0004_notification_delivery"
+migrations/versions\0006_notification_management.py:6:revision = "0006_notification_management"
+migrations/versions\0006_notification_management.py:7:down_revision = "0005_confirmation_outbox"
+migrations/versions\0009_state_availability.py:6:revision = "0009_state_availability"
+migrations/versions\0009_state_availability.py:7:down_revision = "0008_web_launch"
+migrations/versions\0007_release_approvals.py:6:revision = "0007_release_approvals"
+migrations/versions\0007_release_approvals.py:7:down_revision = "0006_notification_management"
+migrations/versions\0008_web_launch.py:6:revision = "0008_web_launch"
+migrations/versions\0008_web_launch.py:7:down_revision = "0007_release_approvals"
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+FullName   : C:\Users\ovisa\Documents\OAF_App\Development\OAF Website\tests
+Attributes : Directory
+LinkType   : 
+Target     : {}
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+ succeeded in 224ms:
+tests\test_notification_management_migration.py:409:    if mutation == "parent": source = source.replace('down_revision = "0008_web_launch"', 'down_revision = "0007_release_approvals"')
+tests\test_notification_management_migration.py:410:    if mutation == "identity": source = source.replace('revision = "0009_state_availability"', 'revision = "0009_other"')
+tests\test_notification_management_migration.py:493:    if mutation == "identity": source = source.replace('revision = "0008_web_launch"', 'revision = "0008_other"')
+tests/test_migration_catalog.py
+tests/test_migration_runner.py
+?? logs/
+System.Management.Automation.RemoteException
+codex
+At commit 197dd75, `tests/test_migration_authority.py` is absent from both Git and the working tree; the only `0008_web_launch` references in existing tests are historical mutation checks. Where is the failing test sourced from, or what is its relevant test body?
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "@'
+import ast
+from pathlib import Path
+System.Management.Automation.RemoteException
+revisions = {}
+for path in Path('migrations/versions').glob('*.py'):
+    values = {}
+    for node in ast.parse(path.read_text(encoding='utf-8')).body:
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id in {'revision', 'down_revision'}:
+                    values[target.id] = ast.literal_eval(node.value)
+    if 'revision' in values:
+        revisions[values['revision']] = values.get('down_revision')
+parents = {parent for parent in revisions.values() if parent is not None}
+heads = sorted(set(revisions) - parents)
+assert heads == ['0009_state_availability'], heads
+assert revisions['0009_state_availability'] == '0008_web_launch'
+print('Revision definitions confirm sole head: 0009_state_availability; parent: 0008_web_launch')
+'@ | .\\.venv\\Scripts\\python.exe -B -" in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+ succeeded in 220ms:
+Revision definitions confirm sole head: 0009_state_availability; parent: 0008_web_launch
+System.Management.Automation.RemoteException
+codex
+Confirmed `0009_state_availability` is the sole head, directly following `0008_web_launch`.
+System.Management.Automation.RemoteException
+Blocked: `tests/test_migration_authority.py` is absent from both the working tree and commit `197dd75`. Please provide its source or actual path.
+System.Management.Automation.RemoteException
+Changed files: none. Focused tests: not run because the failing test is unavailable. Git state preserved.
+tokens used
+21,876
+Confirmed `0009_state_availability` is the sole head, directly following `0008_web_launch`.
+
+Blocked: `tests/test_migration_authority.py` is absent from both the working tree and commit `197dd75`. Please provide its source or actual path.
+
+Changed files: none. Focused tests: not run because the failing test is unavailable. Git state preserved.
+PROJECT: OAF WEBSITE
+TASK: WU3 — Correct Stale Alembic Head Test Expectation
+STATUS: PASS
+UTC: 2026-10-29T02:17:10.5652825Z
+EXECUTION: PASS
+NATIVE_EXIT: 0
+FIRST_FAILURE: NONE
+REPORTING_FAILURES: 
+EVIDENCE: C:\Users\ovisa\Documents\OAF_App\Development\OAF Website\logs\codex-20261029T0217105678048Z-b17315597a394188befa1dbbfd3414d1.log
+
+ORIGINAL CODEX REPORT:
+Confirmed `0009_state_availability` is the sole head, directly following `0008_web_launch`.
+
+Blocked: `tests/test_migration_authority.py` is absent from both the working tree and commit `197dd75`. Please provide its source or actual path.
+
+Changed files: none. Focused tests: not run because the failing test is unavailable. Git state preserved.
+DONE - VERIFIED - new output is on the clipboard. Exact ordinal full-content read-back PASS.

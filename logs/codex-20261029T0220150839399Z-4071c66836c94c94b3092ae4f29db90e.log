@@ -1,0 +1,1293 @@
+PROJECT: OAF WEBSITE
+TASK: WU3 — Correct Generated CI Migration-Head Expectation
+STATUS: INCOMPLETE
+UTC: 2026-10-29T02:20:15.0809094Z
+Mode: SOL / EXTRA HIGH
+Model: gpt-6.1-sol
+Reasoning: xhigh
+Sandbox: workspace-write
+Codex is running...
+OpenAI Codex v0.164.0
+--------
+workdir: C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+model: gpt-6.1-sol
+provider: openai
+approval: on-request
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 01a18575-3c67-76b1-b255-6bf184d04b8e
+--------
+user
+PROJECT: OAF WEBSITE
+TASK: WU3 ? Correct Generated CI Migration-Head Expectation
+STATUS: INCOMPLETE
+System.Management.Automation.RemoteException
+PHASE: FOCUSED CORRECTION
+System.Management.Automation.RemoteException
+ACCEPTED FACTS:
+- Commit 197dd75.
+- GitHub Actions shards 0 and 1 failed.
+- CI executed tests/test_migration_authority.py.
+- That test file is absent locally and from the commit.
+- 0009_state_availability is the verified sole Alembic head.
+- Previous Codex inspection confirmed these facts.
+- No changes were made during that inspection.
+System.Management.Automation.RemoteException
+OBJECTIVE:
+Find the authoritative source of the failing CI test
+and correct its stale migration-head expectation.
+System.Management.Automation.RemoteException
+INSTRUCTIONS:
+1. Inspect only the relevant GitHub Actions workflow,
+   CI test generation mechanism and migration-head
+   assertion source.
+2. Determine whether tests/test_migration_authority.py
+   is generated during CI.
+3. Locate the exact source of its assertion expecting
+   0008_web_launch.
+4. Correct that expectation to the verified current
+   head 0009_state_availability.
+5. Preserve historical migration-chain assertions.
+6. If the source cannot be located, report the exact
+   missing source and stop without speculative edits.
+7. Validate only the affected generated test or
+   directly relevant focused checks.
+8. Preserve all owner changes and Git state.
+System.Management.Automation.RemoteException
+PROHIBITED:
+No canonical or broad test campaign.
+No application or migration DDL changes.
+No database operations.
+No new testing framework.
+No unrelated investigations or modifications.
+No Git staging, commit or push.
+System.Management.Automation.RemoteException
+DELIVERABLE:
+Exact source of the CI assertion, minimal correction,
+focused validation result and changed files.
+System.Management.Automation.RemoteException
+STOP CONDITION:
+One verified correction or one genuine actionable blocker.
+System.Management.Automation.RemoteException
+5P: SIMPLE. DIRECT. SUFFICIENT. EFFICIENT. SAFE.
+System.Management.Automation.RemoteException
+codex
+IΓÇÖll trace the CI testΓÇÖs source, make the one head-expectation correction if I can verify it, and run only the focused check. IΓÇÖll preserve owner changes and Git state.
+System.Management.Automation.RemoteException
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Location; git status --short; rg --files -g AGENTS.md -g '*migration*authority*' -g '*migration*' -g '.github/workflows/*' -g '*ci*' -g '"'!node_modules'"' -g '"'!venv'"' -g '"'!.venv'"'" in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+ succeeded in 170ms:
+System.Management.Automation.RemoteException
+?? logs/
+requirements-migrations.txt
+ops\Record-Testing0003Reconciliation.ps1
+ops\ci_pytest.py
+tests\migration_offline.py
+tests\test_confirmation_outbox_migration.py
+tests\test_migration_artifacts.py
+tests\test_migration_authorization.py
+oaf_website\migration_config.py
+tests\test_state_request_migration.py
+tests\test_notification_migration.py
+oaf_website\migration_authority.py
+tests\test_notification_management_migration.py
+tests\test_notification_delivery_migration.py
+oaf_website\migration_validation.py
+tests\test_migration_runner.py
+tests\test_migration_provenance.py
+tests\test_migration_operational.py
+tests\test_migration_config.py
+tests\test_migration_catalog.py
+migrations\versions\0001_migration_baseline.py
+Path                                                    
+----                                                    
+C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$instructionPaths = @('"'C:\\AGENTS.md','C:\\Users\\AGENTS.md','C:\\Users\\ovisa\\AGENTS.md','C:\\Users\\ovisa\\Documents\\AGENTS.md','C:\\Users\\ovisa\\Documents\\OAF_App\\AGENTS.md','C:\\Users\\ovisa\\Documents\\OAF_App\\Development\\AGENTS.md','AGENTS.md'); foreach ("'$instructionPath in $instructionPaths) { if (Test-Path -LiteralPath $instructionPath) { Write-Output $instructionPath; Get-Content -LiteralPath $instructionPath } }' in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg --files --hidden .github ops tests -g AGENTS.md -g '*.yml' -g '*.yaml' -g '*ci*' -g '*authority*'; rg -n --hidden 'test_migration_authority|0008_web_launch|0009_state_availability|generate|shard|pytest|ci_pytest' .github ops/ci_pytest.py tests/test_migration_authorization.py oaf_website/migration_authority.py; git log -1 --oneline; git remote -v" in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+ succeeded in 145ms:
+ succeeded in 219ms:
+ops\Record-Testing0003Reconciliation.ps1
+.github\workflows\linux-tests.yml
+ops\ci_pytest.py
+tests/test_migration_authorization.py:17:import pytest
+tests/test_migration_authorization.py:26:@pytest.fixture
+tests/test_migration_authorization.py:65:        with pytest.raises(c.MigrationError, match=c.Failure.OPERATIONAL_GATE):
+tests/test_migration_authorization.py:67:    with pytest.raises(c.MigrationError, match=c.Failure.OPERATIONAL_GATE):
+tests/test_migration_authorization.py:72:@pytest.mark.parametrize("value", [None, {}, object(), SimpleNamespace(authorized=True)])
+tests/test_migration_authorization.py:74:    with pytest.raises(c.MigrationError, match=c.Failure.OPERATIONAL_GATE):
+tests/test_migration_authorization.py:78:@pytest.mark.parametrize("field,value", [
+tests/test_migration_authorization.py:89:        with pytest.raises(c.MigrationError, match=c.Failure.OPERATIONAL_GATE):
+tests/test_migration_authorization.py:93:@pytest.mark.parametrize("field,value", [("environment", "development"), ("action", "verify"),
+tests/test_migration_authorization.py:99:        with pytest.raises(c.MigrationError, match=c.Failure.OPERATIONAL_GATE):
+tests/test_migration_authorization.py:119:@pytest.mark.parametrize("context_setup", c.IDENTITIES, indirect=True)
+tests/test_migration_authorization.py:154:@pytest.mark.parametrize("case", ["offline", "missing", "fabricated", "transaction", "inactive", "nested",
+tests/test_migration_authorization.py:188:        with pytest.raises(c.MigrationError):
+tests/test_migration_authorization.py:193:@pytest.mark.parametrize("code,expected", [("57014", c.Failure.STATEMENT_TIMEOUT),
+tests/test_migration_authorization.py:201:        with pytest.raises(c.MigrationError, match=expected) as caught:
+tests/test_migration_authorization.py:206:@pytest.mark.parametrize("code,expected", [
+tests/test_migration_authorization.py:272:        with pytest.raises(c.MigrationError, match=c.Failure.TRANSACTION):
+tests/test_migration_authorization.py:285:    with pytest.raises(DriverError):
+tests/test_migration_authorization.py:292:    with pytest.raises(c.MigrationError, match=c.Failure.OPERATIONAL_GATE):
+tests/test_migration_authorization.py:300:        with pytest.raises(c.MigrationError, match=c.Failure.OPERATIONAL_GATE):
+tests/test_migration_authorization.py:310:        with pytest.raises(c.MigrationError, match=c.Failure.INVALID_CONFIGURATION):
+tests/test_migration_authorization.py:314:@pytest.mark.parametrize("backend,lock", [(None, True), (True, True), (702, True), (701, False)])
+tests/test_migration_authorization.py:318:    with pytest.raises(c.MigrationError, match=c.Failure.LOCK_BUSY):
+tests/test_migration_authorization.py:322:@pytest.mark.parametrize("needle,wrong", [("current_setting('search_path')", "public"),
+tests/test_migration_authorization.py:330:        with pytest.raises(c.MigrationError, match=c.Failure.INVALID_CONFIGURATION):
+tests/test_migration_authorization.py:335:@pytest.mark.parametrize("environment", c.IDENTITIES)
+tests/test_migration_authorization.py:336:@pytest.mark.parametrize("action", ["verify", "upgrade"])
+tests/test_migration_authorization.py:337:@pytest.mark.parametrize("entrypoint", ["cli", "runner", "supplied_authority"])
+tests/test_migration_authorization.py:366:        with pytest.raises(c.MigrationError, match=c.Failure.OPERATIONAL_GATE) as caught:
+tests/test_migration_authorization.py:391:@pytest.mark.parametrize("environment", c.IDENTITIES)
+tests/test_migration_authorization.py:417:    with pytest.raises(c.MigrationError, match=c.Failure.OPERATIONAL_GATE):
+ops/ci_pytest.py:1:"""Two disjoint canonical offline pytest shards and strict coverage aggregation."""
+ops/ci_pytest.py:11:OUTPUT = ROOT / ".pytest_cache/ci"
+ops/ci_pytest.py:33:def partition(nodeids, shard):
+ops/ci_pytest.py:34:    require(shard in range(SHARDS), "invalid_shard")
+ops/ci_pytest.py:36:    return nodeids[shard::SHARDS]
+ops/ci_pytest.py:47:    def pytest_collection_modifyitems(self, config, items):
+ops/ci_pytest.py:52:        config.hook.pytest_deselected(items=[item for item in ordered if item.nodeid not in keep])
+ops/ci_pytest.py:55:    def pytest_runtest_logreport(self, report):
+ops/ci_pytest.py:77:def run_shard(index, *, collect=False):
+ops/ci_pytest.py:78:    import pytest
+ops/ci_pytest.py:79:    shard = Shard(index)
+ops/ci_pytest.py:80:    destination = OUTPUT / ("collect" if collect else "run") / f"shard-{index}"
+ops/ci_pytest.py:89:        code = int(pytest.main(["-p", "migration_offline", "-q", "-x", "--tb=short",
+ops/ci_pytest.py:91:                              plugins=[shard]))
+ops/ci_pytest.py:95:    complete = (not shard.unsuccessful and all(
+ops/ci_pytest.py:96:        Counter(shard.passed[phase]) == Counter(shard.selected) for phase in shard.passed))
+ops/ci_pytest.py:97:    if code == 0 and (not shard.selected or (not collect and not complete)):
+ops/ci_pytest.py:100:        format=1, shard=index, shards=SHARDS, mode="collect" if collect else "run",
+ops/ci_pytest.py:101:        collected=shard.collected, selected=shard.selected, passed=shard.passed,
+ops/ci_pytest.py:102:        unsuccessful=shard.unsuccessful, exit_code=code))
+ops/ci_pytest.py:109:        write_json(destination / "arcs.json", dict(format=1, shard=index, arcs=arcs))
+ops/ci_pytest.py:110:    print(f"Shard {index}: collected={len(shard.collected)} selected={len(shard.selected)} exit={code}",
+ops/ci_pytest.py:120:        require(document["format"] == 1 and document["shards"] == SHARDS
+ops/ci_pytest.py:121:                and document["shard"] == index and document["mode"] == "run"
+ops/ci_pytest.py:122:                and document["exit_code"] == 0, "shard_not_successful")
+ops/ci_pytest.py:125:        require(bool(selected) and document["selected"] == selected, "shard_partition_mismatch")
+ops/ci_pytest.py:138:    expected = {f"linux-shard-{index}" for index in range(SHARDS)}
+ops/ci_pytest.py:142:        artifact = directory / f"linux-shard-{index}"
+ops/ci_pytest.py:147:        require(payload["format"] == 1 and payload["shard"] == index
+ops/ci_pytest.py:185:    parser.add_argument("action", choices=("collect", "shard", "combine"))
+ops/ci_pytest.py:186:    parser.add_argument("--shard", type=int, choices=range(SHARDS))
+ops/ci_pytest.py:190:        require(options.shard is None, "combine_has_no_shard")
+ops/ci_pytest.py:192:    require(options.shard is not None, "shard_required")
+ops/ci_pytest.py:193:    return run_shard(options.shard, collect=options.action == "collect")
+.github\workflows\linux-tests.yml:13:    name: Pytest shard ${{ matrix.shard }}
+.github\workflows\linux-tests.yml:20:        shard: [0, 1]
+.github\workflows\linux-tests.yml:38:      - name: Run disjoint canonical shard with branch coverage
+.github\workflows\linux-tests.yml:39:        run: .venv/bin/python -B ops/ci_pytest.py shard --shard ${{ matrix.shard }}
+.github\workflows\linux-tests.yml:44:          name: linux-shard-${{ matrix.shard }}
+.github\workflows\linux-tests.yml:46:            .pytest_cache/ci/run/shard-${{ matrix.shard }}/manifest.json
+.github\workflows\linux-tests.yml:47:            .pytest_cache/ci/run/shard-${{ matrix.shard }}/arcs.json
+.github\workflows\linux-tests.yml:67:          pattern: linux-shard-*
+.github\workflows\linux-tests.yml:68:          path: .pytest_cache/ci/downloads
+.github\workflows\linux-tests.yml:70:        run: python -B ops/ci_pytest.py combine
+197dd75 Complete WU3 state availability notifications and migration 0009
+origin	https://github.com/OvisAlmsFoundation/oaf-website.git (fetch)
+origin	https://github.com/OvisAlmsFoundation/oaf-website.git (push)
+System.Management.Automation.RemoteException
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content -LiteralPath .github/workflows/linux-tests.yml; Get-Content -LiteralPath ops/ci_pytest.py; rg --files --hidden .github ops tests -g AGENTS.md -g conftest.py -g 'pytest*'; rg -n --hidden 'test_migration_authority|0008_web_launch|0009_state_availability' .github ops tests pyproject.toml pytest.ini setup.cfg requirements*.txt" in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Command gh, python, uv -ErrorAction SilentlyContinue | Select-Object Name,Source; Get-ChildItem -Force -Name; git ls-files .github ops tests/conftest.py pytest.ini pyproject.toml setup.cfg' in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+ exited 1 in 225ms:
+name: Linux tests
+System.Management.Automation.RemoteException
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+System.Management.Automation.RemoteException
+permissions:
+  contents: read
+System.Management.Automation.RemoteException
+jobs:
+  tests:
+    name: Pytest shard ${{ matrix.shard }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        shard: [0, 1]
+    env:
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+      PYTEST_ADDOPTS: ""
+      PYTEST_PLUGINS: ""
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/tests
+      OAF_ENV: testing
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install canonical dependencies in website environment
+        run: |
+          python -m venv .venv
+          .venv/bin/python -m pip install -r requirements-dev.txt -r requirements-migrations.txt
+      - name: Run disjoint canonical shard with branch coverage
+        run: .venv/bin/python -B ops/ci_pytest.py shard --shard ${{ matrix.shard }}
+      - name: Upload only synthetic test inventory and coverage arcs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-shard-${{ matrix.shard }}
+          path: |
+            .pytest_cache/ci/run/shard-${{ matrix.shard }}/manifest.json
+            .pytest_cache/ci/run/shard-${{ matrix.shard }}/arcs.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+System.Management.Automation.RemoteException
+  coverage:
+    name: Combined statement and branch coverage
+    needs: tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -r requirements-dev.txt
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: linux-shard-*
+          path: .pytest_cache/ci/downloads
+      - name: Verify complete disjoint suite and enforce exact 100% coverage
+        run: python -B ops/ci_pytest.py combine
+"""Two disjoint canonical offline pytest shards and strict coverage aggregation."""
+System.Management.Automation.RemoteException
+import argparse
+import ast
+from collections import Counter
+import json
+from pathlib import Path
+import sys
+System.Management.Automation.RemoteException
+ROOT = Path(__file__).resolve().parents[1]
+OUTPUT = ROOT / ".pytest_cache/ci"
+SHARDS = 2
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+def require(condition, code):
+    if not condition:
+        raise RuntimeError(code)
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+def canonical_files():
+    # Read the existing allowlist without importing (and prematurely arming)
+    # the early isolation plugin. New canonical files require its review too.
+    tree = ast.parse((ROOT / "tests/migration_offline.py").read_text(encoding="utf-8"))
+    value = next(node.value.args[0] for node in tree.body
+                 if isinstance(node, ast.Assign)
+                 and any(isinstance(t, ast.Name) and t.id == "APPROVED_TESTS" for t in node.targets))
+    files = sorted(ast.literal_eval(value))
+    require(set(files) == {p.relative_to(ROOT).as_posix() for p in (ROOT / "tests").glob("test_*.py")},
+            "canonical_file_inventory_mismatch")
+    return files
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+def partition(nodeids, shard):
+    require(shard in range(SHARDS), "invalid_shard")
+    require(bool(nodeids) and nodeids == sorted(set(nodeids)), "invalid_collection")
+    return nodeids[shard::SHARDS]
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+class Shard:
+    def __init__(self, index):
+        self.index = index
+        self.collected = []
+        self.selected = []
+        self.passed = {phase: [] for phase in ("setup", "call", "teardown")}
+        self.unsuccessful = []
+System.Management.Automation.RemoteException
+    def pytest_collection_modifyitems(self, config, items):
+        ordered = sorted(items, key=lambda item: item.nodeid)
+        self.collected = [item.nodeid for item in ordered]
+        self.selected = partition(self.collected, self.index)
+        keep = set(self.selected)
+        config.hook.pytest_deselected(items=[item for item in ordered if item.nodeid not in keep])
+        items[:] = [item for item in ordered if item.nodeid in keep]
+System.Management.Automation.RemoteException
+    def pytest_runtest_logreport(self, report):
+        if report.passed and not getattr(report, "wasxfail", False):
+            self.passed[report.when].append(report.nodeid)
+        else:
+            self.unsuccessful.append(report.nodeid)
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+def write_json(path, document):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("x", encoding="utf-8", newline="\n") as stream:
+        json.dump(document, stream, sort_keys=True)
+        stream.write("\n")
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+def unpack(arc):
+    # coverage 7.13.2 C tracer packs arcs. Same decoding as accepted measurement.
+    if not isinstance(arc, int):
+        return list(arc)
+    first, second = arc & 0xFFFFFFF, (arc >> 28) & 0xFFFFFFF
+    return [-first if arc & (1 << 56) else first, -second if arc & (1 << 57) else second]
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+def run_shard(index, *, collect=False):
+    import pytest
+    shard = Shard(index)
+    destination = OUTPUT / ("collect" if collect else "run") / f"shard-{index}"
+    require(not destination.exists(), "output_already_exists")
+    cov = None
+    if not collect:
+        import coverage
+        require(coverage.__version__ == "7.13.2", "coverage_version_mismatch")
+        cov = coverage.Coverage(branch=True, config_file=False, source=["oaf_website"])
+        cov.start()
+    try:
+        code = int(pytest.main(["-p", "migration_offline", "-q", "-x", "--tb=short",
+                              *(["--collect-only", "--quiet"] if collect else []), *canonical_files()],
+                              plugins=[shard]))
+    finally:
+        if cov is not None:
+            cov.stop()
+    complete = (not shard.unsuccessful and all(
+        Counter(shard.passed[phase]) == Counter(shard.selected) for phase in shard.passed))
+    if code == 0 and (not shard.selected or (not collect and not complete)):
+        code = 1
+    write_json(destination / "manifest.json", dict(
+        format=1, shard=index, shards=SHARDS, mode="collect" if collect else "run",
+        collected=shard.collected, selected=shard.selected, passed=shard.passed,
+        unsuccessful=shard.unsuccessful, exit_code=code))
+    if cov is not None:
+        # Do not call get_data/save in the guarded process: even SQLite coverage
+        # metadata is denied there. Export arcs as in the accepted canonical run.
+        arcs = {Path(name).resolve().relative_to(ROOT).as_posix(): sorted(
+            [unpack(arc) for arc in values])
+            for name, values in cov._collector.data.items()}
+        write_json(destination / "arcs.json", dict(format=1, shard=index, arcs=arcs))
+    print(f"Shard {index}: collected={len(shard.collected)} selected={len(shard.selected)} exit={code}",
+          flush=True)
+    return code
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+def verify_manifests(documents):
+    require(len(documents) == SHARDS, "two_manifests_required")
+    canonical = documents[0]["collected"]
+    assigned = []
+    for index, document in enumerate(documents):
+        require(document["format"] == 1 and document["shards"] == SHARDS
+                and document["shard"] == index and document["mode"] == "run"
+                and document["exit_code"] == 0, "shard_not_successful")
+        require(document["collected"] == canonical, "collections_differ")
+        selected = partition(canonical, index)
+        require(bool(selected) and document["selected"] == selected, "shard_partition_mismatch")
+        require(not document["unsuccessful"] and set(document["passed"]) == {"setup", "call", "teardown"}
+                and all(Counter(document["passed"][phase]) == Counter(selected)
+                        for phase in ("setup", "call", "teardown")), "test_not_fully_passed")
+        assigned.extend(selected)
+    require(Counter(assigned) == Counter(canonical), "suite_not_exactly_once")
+    return len(canonical)
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+def combine():
+    import coverage
+    require(coverage.__version__ == "7.13.2", "coverage_version_mismatch")
+    directory = OUTPUT / "downloads"
+    expected = {f"linux-shard-{index}" for index in range(SHARDS)}
+    require({p.name for p in directory.iterdir()} == expected, "two_artifacts_required")
+    documents, payloads = [], []
+    for index in range(SHARDS):
+        artifact = directory / f"linux-shard-{index}"
+        require({p.name for p in artifact.iterdir()} == {"manifest.json", "arcs.json"},
+                "artifact_files_mismatch")
+        documents.append(json.loads((artifact / "manifest.json").read_text(encoding="utf-8")))
+        payload = json.loads((artifact / "arcs.json").read_text(encoding="utf-8"))
+        require(payload["format"] == 1 and payload["shard"] == index
+                and any(payload["arcs"].values()),
+                "invalid_coverage_artifact")
+        payloads.append(payload)
+    count = verify_manifests(documents)
+    # Metadata-only process: no application imports, tests, credentials or DBs.
+    cov = coverage.Coverage(branch=True, config_file=False, source=["oaf_website"],
+                            data_file=str(OUTPUT / ".coverage"))
+    data = cov.get_data()
+    data.erase()
+    for payload in payloads:
+        normalized = {}
+        for name, arcs in payload["arcs"].items():
+            path = Path(name)
+            require(not path.is_absolute() and ".." not in path.parts
+                    and path.parts[0] == "oaf_website" and path.suffix == ".py"
+                    and (ROOT / path).is_file(), "invalid_coverage_source")
+            require(all(isinstance(arc, list) and len(arc) == 2
+                        and all(type(line) is int for line in arc) for arc in arcs),
+                    "invalid_coverage_arcs")
+            normalized[str((ROOT / path).resolve())] = [tuple(arc) for arc in arcs]
+        data.add_arcs(normalized)
+    require(data.has_arcs(), "branch_coverage_required")
+    cov.save()
+    cov.report(show_missing=True)
+    cov.json_report(outfile=str(OUTPUT / "coverage.json"))
+    totals = json.loads((OUTPUT / "coverage.json").read_text(encoding="utf-8"))["totals"]
+    require(totals["num_statements"] > 0 and totals["num_branches"] > 0
+            and totals["covered_lines"] == totals["num_statements"]
+            and totals["covered_branches"] == totals["num_branches"]
+            and totals["missing_lines"] == totals["missing_branches"] == 0,
+            "statement_and_branch_coverage_below_100")
+    print(f"PASS: {count} tests exactly once; statement and branch coverage both 100%.", flush=True)
+    return 0
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("action", choices=("collect", "shard", "combine"))
+    parser.add_argument("--shard", type=int, choices=range(SHARDS))
+    options = parser.parse_args()
+    require(Path.cwd().resolve() == ROOT, "run_from_repository_root")
+    if options.action == "combine":
+        require(options.shard is None, "combine_has_no_shard")
+        return combine()
+    require(options.shard is not None, "shard_required")
+    return run_shard(options.shard, collect=options.action == "collect")
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+if __name__ == "__main__":
+    raise SystemExit(main())
+tests\conftest.py
+rg: pyproject.toml: The system cannot find the file specified. (os error 2)
+rg: pytest.ini: The system cannot find the file specified. (os error 2)
+rg: setup.cfg: The system cannot find the file specified. (os error 2)
+rg: requirements*.txt: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+tests\test_notification_management_migration.py:409:    if mutation == "parent": source = source.replace('down_revision = "0008_web_launch"', 'down_revision = "0007_release_approvals"')
+tests\test_notification_management_migration.py:410:    if mutation == "identity": source = source.replace('revision = "0009_state_availability"', 'revision = "0009_other"')
+tests\test_notification_management_migration.py:493:    if mutation == "identity": source = source.replace('revision = "0008_web_launch"', 'revision = "0008_other"')
+System.Management.Automation.RemoteException
+ succeeded in 381ms:
+System.Management.Automation.RemoteException
+.github/workflows/linux-tests.yml
+ops/Invoke-NotificationLiveValidation.ps1
+ops/Invoke-StateRequestLiveValidation.ps1
+ops/Record-Development0002Prerequisites.ps1
+ops/Record-Development0003Prerequisites.ps1
+ops/Record-Testing0003Approvals.ps1
+ops/Record-Testing0003Reconciliation.ps1
+ops/Set-DevelopmentContactSmtpCredential.ps1
+ops/Set-DevelopmentIntegrationCredentials.ps1
+ops/Start-DevelopmentWebsite.ps1
+ops/ci_pytest.py
+ops/local_postgres_bootstrap/01_roles.sql
+ops/local_postgres_bootstrap/02_dev_schema.sql
+ops/local_postgres_bootstrap/03_test_schema.sql
+ops/local_postgres_bootstrap/04_verify.sql
+ops/local_postgres_bootstrap/05_activate_dev.py
+ops/local_postgres_bootstrap/06_activate_test.py
+ops/local_postgres_bootstrap/README.md
+ops/notification_live_check.py
+ops/state_request_live_check.py
+tests/conftest.py
+Name       Source                                                                           
+----       ------                                                                           
+python.exe C:\Users\ovisa\Documents\OAF_App\Development\OAF Website\.venv\Scripts\python.exe
+.git
+.github
+.pytest_cache
+.venv
+.vscode
+assets
+config
+docs
+instance
+logs
+migrations
+oaf_website
+ops
+tests
+.gitignore
+about.html
+alembic.ini
+confirm-email.html
+contact.html
+faq.html
+gramanna.html
+index.html
+manage-notifications.html
+README.md
+requirements-dev.txt
+requirements-migrations.txt
+requirements.txt
+styles.css
+support.html
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+codex
+The workflow has no explicit test-generation step; it runs `ops/ci_pytest.py`, which collects files from an allowlist. IΓÇÖm checking the pytest startup hooks for generation before declaring the assertion source missing.
+System.Management.Automation.RemoteException
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'git show 197dd75:.github/workflows/linux-tests.yml; git log -5 --oneline -- .github/workflows/linux-tests.yml ops/ci_pytest.py tests/conftest.py tests/migration_offline.py tests/test_migration_authority.py; git status --porcelain=v1; Get-ChildItem -LiteralPath logs -Name' in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content -LiteralPath tests/conftest.py; Get-Content -LiteralPath tests/migration_offline.py; Get-Content -LiteralPath requirements-dev.txt; Get-Content -LiteralPath requirements-migrations.txt; Get-Content -LiteralPath requirements.txt; rg -n 'write_text|write_bytes|open\\(|exec\\(|compile\\(|base64|zlib|marshal|pytest_plugins|pytest_generate_tests|pytest_collect|migration_authority|0008|head' tests/conftest.py tests/migration_offline.py tests/test_migration_catalog.py tests/test_migration_provenance.py tests/test_migration_artifacts.py .github/workflows/linux-tests.yml ops/ci_pytest.py" in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+ succeeded in 220ms:
+"""Offline suite: deny real credential access and database/network connections."""
+System.Management.Automation.RemoteException
+import socket
+import sys
+from types import ModuleType
+System.Management.Automation.RemoteException
+import psycopg
+import pytest
+import sqlalchemy
+import sqlalchemy.engine.create
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+@pytest.fixture(autouse=True)
+def isolate_external_access(monkeypatch):
+    def denied(*args, **kwargs):
+        raise AssertionError("Unit tests must not access credentials or connections.")
+System.Management.Automation.RemoteException
+    # Even accidental imports cannot reach an installed keyring or its plugins.
+    for name in ("keyring", "keyring.backends", "keyring.backends.Windows"):
+        module = ModuleType(name)
+        module.__path__ = []
+        module.get_keyring = denied
+        module.get_password = denied
+        module.get_credential = denied
+        module.set_password = denied
+        module.delete_password = denied
+        module.WinVaultKeyring = denied
+        monkeypatch.setitem(sys.modules, name, module)
+    monkeypatch.setattr(psycopg, "connect", denied)
+    monkeypatch.setattr(psycopg.Connection, "connect", denied)
+    monkeypatch.setattr(sqlalchemy, "create_engine", denied)
+    monkeypatch.setattr(sqlalchemy.engine.create, "create_engine", denied)
+    monkeypatch.setattr(socket, "create_connection", denied)
+    monkeypatch.setattr(socket.socket, "connect", denied)
+    monkeypatch.setenv("OAF_ENV", "testing")
+"""Stage 3 test-only plugin, explicitly loaded BEFORE collection with -p.
+System.Management.Automation.RemoteException
+Supported PowerShell invocation (from the website root):
+  $env:PYTEST_DISABLE_PLUGIN_AUTOLOAD='1'; $env:PYTHONPATH="$PWD;$PWD/tests"
+  $env:PYTEST_ADDOPTS=''; $env:PYTEST_PLUGINS=''
+  .venv/Scripts/python.exe -B -m pytest -p migration_offline -q <APPROVED_TESTS>
+APPROVED_TESTS below is the exact bounded file inventory; --collect-only is safe.
+System.Management.Automation.RemoteException
+Guards cover the declared Python APIs, exposed native Psycopg aliases, native
+wrapper imports, ctypes loading/symbol lookup and private file opens. All
+connections/credentials in these tests must be synthetic. Operational records
+are confined to test temporary directories. This is NOT OS isolation: malicious native code, cached
+native function pointers or arbitrary alternate FFI are outside this trusted
+test scope. Never extend the scope to those interfaces without separate review.
+"""
+System.Management.Automation.RemoteException
+import os
+import asyncio
+import ctypes
+import importlib.abc
+from pathlib import Path
+import socket
+import sqlite3
+import sqlite3.dbapi2
+import _sqlite3
+import ssl
+import subprocess
+import sys
+from types import ModuleType, SimpleNamespace
+from unittest.mock import Mock
+System.Management.Automation.RemoteException
+import psycopg
+import pytest
+import sqlalchemy
+import sqlalchemy.engine.create
+from sqlalchemy.engine import Engine
+System.Management.Automation.RemoteException
+# pytest's trusted Windows console adapter resolves kernel32 symbols on import.
+# Load it before denying new FFI access; it has no credential/database interface.
+if sys.platform == "win32":
+    import colorama
+    # Flask's pinned Click console adapter also resolves kernel32 console
+    # symbols on import. Preload this trusted UI dependency before the same
+    # FFI denial; it has no credential/database interface.
+    import click
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+ROOT = Path(__file__).resolve().parents[1]
+SECRET = "STAGE3-SYNTHETIC-NOT-A-DATABASE-PASSWORD:@/├â╞Æ├é┬⌐"
+ATTEMPTS = []
+EARLY_REGISTERED = False
+PRODUCTION_IMPORTS = []
+APPROVED_TESTS = frozenset({
+    "tests/test_failure_diagnostics.py",
+    "tests/test_database_config.py", "tests/test_migration_config.py",
+    "tests/test_migration_artifacts.py", "tests/test_migration_authorization.py",
+    "tests/test_migration_catalog.py", "tests/test_migration_runner.py",
+    "tests/test_migration_provenance.py",
+    "tests/test_migration_operational.py",
+    "tests/test_state_requests.py", "tests/test_state_request_migration.py",
+    "tests/test_notifications.py", "tests/test_notification_migration.py",
+    "tests/test_public_confirmation.py",
+    "tests/test_notification_lifecycle_repair.py", "tests/test_webhook_guard.py",
+    "tests/test_confirmation_processor.py",
+    "tests/test_confirmation_schedule.py",
+    "tests/test_notification_management.py", "tests/test_brevo_unsubscribe.py",
+    "tests/test_notification_management_migration.py",
+    "tests/test_controlled_confirmation.py", "tests/test_testing_https.py",
+    "tests/test_operational_safeguards.py",
+    "tests/test_integrations.py",
+    "tests/test_development_integrations.py",
+    "tests/test_contact.py",
+    "tests/test_notification_delivery.py", "tests/test_notification_delivery_migration.py",
+    "tests/test_confirmation_outbox.py", "tests/test_confirmation_outbox_migration.py",
+    "tests/test_brevo.py", "tests/test_notification_dispatch.py",
+})
+_guard = pytest.MonkeyPatch()
+_REAL_AUDIT = str(Path(os.environ.get('LOCALAPPDATA', 'C:/unavailable')) /
+                  'OAF Website' / 'BootstrapAudit').replace('\\', '/').lower()
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+class OfflineAccess(BaseException):
+    """Cannot be swallowed by production's ordinary exception classification."""
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+def denied(*args, **kwargs):
+    ATTEMPTS.append("external access denied")
+    raise OfflineAccess("Stage 3 offline isolation denied external access")
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+def _private(path):
+    if not isinstance(path, (str, bytes, os.PathLike)):
+        return False
+    value = "/" + os.fsdecode(path).replace("\\", "/").lower()
+    return ("/config/local/" in value or "/secrets/" in value
+            or _REAL_AUDIT in value
+            or "/.aws/" in value or "/.ssh/" in value
+            or Path(value).name.startswith(".env")
+            or Path(value).name in {"keyringrc.cfg", "credentials", "pgpass.conf", ".pgpass"})
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+def _audit_guard(event, args):
+    if event in {"socket.connect", "socket.bind", "socket.getaddrinfo",
+                 "socket.gethostbyname", "socket.gethostbyaddr", "socket.getnameinfo",
+                 "socket.sendto", "socket.sendmsg", "subprocess.Popen", "os.system",
+                 "os.exec", "os.posix_spawn", "os.spawn", "os.fork", "os.forkpty",
+                 "os.startfile", "os.startfile/2", "sqlite3.connect",
+                 "ctypes.dlopen", "ctypes.dlsym", "ctypes.dlsym/handle"}:
+        denied()
+    if event == "open" and _private(args[0]):
+        denied()
+    if event in {'os.listdir', 'os.scandir'} and args and _private(args[0]):
+        denied()
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+if any(name == "oaf_website" or name.startswith("oaf_website.") for name in sys.modules):
+    raise pytest.UsageError("Offline plugin loaded after production imports")
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+class _ImportGuard(importlib.abc.MetaPathFinder):
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname == "oaf_website" or fullname.startswith("oaf_website."):
+            require_early_registration()
+            PRODUCTION_IMPORTS.append(fullname)
+        # Alternate libpq/credential wrappers are unsupported; deny BEFORE load.
+        if fullname.startswith(("psycopg.pq.pq_ctypes", "psycopg.pq._pq_ctypes",
+                                "psycopg_c", "win32ctypes.core", "cffi")):
+            denied()
+        return None
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+class _DeniedNativeConnection:
+    def __new__(cls, *args, **kwargs):
+        denied()
+    connect = connect_start = connect_poll = reset = reset_start = reset_poll = ping = staticmethod(denied)
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+# Native types are immutable in the installed binary distribution. Replace
+# every exposed alias instead of pretending setattr on the C type succeeded.
+for native_name in ("PGconn", "PGcancel", "PGcancelConn"):
+    native = getattr(psycopg.pq, native_name)
+    for module in tuple(sys.modules.values()):
+        if module is not None and getattr(module, "__name__", "").startswith("psycopg"):
+            if vars(module).get(native_name) is native:
+                _guard.setattr(module, native_name, _DeniedNativeConnection)
+del native
+System.Management.Automation.RemoteException
+GUARDED_APIS = [
+    (psycopg, "connect"), (psycopg.Connection, "connect"),
+    (psycopg.AsyncConnection, "connect"), (psycopg.pq, "import_from_libpq"),
+    (psycopg.generators, "connect"), (psycopg.generators, "_connect"),
+    (sqlalchemy, "create_engine"), (sqlalchemy.engine.create, "create_engine"),
+    (Engine, "connect"), (Engine, "raw_connection"),
+]
+# The binary generator can call libpq directly, bypassing pq.PGconn's alias.
+from psycopg._cmodule import _psycopg
+if _psycopg is not None:
+    GUARDED_APIS.append((_psycopg, "connect"))
+for obj, names in (
+    (socket, ("create_connection", "create_server", "getaddrinfo", "getnameinfo",
+              "gethostbyname", "gethostbyname_ex", "gethostbyaddr")),
+    (socket.socket, ("connect", "connect_ex", "bind", "listen", "accept", "send",
+                     "_accept", "sendall", "sendto", "sendmsg", "sendfile", "recv",
+                     "recv_into", "recvfrom", "recvfrom_into", "recvmsg", "recvmsg_into")),
+    (ssl.SSLSocket, ("connect", "connect_ex", "send", "sendall", "sendto", "write",
+                    "read", "recv", "recv_into", "recvfrom", "recvfrom_into")),
+    (asyncio.BaseEventLoop, ("create_connection", "create_server", "create_datagram_endpoint",
+                            "connect_accepted_socket", "subprocess_exec", "subprocess_shell")),
+    (asyncio.SelectorEventLoop, ("sock_connect", "sock_sendall", "sock_sendto")),
+    (subprocess, ("Popen", "run", "call", "check_call", "check_output", "getoutput", "getstatusoutput")),
+    (os, tuple(n for n in dir(os) if n.startswith(("spawn", "exec"))) +
+         ("system", "popen", "startfile", "posix_spawn", "posix_spawnp", "fork", "forkpty")),
+    (ctypes, ("CDLL", "PyDLL", "WinDLL", "OleDLL")),
+    (ctypes.LibraryLoader, ("LoadLibrary", "__getattr__")),
+    (sqlite3, ("connect", "Connection")),
+    (sqlite3.dbapi2, ("connect", "Connection")),
+    (_sqlite3, ("connect", "Connection")),
+):
+    GUARDED_APIS.extend((obj, name) for name in names if hasattr(obj, name))
+if sys.platform == "win32":
+    import _winapi
+    GUARDED_APIS.append((_winapi, "CreateProcess"))
+    # Proactor uses different asynchronous socket implementations on Windows.
+    from asyncio.proactor_events import BaseProactorEventLoop
+    GUARDED_APIS.extend((BaseProactorEventLoop, name) for name in
+                        ("sock_connect", "sock_sendall", "sock_sendto")
+                        if hasattr(BaseProactorEventLoop, name))
+for obj, name in GUARDED_APIS:
+    _guard.setattr(obj, name, denied)
+System.Management.Automation.RemoteException
+CREDENTIAL_MODULES = ("keyring", "keyring.backends", "keyring.backends.Windows",
+    "win32cred", "win32crypt", "win32vault", "win32ctypes.pywin32.win32cred")
+CREDENTIAL_METHODS = ("get_keyring", "get_password", "get_credential", "set_password",
+    "delete_password", "WinVaultKeyring", "CredRead", "CredReadA", "CredReadW",
+    "CredEnumerate", "CredEnumerateA", "CredEnumerateW", "CredWrite", "CredDelete",
+    "CredReadDomainCredentials", "CredReadDomainCredentialsW", "CryptUnprotectData",
+    "VaultOpenVault", "VaultEnumerateVaults", "VaultEnumerateItems", "VaultGetItem")
+for name in CREDENTIAL_MODULES:
+    module = ModuleType(name)
+    module.__path__ = []
+    for method in CREDENTIAL_METHODS:
+        setattr(module, method, denied)
+    _guard.setitem(sys.modules, name, module)
+sys.dont_write_bytecode = True
+sys.addaudithook(_audit_guard)
+sys.meta_path.insert(0, _ImportGuard())
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+def require_early_registration():
+    if not EARLY_REGISTERED:
+        raise pytest.UsageError("Use the supported -p migration_offline invocation before collection")
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+@pytest.hookimpl(tryfirst=True)
+def pytest_load_initial_conftests(early_config, parser, args):
+    global EARLY_REGISTERED
+    if (os.environ.get("PYTEST_DISABLE_PLUGIN_AUTOLOAD") != "1"
+            or os.environ.get("PYTEST_PLUGINS") or os.environ.get("PYTEST_ADDOPTS")
+            or early_config.pluginmanager.get_plugin("migration_offline") is not sys.modules[__name__]
+            or Path(sys.prefix).resolve() != (ROOT / ".venv").resolve()):
+        raise pytest.UsageError("Offline startup requires website .venv, explicit plugin and disabled autoload")
+    selected = early_config.known_args_namespace.file_or_dir
+    if not selected or any(Path(arg.split("::")[0]).resolve() not in
+                           {ROOT / name for name in APPROVED_TESTS} for arg in selected):
+        raise pytest.UsageError("Offline collection requires explicit approved test files")
+    if (any(getattr(obj, name) is not denied for obj, name in GUARDED_APIS)
+            or any(getattr(sys.modules[module], name) is not denied
+                   for module in CREDENTIAL_MODULES for name in CREDENTIAL_METHODS)
+            or any(getattr(psycopg.pq, name) is not _DeniedNativeConnection
+                   for name in ("PGconn", "PGcancel", "PGcancelConn"))):
+        raise pytest.UsageError("Offline guards incomplete before collection")
+    EARLY_REGISTERED = True
+    print("Stage 3 isolation: plugin and guards verified before conftest/collection")
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+@pytest.hookimpl(trylast=True)
+def pytest_sessionfinish(session, exitstatus):
+    if ATTEMPTS:
+        if session.exitstatus == 0:
+            session.exitstatus = pytest.ExitCode.TESTS_FAILED
+        print("UNEXPECTED OFFLINE ACCESS ATTEMPTS:", len(ATTEMPTS))
+    else:
+        print("Stage 3 isolation: zero unexpected external-access attempts")
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+@pytest.fixture(autouse=True)
+def offline_guard(monkeypatch, isolate_external_access, tmp_path):
+    # Run after existing conftest, then retain non-swallowable, counted denials.
+    require_early_registration()
+    monkeypatch.setenv('LOCALAPPDATA', str(tmp_path))
+    (tmp_path / 'OAF Website' / 'BootstrapAudit').mkdir(parents=True, exist_ok=True)
+    for obj, name in GUARDED_APIS:
+        monkeypatch.setattr(obj, name, denied)
+    for name in ("keyring", "keyring.backends", "keyring.backends.Windows"):
+        for method in CREDENTIAL_METHODS:
+            # Existing conftest creates smaller synthetic modules per test.
+            monkeypatch.setattr(sys.modules[name], method, denied, raising=False)
+    # Also replace copied production aliases.
+    for name in ("oaf_website.migrate",):
+        module = sys.modules.get(name)
+        if module is not None:
+            monkeypatch.setattr(module, "create_engine", denied)
+    yield
+    assert not ATTEMPTS, "Unexpected access attempt must fail the whole run"
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+def artifacts():
+    from oaf_website import migration_validation as v
+    import json
+    document = json.loads((ROOT / "migrations/manifest.json").read_bytes())
+    return v.validate_artifacts(expected_start=v.BASE, target=v.BASELINE,
+                                manifest_hash=v.digest((ROOT / "migrations/manifest.json").read_bytes()),
+                                revision_hash=document["revisions"][0]["sha256"])
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+class DriverError(Exception):
+    def __init__(self, code=None):
+        self.sqlstate = code
+        super().__init__(SECRET)
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+class Result:
+    def __init__(self, value):
+        self.value = value
+System.Management.Automation.RemoteException
+    def mappings(self):
+        assert isinstance(self.value, list)
+        return self.value
+System.Management.Automation.RemoteException
+    def scalar_one(self):
+        return self.value
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+class FakeTransaction:
+    def __init__(self, connection):
+        self.connection = connection
+        self.is_active = True
+System.Management.Automation.RemoteException
+    def commit(self):
+        c = self.connection
+        c.hit("commit")
+        c.commits += 1
+        self.is_active = False
+        c.transaction = None
+System.Management.Automation.RemoteException
+    def rollback(self):
+        self.connection.rollback()
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+class FakeConnection:
+    """Deterministic physical-session model; never subclasses a real connection."""
+    def __init__(self):
+        self.driver = SimpleNamespace(closed=False, broken=False, pgconn=object(), advisory_lock=False,
+                                      info=SimpleNamespace(backend_pid=701))
+        self.proxy = SimpleNamespace(is_valid=True, dbapi_connection=self.driver,
+                                     driver_connection=self.driver)
+        self.closed = self.invalidated = False
+        self.transaction = None
+        self.commits = self.rollbacks = self.begins = 0
+        self.calls = []
+        self.physical_calls = []
+        self.reconnect_attempts = 0
+        self.reconnect_on_access = False
+        self.retain_lock_on_unlock = False
+        self.hooks = {}
+        self.lock = False
+        self.target = False
+        self.owner = False
+System.Management.Automation.RemoteException
+    def hit(self, phase):
+        self.calls.append(phase)
+        hook = self.hooks.get(phase)
+        if isinstance(hook, list):
+            hook = hook.pop(0) if hook else None
+        if isinstance(hook, BaseException):
+            raise hook
+        if callable(hook):
+            return hook(self)
+System.Management.Automation.RemoteException
+    @property
+    def connection(self):
+        self.hit("physical_proxy")
+        if self.reconnect_on_access and (self.invalidated or not self.proxy.is_valid):
+            self.reconnect_attempts += 1
+            self.replace_physical_session()
+            self.invalidated = False
+        return self.proxy
+System.Management.Automation.RemoteException
+    def replace_physical_session(self, same_pid=True):
+        self.driver = SimpleNamespace(closed=False, broken=False, pgconn=object(), advisory_lock=False,
+            info=SimpleNamespace(backend_pid=701 if same_pid else 702))
+        self.proxy = SimpleNamespace(is_valid=True, dbapi_connection=self.driver,
+                                     driver_connection=self.driver)
+        self.lock = False
+System.Management.Automation.RemoteException
+    @property
+    def lock(self):
+        return self.driver.advisory_lock
+System.Management.Automation.RemoteException
+    @lock.setter
+    def lock(self, value):
+        self.driver.advisory_lock = value
+System.Management.Automation.RemoteException
+    def begin(self):
+        self.hit("begin")
+        assert not self.transaction
+        self.begins += 1
+        self.transaction = FakeTransaction(self)
+        return self.transaction
+System.Management.Automation.RemoteException
+    def get_transaction(self):
+        return self.transaction
+System.Management.Automation.RemoteException
+    def in_transaction(self):
+        return self.transaction is not None
+System.Management.Automation.RemoteException
+    def in_nested_transaction(self):
+        return False
+System.Management.Automation.RemoteException
+    def rollback(self):
+        self.hit("rollback")
+        self.rollbacks += 1
+        if self.transaction:
+            self.transaction.is_active = False
+        self.transaction = None
+        self.owner = False
+System.Management.Automation.RemoteException
+    def close(self):
+        self.hit("close")
+        self.closed = True
+System.Management.Automation.RemoteException
+    def execute(self, sql, parameters=None):
+        sql = str(sql)
+        self.calls.append(sql)
+        self.physical_calls.append((sql, self.proxy, self.driver, self.driver.pgconn))
+        if sql.startswith("SET "):
+            if "ROLE" in sql:
+                self.owner = True
+            return Result(None)
+        if not self.transaction:
+            self.begin()  # Model SQLAlchemy autobegin without opening anything.
+        if "current_setting('search_path')" in sql:
+            return Result("pg_catalog, oaf_website, pg_temp")
+        if "pg_settings" in sql:
+            return Result(5000 if "lock_timeout" in sql else 60000)
+        if "SELECT pg_catalog.pg_backend_pid()" == sql:
+            return Result(self.driver.info.backend_pid)
+        if "pg_try_advisory_lock" in sql:
+            self.hit("acquire")
+            self.lock = True
+            return Result(True)
+        if "pg_advisory_unlock" in sql:
+            override = self.hit("unlock")
+            released = self.lock if override is None else override
+            if not self.retain_lock_on_unlock:
+                self.lock = False
+            return Result(released)
+        if "pg_locks" in sql:
+            self.hit("absence" if "AND granted" in sql and "pid=pg_catalog.pg_backend_pid()" in sql else "lock_check")
+            return Result(self.lock)
+        raise AssertionError("Unknown fake session query: " + sql)
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+class FakeSink:
+    def __init__(self, connection):
+        self.connection = connection
+        self.events = []
+        self.final_events = []
+        self.write_attempts = []
+        self.final_attempts = []
+System.Management.Automation.RemoteException
+    def write(self, event):
+        self.write_attempts.append(event)
+        self.connection.hit("audit_" + event.phase)
+        self.events.append(event)
+System.Management.Automation.RemoteException
+    def finalize(self, event):
+        self.final_attempts.append(event)
+        self.connection.hit("finalize")
+        self.final_events.append(event)
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+@pytest.fixture
+def runner(monkeypatch):
+    from oaf_website import migrate as m, migration_config as c
+    real_execute_revision = m._execute_revision
+    a = artifacts()
+    connection = FakeConnection()
+    sink = FakeSink(connection)
+    engine = SimpleNamespace(connect=Mock(return_value=connection),
+                             dispose=lambda: connection.hit("dispose"))
+    authority = SimpleNamespace(authorize=Mock(return_value=sink))
+    request = m.Request("upgrade", "testing", a.expected_start, a.target,
+                        a.manifest_hash, a.revision_hash)
+    monkeypatch.setattr(c.os, "environ", {"OAF_ENV": "testing"})
+    # Private seam replacement is limited to this fixture, not an adapter registry.
+    monkeypatch.setattr(m, "_require_operational_adapter", Mock())
+    monkeypatch.setattr(m, "load_migration_config", Mock(return_value=SimpleNamespace(url="synthetic-only")))
+    monkeypatch.setattr(m, "create_engine", Mock(return_value=engine))
+    monkeypatch.setattr(m, "verify_identity", lambda *args, **kw: connection.hit("identity"))
+    monkeypatch.setattr(m, "verify_authority", lambda *args: connection.hit("authority"))
+System.Management.Automation.RemoteException
+    def catalog(*args):
+        override = connection.hit("catalog")
+        return override if override is not None else a.target if connection.target else a.expected_start
+System.Management.Automation.RemoteException
+    def revision(*args):
+        args[4].mutation_started = True
+        args[4].transaction = 'mutation_possible'
+        connection.hit("revision")
+        assert args[3] is connection.transaction
+        connection.target = True
+System.Management.Automation.RemoteException
+    monkeypatch.setattr(m, "catalog_state", catalog)
+    monkeypatch.setattr(m, "_execute_revision", revision)
+    return SimpleNamespace(m=m, c=c, a=a, connection=connection, sink=sink,
+                           real_execute_revision=real_execute_revision,
+                           engine=engine, authority=authority, request=request,
+                           run=lambda: m.run(request, authority=authority))
+# Install production dependencies in the dedicated website .venv as well.
+-r requirements.txt
+System.Management.Automation.RemoteException
+# Do not install Playwright here; use the shared environment in docs/WORKFLOW.md.
+pytest==9.0.2
+coverage==7.13.2
+# Standalone tooling; compatibility is NOT operationally validated.
+# Install/resolve only at a separately authorized dependency/testing checkpoint.
+-r requirements.txt
+Alembic==1.20.0
+# Website backend: Python 3.11.
+# Pins selected from published package metadata.
+Flask==3.1.3
+SQLAlchemy==2.0.54
+psycopg[binary]==3.3.6
+# Published Python >=3.9 metadata: https://pypi.org/project/keyring/25.7.0/
+keyring==25.7.0
+ops/ci_pytest.py:47:    def pytest_collection_modifyitems(self, config, items):
+ops/ci_pytest.py:64:    with path.open("x", encoding="utf-8", newline="\n") as stream:
+tests/test_migration_artifacts.py:22:        target.write_bytes((ROOT / name).read_bytes())
+tests/test_migration_artifacts.py:37:    (root / "migrations/manifest.json").write_text(json.dumps(document), encoding="utf-8")
+tests/test_migration_artifacts.py:50:        path.write_text('\n'.join(source.splitlines()[first.end_lineno:])+'\n')
+tests/test_migration_artifacts.py:81:@pytest.mark.parametrize("start,target", [("head", v.BASELINE), (v.BASELINE, "base"),
+tests/test_migration_artifacts.py:82:    (v.BASE, "head"), (v.BASE, "heads"), (v.BASE, "0002"), (v.BASE, "base")])
+tests/test_migration_artifacts.py:102:        path.write_bytes(path.read_bytes() + b"\n# synthetic tamper\n")
+tests/test_migration_artifacts.py:122:    ("target_state", "head"), ("grants", ["PUBLIC"]), ("branch_labels", ["branch"])])
+tests/test_migration_artifacts.py:134:    path.write_bytes(payload)
+tests/test_migration_artifacts.py:143:    (artifact_copy / name).write_text("# synthetic only\n", encoding="utf-8")
+tests/test_migration_artifacts.py:162:    path.write_text(path.read_text(encoding="utf-8").replace(old, new), encoding="utf-8")
+tests/test_migration_artifacts.py:173:    path.write_text("Alembic==0.0.0\n", encoding="utf-8")
+tests/test_migration_artifacts.py:210:    exec(compile((ROOT / v.REVISION_FILE).read_bytes(), "synthetic-baseline", "exec"), namespace)
+System.Management.Automation.RemoteException
+ succeeded in 277ms:
+name: Linux tests
+System.Management.Automation.RemoteException
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+System.Management.Automation.RemoteException
+permissions:
+  contents: read
+System.Management.Automation.RemoteException
+jobs:
+  tests:
+    name: Pytest shard ${{ matrix.shard }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        shard: [0, 1]
+    env:
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+      PYTEST_ADDOPTS: ""
+      PYTEST_PLUGINS: ""
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/tests
+      OAF_ENV: testing
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install canonical dependencies in website environment
+        run: |
+          python -m venv .venv
+          .venv/bin/python -m pip install -r requirements-dev.txt -r requirements-migrations.txt
+      - name: Run disjoint canonical shard with branch coverage
+        run: .venv/bin/python -B ops/ci_pytest.py shard --shard ${{ matrix.shard }}
+      - name: Upload only synthetic test inventory and coverage arcs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-shard-${{ matrix.shard }}
+          path: |
+            .pytest_cache/ci/run/shard-${{ matrix.shard }}/manifest.json
+            .pytest_cache/ci/run/shard-${{ matrix.shard }}/arcs.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+System.Management.Automation.RemoteException
+  coverage:
+    name: Combined statement and branch coverage
+    needs: tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -r requirements-dev.txt
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: linux-shard-*
+          path: .pytest_cache/ci/downloads
+      - name: Verify complete disjoint suite and enforce exact 100% coverage
+        run: python -B ops/ci_pytest.py combine
+bdb8652 Add Linux CI and portability support
+d6def30 Complete OAF Website Step 5
+ea85b65 OAF Website: complete email confirmation workflow and TESTING validation
+b2f0069 OAF Website: integrate notifications, contact, migration foundations and shared services
+adaa149 Add launch and availability notifications with migration 0003
+?? logs/
+codex-20261027T1616403062430Z-0cfb95f753a8476ea7f0c37f2d141883.log
+codex-20261027T1622194980844Z-de0ba5c888594b398a77c6585792e4a0.log
+codex-20261027T1656432870936Z-51a5e947e47246b895026cb1cb5b118a.log
+codex-20261027T1722337313520Z-cfc2101e90a04fd7867da22f677b5934.log
+codex-20261027T1744025362225Z-5c397153e00f41e7888200ee2fd52bcf.log
+codex-20261027T1803263448665Z-5ce8b14724d940bcac07893a5ac55aa7.log
+codex-20261027T1822142331059Z-8bad35896cb744cfbb13b5c5085e38e9.log
+codex-20261027T1826474032617Z-9635c115aa66492287ed09ea37104851.log
+codex-20261027T2127578409649Z-eb726ef7ffb94f0aacac154f8412ff41.log
+codex-20261027T2136388310238Z-ed956557521e4ee68b5c6d7e5658cc7f.log
+codex-20261027T2149587696149Z-809a0824850349d192d0d78549a2a815.log
+codex-20261027T2158191479087Z-c4fa4ede2c2b43a2b7723c8c33088682.log
+codex-20261027T2210407422058Z-92f8995cd0c6415592dd5c08986715c3.log
+codex-20261027T2219591905849Z-74d619fe066b45f485a0806bef75d312.log
+codex-20261027T2310005256232Z-f25768cc7edc45669373b0aa380031f2.log
+codex-20261027T2330461142235Z-e57bb9f0ccde439a8b9e5fa589ee50c7.log
+codex-20261027T2345372986159Z-e9e2783aa3d0450a9fbfabfd410b18cb.log
+codex-20261027T2351504159805Z-9579720c8f6a4230ba713b2266b416f5.log
+codex-20261028T0012070499890Z-623864df94534fdcb1333510dd72c957.log
+codex-20261028T0018372862231Z-53156b73fb6e4d0b920b74d98805323d.log
+codex-20261028T0044337148261Z-e67ee9f4ea9c4e89a0db4aaf7b10f2d7.log
+codex-20261028T0050330184002Z-083ce22b36a74990a69855563700d944.log
+codex-20261028T0056040098517Z-0e3e812f999949619f3ef537642fd6e6.log
+codex-20261028T0100325526007Z-dc532a4c347a4fe9882b369571cd0fe8.log
+codex-20261028T0112214465105Z-ee68c7059e8f45eca057be6b3c3896f2.log
+codex-20261028T0120522322048Z-669e726cff904a15a6c430ac0e37e8c8.log
+codex-20261028T0131224608490Z-d5371654ec95446388860788f3b664ee.log
+codex-20261028T0143009376855Z-954fed9babf8406bac2f957b54ee1de6.log
+codex-20261028T0151007715499Z-c6aa5d93a0b4442b8b144202c56c70ba.log
+codex-20261028T0154171744474Z-8344d10505114d5aa0483a347f39e186.log
+codex-20261028T0207032572889Z-1788617b216f431bb3b473f04288f76d.log
+codex-20261028T0212480298194Z-04917213a77245eab390a51696f78638.log
+codex-20261028T0302131963138Z-578073decc46444b881959a7b72e3b7b.log
+codex-20261028T0315591985575Z-2755e07a319b495bb65a8801c152634a.log
+codex-20261028T0336236533948Z-bd3f3953af6b4eb2bc9257dad65b56ed.log
+codex-20261028T0351226884852Z-1e6f8fec8e004137af3e666ff785909d.log
+codex-20261029T0217105678048Z-b17315597a394188befa1dbbfd3414d1.log
+codex-20261029T0220150839399Z-4071c66836c94c94b3092ae4f29db90e.log
+System.Management.Automation.RemoteException
+codex
+The workflow, shard runner, and pytest startup hooks contain no generator or stale head assertion. The test is also absent from the runnerΓÇÖs allowlist. IΓÇÖll confirm those findings with a static check, then stop: correcting it requires the source or template that supplied the test to the failing CI run.
+System.Management.Automation.RemoteException
+exec
+"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "@'
+import ast
+from pathlib import Path
+System.Management.Automation.RemoteException
+root = Path.cwd()
+target = 'tests/test_migration_authority.py'
+plugin = ast.parse((root / 'tests/migration_offline.py').read_text(encoding='utf-8'))
+assignment = next(node for node in plugin.body if isinstance(node, ast.Assign) and any(isinstance(name, ast.Name) and name.id == 'APPROVED_TESTS' for name in node.targets))
+approved = ast.literal_eval(assignment.value.args[0])
+assert not (root / target).exists()
+assert target not in approved
+sources = ['.github/workflows/linux-tests.yml', 'ops/ci_pytest.py', 'tests/migration_offline.py', 'tests/conftest.py']
+for name in sources:
+    source = (root / name).read_text(encoding='utf-8')
+    assert 'test_migration_authority' not in source, name
+    assert '0008_web_launch' not in source, name
+    ast.parse(source) if name.endswith('.py') else None
+print('PASS: affected file absent; absent from CI allowlist; no target-test or stale-head reference in workflow, runner, or startup hooks; Python sources parse.')
+print('No pytest tests executed; no application imports or database operations.')
+'@ | & .venv/Scripts/python.exe -B -
+git diff --exit-code
+git diff --cached --exit-code
+git status --short
+rg -n 'uses: actions/checkout|Install canonical|run: .venv/bin/python|def canonical_files|APPROVED_TESTS|canonical_file_inventory_mismatch|pytest.main|pytest_load_initial_conftests' .github/workflows/linux-tests.yml ops/ci_pytest.py tests/migration_offline.py" in C:\Users\ovisa\Documents\OAF_App\Development\OAF Website
+ succeeded in 357ms:
+PASS: affected file absent; absent from CI allowlist; no target-test or stale-head reference in workflow, runner, or startup hooks; Python sources parse.
+No pytest tests executed; no application imports or database operations.
+?? logs/
+.github/workflows/linux-tests.yml:28:      - uses: actions/checkout@v4
+.github/workflows/linux-tests.yml:34:      - name: Install canonical dependencies in website environment
+.github/workflows/linux-tests.yml:39:        run: .venv/bin/python -B ops/ci_pytest.py shard --shard ${{ matrix.shard }}
+.github/workflows/linux-tests.yml:58:      - uses: actions/checkout@v4
+ops/ci_pytest.py:20:def canonical_files():
+ops/ci_pytest.py:26:                 and any(isinstance(t, ast.Name) and t.id == "APPROVED_TESTS" for t in node.targets))
+ops/ci_pytest.py:29:            "canonical_file_inventory_mismatch")
+ops/ci_pytest.py:89:        code = int(pytest.main(["-p", "migration_offline", "-q", "-x", "--tb=short",
+tests/migration_offline.py:6:  .venv/Scripts/python.exe -B -m pytest -p migration_offline -q <APPROVED_TESTS>
+tests/migration_offline.py:7:APPROVED_TESTS below is the exact bounded file inventory; --collect-only is safe.
+tests/migration_offline.py:53:APPROVED_TESTS = frozenset({
+tests/migration_offline.py:215:def pytest_load_initial_conftests(early_config, parser, args):
+tests/migration_offline.py:224:                           {ROOT / name for name in APPROVED_TESTS} for arg in selected):
+System.Management.Automation.RemoteException
+codex
+Blocked: the authoritative source of the stale assertion could not be located.
+System.Management.Automation.RemoteException
+- The [workflow](<C:/Users/ovisa/Documents/OAF_App/Development/OAF Website/.github/workflows/linux-tests.yml:39>) invokes the shard runner without generating tests.
+- The [runner](<C:/Users/ovisa/Documents/OAF_App/Development/OAF Website/ops/ci_pytest.py:20>) uses an allowlist that excludes `tests/test_migration_authority.py`.
+- No generator or `0008_web_launch` assertion was found in the workflow, runner, or pytest startup hooks. Generation during CI remains unconfirmed.
+System.Management.Automation.RemoteException
+The missing source is the script/template or other CI input that supplied `tests/test_migration_authority.py` to the failing run.
+System.Management.Automation.RemoteException
+Focused static checks passed; no tests or database operations ran. Changed files: none. Historical assertions, owner changes, and Git state remain untouched. Stopped without speculative edits.
+tokens used
+46,181
+Blocked: the authoritative source of the stale assertion could not be located.
+
+- The [workflow](<C:/Users/ovisa/Documents/OAF_App/Development/OAF Website/.github/workflows/linux-tests.yml:39>) invokes the shard runner without generating tests.
+- The [runner](<C:/Users/ovisa/Documents/OAF_App/Development/OAF Website/ops/ci_pytest.py:20>) uses an allowlist that excludes `tests/test_migration_authority.py`.
+- No generator or `0008_web_launch` assertion was found in the workflow, runner, or pytest startup hooks. Generation during CI remains unconfirmed.
+
+The missing source is the script/template or other CI input that supplied `tests/test_migration_authority.py` to the failing run.
+
+Focused static checks passed; no tests or database operations ran. Changed files: none. Historical assertions, owner changes, and Git state remain untouched. Stopped without speculative edits.
+PROJECT: OAF WEBSITE
+TASK: WU3 — Correct Generated CI Migration-Head Expectation
+STATUS: PASS
+UTC: 2026-10-29T02:20:15.0809094Z
+EXECUTION: PASS
+NATIVE_EXIT: 0
+FIRST_FAILURE: NONE
+REPORTING_FAILURES: 
+EVIDENCE: C:\Users\ovisa\Documents\OAF_App\Development\OAF Website\logs\codex-20261029T0220150839399Z-4071c66836c94c94b3092ae4f29db90e.log
+
+ORIGINAL CODEX REPORT:
+Blocked: the authoritative source of the stale assertion could not be located.
+
+- The [workflow](<C:/Users/ovisa/Documents/OAF_App/Development/OAF Website/.github/workflows/linux-tests.yml:39>) invokes the shard runner without generating tests.
+- The [runner](<C:/Users/ovisa/Documents/OAF_App/Development/OAF Website/ops/ci_pytest.py:20>) uses an allowlist that excludes `tests/test_migration_authority.py`.
+- No generator or `0008_web_launch` assertion was found in the workflow, runner, or pytest startup hooks. Generation during CI remains unconfirmed.
+
+The missing source is the script/template or other CI input that supplied `tests/test_migration_authority.py` to the failing run.
+
+Focused static checks passed; no tests or database operations ran. Changed files: none. Historical assertions, owner changes, and Git state remain untouched. Stopped without speculative edits.
+DONE - VERIFIED - new output is on the clipboard. Exact ordinal full-content read-back PASS.
