@@ -1537,3 +1537,15 @@ operational authorization, activation, deployment or Git delivery is claimed.
 
 **ONE smallest next checkpoint:** independent review of the exact OAF 0009
 migration artifacts and manifest; stop before execution or activation.
+
+
+### Mandatory legal-page deployment-readiness requirement
+
+Before public launch, both `privacy-policy.html` and `terms-of-use.html` must
+display actual Effective Date and Last Updated dates; no date placeholders may
+remain. Confirm the remaining applicable legal review, provider privacy/payment/
+email requirements, and publication checks against the services and practices
+actually being launched, including approved wording, working legal/contact links,
+and any required notices or interaction-specific acceptance reviewed separately.
+Development retains the owner-approved date placeholders until publication dates
+are established. Historical governing content and owner notes remain in force.

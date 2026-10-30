@@ -136,6 +136,11 @@ nav a,
   text-decoration: underline;
 }
 
+.footer-links a:focus-visible {
+  outline: 2px solid #496d60;
+  outline-offset: 3px;
+}
+
 .hero {
   position: relative;
   min-height: clamp(28rem, 40vw, 40rem);
@@ -406,7 +411,8 @@ footer {
 /* Informational pages: readable columns using the shared layout and palette. */
 .faq-page,
 .support-page,
-.contact-page {
+.contact-page,
+.legal-page {
   min-height: 100vh;
   min-height: 100dvh;
   display: flex;
@@ -415,25 +421,29 @@ footer {
 
 .faq-page footer,
 .support-page footer,
-.contact-page footer {
+.contact-page footer,
+.legal-page footer {
   margin-top: auto;
 }
 
 .faq-page .section-inner,
 .support-page .section-inner,
-.contact-page .section-inner {
+.contact-page .section-inner,
+.legal-page .section-inner {
   max-width: 800px;
 }
 
 .faq-intro,
 .support-intro,
-.contact-intro {
+.contact-intro,
+.legal-intro {
   background: #edf1ee;
 }
 
 .faq-intro h1,
 .support-intro h1,
-.contact-intro h1 {
+.contact-intro h1,
+.legal-intro h1 {
   margin: 0;
   color: #233f36;
   font-size: clamp(2.3rem, 5vw, 4.5rem);
@@ -447,7 +457,8 @@ footer {
   border-top: 1px solid #dce5df;
 }
 
-.faq-item h2 {
+.faq-item h2,
+.legal-content h2 {
   margin: 0 0 20px;
   color: #233f36;
   font-size: clamp(1.35rem, 2.4vw, 1.65rem);
@@ -455,7 +466,9 @@ footer {
 }
 
 .faq-item p,
-.support-content p {
+.support-content p,
+.legal-page article p,
+.legal-content li {
   margin: 0 0 16px;
   color: #555;
   font-size: 1.1rem;
@@ -477,7 +490,8 @@ footer {
 }
 
 .faq-page a:focus-visible,
-.support-page a:focus-visible {
+.support-page a:focus-visible,
+.legal-page a:focus-visible {
   outline: 2px solid #496d60;
   outline-offset: 3px;
 }
@@ -489,10 +503,59 @@ footer {
 @media (max-width: 750px) {
   .faq-page .content-section,
   .support-page .content-section,
-  .contact-page .content-section {
+  .contact-page .content-section,
+  .legal-page .content-section {
     padding-top: 60px;
     padding-bottom: 60px;
   }
+}
+
+/* Legal documents reuse the informational-page layout and readable type. */
+.legal-intro h1 {
+  margin-bottom: 20px;
+}
+
+.legal-page article {
+  overflow-wrap: anywhere;
+}
+
+.legal-content section + section {
+  margin-top: 40px;
+  padding-top: 40px;
+  border-top: 1px solid #dce5df;
+}
+
+.legal-content h3 {
+  margin: 28px 0 16px;
+  color: #233f36;
+  font-size: 1.2rem;
+  line-height: 1.4;
+}
+
+.legal-content ul {
+  margin: 0 0 16px;
+  padding-left: 1.5rem;
+}
+
+.legal-intro p:last-child,
+.legal-content section > p:last-child {
+  margin-bottom: 0;
+}
+
+.legal-page main {
+  scroll-margin-top: 180px;
+}
+
+.legal-skip-link {
+  position: fixed;
+  top: -100px;
+  left: 7%;
+  z-index: 101;
+  margin: 0;
+}
+
+.legal-skip-link:focus {
+  top: 12px;
 }
 
 /* About page: build on the shared sections, typography, and components. */
