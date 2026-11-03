@@ -44,6 +44,9 @@ class Shard:
         self.passed = {phase: [] for phase in ("setup", "call", "teardown")}
         self.unsuccessful = []
 
+    def pytest_sessionstart(self, session):
+        self.session = session
+
     def pytest_collection_modifyitems(self, config, items):
         ordered = sorted(items, key=lambda item: item.nodeid)
         self.collected = [item.nodeid for item in ordered]
@@ -57,6 +60,9 @@ class Shard:
             self.passed[report.when].append(report.nodeid)
         else:
             self.unsuccessful.append(report.nodeid)
+        # Finish reporting/cleanup, then stop before another test on a guard breach.
+        if sys.modules["migration_offline"].ATTEMPTS:
+            self.session.shouldstop = "Unexpected offline access attempt; stopping for safety"
 
 
 def write_json(path, document):
@@ -86,7 +92,7 @@ def run_shard(index, *, collect=False):
         cov = coverage.Coverage(branch=True, config_file=False, source=["oaf_website"])
         cov.start()
     try:
-        code = int(pytest.main(["-p", "migration_offline", "-q", "-x", "--tb=short",
+        code = int(pytest.main(["-p", "migration_offline", "-q", "--tb=short",
                               *(["--collect-only", "--quiet"] if collect else []), *canonical_files()],
                               plugins=[shard]))
     finally:
