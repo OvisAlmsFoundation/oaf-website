@@ -814,6 +814,8 @@ def test_correction_authority_cannot_provision_roles_or_credentials(correction):
     (["--revoke-public-temporary", "--provision-production"], False),
     (["--revoke-public-temporary", "--retry"], False)])
 def test_correction_requires_exact_isolated_invocation(monkeypatch, arguments, allowed):
+    # Satisfy the workspace prerequisite on every checkout before testing argv.
+    monkeypatch.setattr(p, "REPOSITORY", ROOT)
     console = SimpleNamespace(isatty=lambda: True)
     monkeypatch.setattr(p, "sys", SimpleNamespace(platform="win32", version_info=(3, 11),
         executable=str(ROOT / ".venv/Scripts/python.exe"), flags=SimpleNamespace(isolated=True),
