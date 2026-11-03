@@ -41,22 +41,10 @@ def process_confirmations(*, expected_profile, enabled=False, credential_account
             raise ValueError("Release processing requires current preference lifecycle controls.")
         environment = dict(os.environ if environ is None else environ)
         profile = _validate_environment(environment, expected_profile)
-        if profile == "production":
-            if not enabled:
-                return BatchResult("disabled")
-            from . import production_config
-            production = production_config.load_production_settings(environ=environment)
-            if (not production.processing_enabled or not management_enabled
-                    or not production.management_enabled or not production.webhook_enabled
-                    or releases_enabled != production.releases_enabled
-                    or confirmation_page != production_config.PUBLIC_ORIGIN + "/confirm-email.html"
-                    or credential_account is not None):
-                raise diagnostic_error(ValueError("Production processing activation unavailable."),
-                    "configuration", "production_processing_activation", stage="processor")
         if not enabled:
             return BatchResult("disabled")
         # TESTING has no unscoped enabled invocation. Other profiles retain their
-        # ordinary contract and cannot consume TESTING recipient configuration.
+        # ordinary contract and reject TESTING scopes before any runtime loading.
         if profile == "testing":
             scope = TestingRecipientScope(profile, testing_recipient)
         elif testing_recipient is not None:
@@ -66,6 +54,16 @@ def process_confirmations(*, expected_profile, enabled=False, credential_account
         if intent_scope is not None and (type(intent_scope) not in (ManagementIntentScope, ConfirmationIntentScope) or
                 profile != "testing" or scope is None or not management_enabled or releases_enabled):
             raise diagnostic_error(ValueError("Exceptional scope requires controlled TESTING management."), "process_confirmations", "processing_intent_scope", stage="processor")
+        if profile == "production":
+            from . import production_config
+            production = production_config.load_production_settings(environ=environment)
+            if (not production.processing_enabled or not management_enabled
+                    or not production.management_enabled or not production.webhook_enabled
+                    or releases_enabled != production.releases_enabled
+                    or confirmation_page != production_config.PUBLIC_ORIGIN + "/confirm-email.html"
+                    or credential_account is not None):
+                raise diagnostic_error(ValueError("Production processing activation unavailable."),
+                    "configuration", "production_processing_activation", stage="processor")
         page = secure_confirmation_page(confirmation_page)
         operation = "provider_configuration"
         provider = load_brevo_config(profile, credential_account=credential_account,

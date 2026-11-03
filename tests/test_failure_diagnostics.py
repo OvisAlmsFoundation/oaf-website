@@ -35,11 +35,31 @@ def test_invalid_store_configuration_precedes_external_access(sink, factory):
         'database': lambda: DatabaseConfig('production', None),
         'delivery': lambda: NotificationDeliveryStore(Model(), SECRET, 'testing', management_enabled=1),
         'summary': lambda: InterestSummaryStore(Model(), 'unknown'),
-        'management': lambda: ManagementCapabilities(SECRET, 'production'),
+        'management': lambda: ManagementCapabilities(SECRET, 'unknown'),
         'subscriptions': lambda: SubscriptionStore(Model(), management_store=SimpleNamespace(engine=Model())),
     }
     with pytest.raises(ValueError):
         calls[factory]()
+
+
+@pytest.mark.parametrize('environment', ['testing', 'development', 'production'])
+def test_management_capabilities_support_isolated_environments(sink, environment):
+    from oaf_website.notification_management import ManagementCapabilities, ManagementUnavailable
+    now = datetime(2026, 11, 2, tzinfo=timezone.utc)
+    capabilities = ManagementCapabilities(SECRET, environment)
+    token = capabilities.issue('a' * 64, 0, now, context='b' * 64)
+    assert capabilities.read(token, now)['subscription'] == 'a' * 64
+    for other in {'testing', 'development', 'production'} - {environment}:
+        with pytest.raises(ManagementUnavailable) as caught:
+            ManagementCapabilities(SECRET, other).read(token, now)
+        assert caught.value.notification_failure['predicate'] == 'capability_environment'
+
+
+@pytest.mark.parametrize('secret', [None, b'', b'x' * 31, 'x' * 32])
+def test_production_management_rejects_invalid_secret_before_external_access(sink, secret):
+    from oaf_website.notification_management import ManagementCapabilities
+    with pytest.raises(ValueError):
+        ManagementCapabilities(secret, 'production')
 
 
 @pytest.mark.parametrize('renderer', ['message', 'footer', 'withdrawal'])
@@ -163,10 +183,56 @@ def test_application_build_failure_disposes_engine_and_preserves_origin(sink, mo
     assert retained[-1]['cleanup_failure']['exception_class']=='OSError'
 
 
-def test_contact_production_profile_is_rejected_before_metadata(sink):
-    from oaf_website.contact_mail import load_contact_config, DeliveryUnavailable
-    with pytest.raises(DeliveryUnavailable):
-        load_contact_config(expected_profile='production', environ={'OAF_ENV':'production'})
+@pytest.mark.parametrize('failed_file', ['oaf-production.toml', 'smtp-password'])
+def test_contact_production_protected_file_failure_retains_diagnostic(sink, monkeypatch, failed_file):
+    from oaf_website import contact_mail as mail, production_config as production
+    metadata = (f'public_origin="{production.PUBLIC_ORIGIN}"\n'
+                'database_host="dpg-synthetic-a"\ntrusted_proxy_cidrs=["10.20.30.0/24"]\n'
+                '[smtp]\nhost="smtp.example.invalid"\nport=465\ntls_mode="ssl"\n'
+                'username="synthetic-account"\nfrom_email="contact@ovisalmsfoundation.org"\n').encode()
+    failure = production.reject('production_protected_file')
+    def read(name, **kwargs):
+        if name == failed_file:
+            raise failure
+        assert name == 'oaf-production.toml'
+        return metadata
+    reader, local, credentials = Mock(side_effect=read), Mock(), Mock()
+    monkeypatch.setattr(production, '_read_file', reader)
+    monkeypatch.setattr(mail, '_windows_password', credentials)
+    with pytest.raises(mail.DeliveryUnavailable) as caught:
+        mail.load_contact_config('production', environ={'OAF_ENV':'production'},
+                                 local_config_path=local, credential_loader=credentials)
+    assert not str(caught.value) and caught.value.__suppress_context__
+    assert caught.value.notification_failure == failure.notification_failure
+    assert records(sink)[-1]['first_failure'] == failure.notification_failure
+    assert reader.call_args_list[0].args == ('oaf-production.toml',)
+    assert reader.call_count == (1 if failed_file == 'oaf-production.toml' else 2)
+    if failed_file == 'smtp-password':
+        reader.assert_called_with('smtp-password', secret=True)
+    assert not local.mock_calls
+    credentials.assert_not_called()
+
+
+@pytest.mark.parametrize('environment,predicate', [
+    ({}, 'environment_profile_required'),
+    ({'OAF_ENV':'unknown'}, 'environment_profile_required'),
+    ({'OAF_ENV':'testing'}, 'environment_profile_match'),
+    ({'OAF_ENV':'production', 'OAF_SMTP_PASSWORD':CANARY}, 'environment_override_prohibited'),
+    ({'OAF_ENV':'production', 'PYTHON_KEYRING_BACKEND':CANARY}, 'environment_override_prohibited'),
+])
+def test_contact_invalid_production_environment_precedes_protected_access(sink, monkeypatch,
+                                                                         environment, predicate):
+    from oaf_website import contact_mail as mail, production_config as production
+    reader, credentials = Mock(), Mock()
+    monkeypatch.setattr(production, '_read_file', reader)
+    monkeypatch.setattr(mail, '_windows_password', credentials)
+    with pytest.raises(mail.DeliveryUnavailable) as caught:
+        mail.load_contact_config('production', environ=environment, credential_loader=credentials)
+    assert not str(caught.value)
+    assert caught.value.notification_failure['predicate'] == predicate
+    assert CANARY not in sink.read_text(encoding='utf-8')
+    reader.assert_not_called()
+    credentials.assert_not_called()
 
 
 def test_startup_diagnostics_before_flask_import(sink,monkeypatch):

@@ -37,14 +37,19 @@ def test_missing_or_malformed_scope_fails_before_any_runtime_access(runtime, val
 
 @pytest.mark.parametrize("profile", ["development", "production"])
 def test_non_testing_scope_fails_before_runtime_access(runtime, profile):
-    assert invoke(profile, testing_recipient=MAILBOX) == BatchResult("unavailable")
+    result = invoke(profile, testing_recipient=MAILBOX)
+    assert result == BatchResult("unavailable")
+    failure = processor.validate_failure(result.first_failure)
+    assert failure["predicate"] == "recipient_testing_only"
+    assert failure["stage"] == "processor" and failure["side_effects"] == "none"
     assert_no_runtime(runtime)
     with pytest.raises(ValueError):
         brevo.TestingRecipientScope(profile, MAILBOX)
 
 
-def test_disabled_scope_is_inert(runtime):
-    assert invoke(enabled=False, testing_recipient="invalid") == BatchResult("disabled")
+@pytest.mark.parametrize("profile", ["testing", "development", "production"])
+def test_disabled_scope_is_inert(runtime, profile):
+    assert invoke(profile, enabled=False, testing_recipient="invalid") == BatchResult("disabled")
     assert_no_runtime(runtime)
 
 
