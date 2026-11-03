@@ -119,6 +119,8 @@ class Database:
 def scenario(monkeypatch, tmp_path):
     # Production code can only see these explicit fakes. Token generation never
     # reaches the OS RNG, even on failure paths. No real owner records are read.
+    # Bind source hashing to this checkout, including non-Windows CI paths.
+    monkeypatch.setattr(p, "REPOSITORY", ROOT)
     monkeypatch.setattr(p, "AUDIT_ROOT", tmp_path)
     monkeypatch.setattr(p, "environment", Mock())
     monkeypatch.setattr(p, "metadata", Mock(return_value=dict(DOCUMENT)))
