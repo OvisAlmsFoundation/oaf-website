@@ -88,8 +88,19 @@ def _verify_checkout(config, dbapi_connection, connection_record, connection_pro
         database, effective, authenticated, host, port, major = cursor.fetchone()
     dbapi_connection.rollback()
     config.verify_connection_identity(database, effective)
+    address_matches = host == config.url.host
+    if config.profile == "production":
+        # Check the configured private hostname and actual TLS use. Require mode
+        # encrypts traffic; it does not independently authenticate the server.
+        from ipaddress import ip_address
+        try:
+            ip_address(host)
+            address_matches = (dbapi_connection.info.host == config.url.host
+                               and dbapi_connection.pgconn.ssl_in_use is True)
+        except (ValueError, AttributeError, TypeError):
+            address_matches = False
     for valid, predicate in ((authenticated == config.url.username, "database_authenticated_identity"),
-            (host == config.url.host, "database_server_address"), (port == config.url.port, "database_server_port"),
+            (address_matches, "database_server_address"), (port == config.url.port, "database_server_port"),
             (major == 17, "database_server_version")):
         if not valid:
             raise diagnostic_error(DatabaseConfigurationError("Connected database identity does not match the selected profile."),

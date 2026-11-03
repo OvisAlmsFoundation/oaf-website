@@ -2,7 +2,7 @@
 
 import re
 
-from .migration_config import IDENTITIES, Failure, MigrationError
+from .migration_config import Failure, MigrationError, catalog_identities
 from .notification_schema import CHECKS, CHECK_COLUMNS
 from .state_request_schema import STATE_CODES
 
@@ -132,7 +132,7 @@ def verify_notifications(connection, identity, *, management=False):
              OR inhparent='oaf_website.notifications'::pg_catalog.regclass)
         OR EXISTS (SELECT 1 FROM pg_catalog.pg_policy WHERE polrelid='oaf_website.notifications'::pg_catalog.regclass)
     """))
-    for registered in IDENTITIES.values():
+    for registered in catalog_identities(identity):
         for role in (registered.owner, registered.runtime, registered.migrator):
             for privilege in privileges:
                 expected_privilege = role == identity.owner or (role == identity.runtime and privilege in {"SELECT", "INSERT"})
@@ -169,7 +169,7 @@ def verify_notifications(connection, identity, *, management=False):
     """)
     require(type_acl == [dict(grantee=identity.owner, grantor=identity.owner, privilege="USAGE", grantable=False)])
     for name in ("oaf_website.notifications", "oaf_website._notifications"):
-        for registered in IDENTITIES.values():
+        for registered in catalog_identities(identity):
             for role in (registered.owner, registered.runtime, registered.migrator):
                 require(scalar(connection, "SELECT pg_catalog.has_type_privilege(:role,:name,'USAGE')",
                                role=role, name=name) is (role == identity.owner))

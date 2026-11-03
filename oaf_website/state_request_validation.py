@@ -2,7 +2,7 @@
 
 import re
 
-from .migration_config import IDENTITIES, Failure, MigrationError
+from .migration_config import Failure, MigrationError, catalog_identities
 from .state_request_schema import STATE_CODES
 
 
@@ -105,7 +105,7 @@ def verify_state_requests(connection, identity):
                OR inhparent='oaf_website.state_requests'::pg_catalog.regclass)
     """):
         raise MigrationError(Failure.DRIFT)
-    for i in IDENTITIES.values():
+    for i in catalog_identities(identity):
         for role in (i.owner, i.runtime, i.migrator):
             for privilege in privileges:
                 expected = role == identity.owner or (role == identity.runtime and privilege in {"SELECT", "INSERT"})
@@ -148,7 +148,7 @@ def verify_state_requests(connection, identity):
     if type_acl != [dict(grantee=identity.owner, grantor=identity.owner, privilege="USAGE", grantable=False)]:
         raise MigrationError(Failure.DRIFT)
     for name in ("oaf_website.state_requests", "oaf_website._state_requests"):
-        for i in IDENTITIES.values():
+        for i in catalog_identities(identity):
             for role in (i.owner, i.runtime, i.migrator):
                 if scalar(connection, "SELECT pg_catalog.has_type_privilege(:role, :name, 'USAGE')",
                           role=role, name=name) is not (role == identity.owner):

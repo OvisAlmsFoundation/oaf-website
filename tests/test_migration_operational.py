@@ -52,7 +52,10 @@ def reference(path, document):
 
 
 @pytest.fixture
-def operational(runner, tmp_path, monkeypatch):
+def operational(runner, tmp_path, monkeypatch, request):
+    environment = getattr(request, "param", "testing")
+    runner.request = replace(runner.request, environment=environment)
+    monkeypatch.setenv("OAF_ENV", environment)
     monkeypatch.setenv('LOCALAPPDATA', str(tmp_path))
     monkeypatch.setattr(m, '_require_operational_adapter', REAL_GATE)
     clock = SimpleNamespace(now=datetime(2030, 1, 1, tzinfo=timezone.utc))
@@ -173,6 +176,7 @@ def test_expired_and_future_authorizations_retained(operational, age):
 
 @pytest.mark.parametrize('authorization_id', [None, '', SECRET, '../outside',
     pytest.param(str(uuid4()), id="unknown-authorization")])
+@pytest.mark.parametrize("operational", ["testing", "production"], indirect=True)
 def test_missing_invalid_authorization_persists_sanitized_denial(operational, authorization_id):
     op = operational
     error = assert_denied(op, authorization_id)
@@ -186,6 +190,7 @@ def test_missing_invalid_authorization_persists_sanitized_denial(operational, au
 @pytest.mark.parametrize('field,value', [('action', 'verify'), ('environment', 'development'),
     ('expected_start', v.BASELINE), ('target', 'head'), ('manifest_hash', '0' * 64),
     ('revision_hash', '0' * 64)])
+@pytest.mark.parametrize("operational", ["testing", "production"], indirect=True)
 def test_authorization_bound_to_exact_request(operational, monkeypatch, field, value):
     op = operational
     authorization_id = op.issue()
@@ -199,6 +204,7 @@ def test_authorization_bound_to_exact_request(operational, monkeypatch, field, v
 
 @pytest.mark.parametrize('kind', ['artifact', 'prerequisite'])
 @pytest.mark.parametrize('change', ['missing', 'pending', 'hash', 'future', 'unknown'])
+@pytest.mark.parametrize("operational", ["testing", "production"], indirect=True)
 def test_independent_approvals_are_required_at_consumption(operational, kind, change):
     op = operational
     authorization_id = op.issue()
@@ -237,6 +243,7 @@ def test_matching_record_hashes_do_not_confer_approval(operational, kind, field,
     assert json.loads((v.ROOT / 'migrations/manifest.json').read_bytes())['approval_status'] == 'pending_independent_review'
 
 
+@pytest.mark.parametrize("operational", ["testing", "production"], indirect=True)
 def test_single_use_and_all_evidence_retained(operational):
     op = operational
     authorization_id = op.issue()
@@ -250,6 +257,7 @@ def test_single_use_and_all_evidence_retained(operational):
 
 
 @pytest.mark.parametrize('same_id', [True, False])
+@pytest.mark.parametrize("operational", ["testing", "production"], indirect=True)
 def test_concurrent_consumption_exclusive_across_instances_and_ids(operational, monkeypatch, same_id):
     op = operational
     ids = [op.issue(), op.issue()]
@@ -275,6 +283,7 @@ def test_concurrent_consumption_exclusive_across_instances_and_ids(operational, 
 
 
 @pytest.mark.parametrize('failure_point', ['claim', 'authorization', 'revision', 'precommit', 'commit_ready'])
+@pytest.mark.parametrize("operational", ["testing", "production"], indirect=True)
 def test_audit_failure_before_mutation_or_commit_blocks(operational, monkeypatch, failure_point):
     op = operational
     identifier = op.issue()
@@ -320,6 +329,7 @@ def test_claim_fsync_failure_retained_and_no_reuse(operational, monkeypatch):
     op.runner.m.load_migration_config.assert_not_called()
 
 
+@pytest.mark.parametrize("operational", ["testing", "production"], indirect=True)
 def test_successful_audit_sequence(operational):
     op = operational
     identifier = op.issue()
@@ -336,6 +346,7 @@ def test_successful_audit_sequence(operational):
 
 
 @pytest.mark.parametrize('failure', ['revision', 'uncertain', 'postcommit_audit', 'terminal_audit'])
+@pytest.mark.parametrize("operational", ["testing", "production"], indirect=True)
 def test_failure_commit_certainty_and_recovery_blocking(operational, monkeypatch, failure):
     op = operational
     identifier = op.issue()
@@ -640,6 +651,7 @@ def test_module_cli_preserves_audit_contract(context_setup, operational, monkeyp
     assert records(op, 'terminal-*.json')[0]['event']['outcome'] == 'applied_and_verified'
 
 
+@pytest.mark.parametrize("operational", ["testing", "production"], indirect=True)
 def test_claim_before_database_access_and_no_owner_issuer_called_by_runner(operational, monkeypatch):
     op = operational
     identifier = op.issue()
@@ -740,6 +752,7 @@ def test_r04_verified_success_permits_separately_authorized_successor(operationa
     assert len(records(op, 'claim-*.json')) == 2
 
 
+@pytest.mark.parametrize("operational", ["testing", "production"], indirect=True)
 def test_r05_migration_connection_requires_exact_scram(operational):
     op = operational
     op.run(op.issue())

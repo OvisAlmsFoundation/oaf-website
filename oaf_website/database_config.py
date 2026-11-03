@@ -45,10 +45,16 @@ def _validate_environment(environ: Mapping[str, str], expected_profile: str) -> 
         raise diagnostic_error(DatabaseConfigurationError("OAF_ENV conflicts with the required application profile."), "_validate_environment", "environment_profile_match", stage="startup")
     # There is one configuration authority; reject alternate URLs and libpq overrides.
     for name in environ:
+        if expected_profile == "production":
+            name = name.upper()
         if (
             (name.startswith("OAF_") and name != "OAF_ENV")
             or name.startswith(("PG", "DB_", "DATABASE_"))
             or name == "SQLALCHEMY_DATABASE_URI"
+            or expected_profile == "production" and (
+                name in {"SQLALCHEMY_URL", "SSLKEYLOGFILE", "SSL_CERT_FILE", "SSL_CERT_DIR"}
+                or name.startswith(("BREVO", "SENDINBLUE", "SMTP_", "CONTACT_"))
+                or "KEYRING_PROPERTY_" in name or name == "PYTHON_KEYRING_BACKEND")
         ):
             raise diagnostic_error(DatabaseConfigurationError("Unexpected or conflicting database environment settings."), "_validate_environment", "environment_override_prohibited", stage="startup")
     return profile
@@ -153,6 +159,16 @@ class DatabaseConfig:
     url: URL = field(repr=False)
 
     def __post_init__(self) -> None:
+        if self.profile == "production":
+            from .production_config import DATABASE, RUNTIME_ROLE, TLS_QUERY, valid_database_host
+            if (not isinstance(self.url, URL) or self.url.drivername != "postgresql+psycopg"
+                    or not valid_database_host(self.url.host, internal=True) or type(self.url.port) is not int
+                    or self.url.port != 5432 or self.url.database != DATABASE
+                    or self.url.username != RUNTIME_ROLE or dict(self.url.query) != TLS_QUERY
+                    or type(self.url.password) is not str or not self.url.password):
+                raise diagnostic_error(DatabaseConfigurationError("Database URL does not match the approved profile identity."),
+                    "__post_init__", "database_url_identity", stage="startup")
+            return
         if self.profile not in _LOCAL_IDENTITIES:
             raise diagnostic_error(DatabaseConfigurationError("Production database configuration is deferred."), "__post_init__", "production_deferred", stage="startup")
         approved = _approved_settings(self.profile)
@@ -176,7 +192,11 @@ class DatabaseConfig:
         This pure check performs no query. Future connection setup must call it on
         every connection before application queries, including pooled connections.
         """
-        approved = _approved_settings(self.profile)
+        if self.profile == "production":
+            from .production_config import DATABASE, RUNTIME_ROLE
+            approved = {"database": DATABASE, "username": RUNTIME_ROLE}
+        else:
+            approved = _approved_settings(self.profile)
         if database != approved["database"] or username != approved["username"]:
             raise diagnostic_error(DatabaseConfigurationError("Connected database identity does not match the selected profile."), "verify_connection_identity", "database_connection_identity", stage="startup")
 
@@ -192,12 +212,13 @@ def load_database_config(
 
     expected_profile is required so each entry point declares its intended profile.
     Injection arguments are for deterministic tests, not environment overrides.
-    Production deliberately fails before local files or Windows secret access.
+    Production uses only the separate fixed protected-file provider.
     """
     environment = dict(os.environ if environ is None else environ)
     profile = _validate_environment(environment, expected_profile)
     if profile == "production":
-        raise diagnostic_error(DatabaseConfigurationError("Production requires an independently approved secret provider; configuration is deferred."), "load_database_config", "production_secret_provider", stage="startup")
+        from .production_config import load_runtime_database
+        return load_runtime_database(environ=environment)
     settings = _read_settings(local_config_path, profile)
     provider = _windows_password if credential_loader is None else credential_loader
     try:

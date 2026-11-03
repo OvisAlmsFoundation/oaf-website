@@ -5,6 +5,7 @@ No listener, database, credentials, external HTTP or SMTP connection is used.
 """
 
 from pathlib import Path
+import argparse
 import sys
 from urllib.parse import urlsplit
 from unittest.mock import Mock
@@ -25,14 +26,68 @@ NAV = ['Home','About','GraManna','FAQ','Contact','Support']
 SUCCESS = 'Your message has been accepted for sending. Thank you.'
 
 
-def main():
+def check_navigation_presentation(page, filename, coarse):
+    links = page.locator('.site-header nav a')
+    minimum = 44 if coarse else 36
+    assert page.evaluate("matchMedia('(pointer: coarse)').matches") == coarse
+    mobile = page.viewport_size['width'] <= 900
+    expect(page.locator('.site-header')).to_have_css('flex-direction', 'column' if mobile else 'row')
+    expect(page.locator('.site-header nav')).to_have_css('column-gap', '18px' if mobile else '28px')
+    expect(page.locator('.site-header nav')).to_have_css('row-gap', '14px' if mobile else '28px')
+    assert links.evaluate_all("nodes => nodes.map(n => n.getAttribute('href'))") == [
+        'index.html', 'about.html', 'gramanna.html', 'faq.html', 'contact.html', 'support.html',
+    ]
+    current = page.locator('.site-header nav a[aria-current="page"]')
+    expect(current).to_have_count(1)
+    expect(current).to_have_attribute('href', filename)
+    boxes = links.evaluate_all('nodes => nodes.map(n => n.getBoundingClientRect().toJSON())')
+    for index, box in enumerate(boxes):
+        assert abs(box['height'] - minimum) < 0.01
+        for other in boxes[index + 1:]:
+            assert (box['right'] <= other['left'] or other['right'] <= box['left']
+                    or box['bottom'] <= other['top'] or other['bottom'] <= box['top']), (box, other)
+    for link in links.all():
+        support = link.get_attribute('class') == 'nav-support'
+        active = link.get_attribute('aria-current') == 'page'
+        expect(link).to_have_css('min-height', f'{minimum}px')
+        expect(link).to_have_css('padding', '6px 14px' if support else '6px 8px')
+        expect(link).to_have_css('border-radius', '3px' if support else '6px')
+        expect(link).to_have_css('margin', '-6px 0px' if support else '-6px -8px')
+        ratio = link.evaluate('n => parseFloat(getComputedStyle(n).lineHeight) / parseFloat(getComputedStyle(n).fontSize)')
+        assert abs(ratio - 1.5) < 0.001
+        link.hover()
+        background = ('rgba(0, 0, 0, 0)' if active else
+                      'rgb(116, 37, 116)' if support else 'rgb(239, 245, 240)')
+        expect(link).to_have_css('background-color', background)
+        expect(link).to_have_css('color', 'rgb(29, 95, 49)' if active else 'rgb(255, 255, 255)' if support else 'rgb(34, 34, 34)')
+        expect(link).to_have_css('font-weight', '700' if active else '400')
+        page.mouse.down()
+        expect(link).to_have_css('background-color', 'rgb(18, 59, 30)' if support and not active else background)
+        page.mouse.move(0, 0)
+        page.mouse.up()
+    links.first.focus()
+    page.keyboard.press('Tab')
+    page.keyboard.press('Shift+Tab')
+    for index, link in enumerate(links.all()):
+        expect(link).to_be_focused()
+        expect(link).to_have_css('outline-style', 'solid')
+        expect(link).to_have_css('outline-width', '2px')
+        expect(link).to_have_css('outline-color', 'rgb(29, 95, 49)')
+        if index + 1 < links.count():
+            page.keyboard.press('Tab')
+    page.locator(':focus').evaluate('n => n.blur()')
+
+
+def main(navigation_only=False, artifacts=None):
     errors, unexpected = [], []
-    screenshot_dir = ROOT/'.pytest_cache'/'contact-checkpoint5a'
+    screenshot_dir = Path(artifacts) if artifacts else ROOT/'.pytest_cache'/('navbar-dimensions-20261102' if navigation_only else 'contact-checkpoint5a')
     screenshot_dir.mkdir(parents=True, exist_ok=True)
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
         try:
-            for width in [1280,390,320]:
+            scenarios = ([(width, False) for width in [1280, 901, 900, 768, 390, 320]] +
+                         [(width, True) for width in [1280, 390, 320]]) if navigation_only else [(1280, False), (390, False), (320, False)]
+            for width, coarse in scenarios:
                 mode = {'mail':'success','http':'normal'}
                 held, posts = [], []
                 state, subscriptions = Mock(), Mock()
@@ -79,24 +134,28 @@ def main():
                             route.abort()
                             return
                     if parts.path not in {'/'+name for name in PUBLIC_FILES} | {
-                        '/api/contact','/api/contact/session','/api/state-requests/totals'}:
+                        '/api/contact','/api/contact/session','/api/state-requests/totals',
+                        '/api/notifications/session'}:
                         unexpected.append(req.url)
                         route.abort()
                         return
                     respond(route)
 
-                context = browser.new_context(viewport={'width':width,'height':900})
+                context = browser.new_context(viewport={'width':width,'height':900}, has_touch=coarse)
                 context.route('**/*',intercept)
                 page = context.new_page()
                 page.on('pageerror',lambda error:errors.append(str(error)))
                 for name in PAGES:
+                    page.mouse.move(0, 0)
                     page.goto(ORIGIN+'/'+name)
                     expect(page.locator('header nav a')).to_have_text(NAV)
                     assert page.locator('.foundation-name a').count() == 0
                     support = page.locator('header nav a').last
                     assert support.get_attribute('class') == 'nav-support'
-                    assert support.evaluate("el => getComputedStyle(el).backgroundColor") == 'rgb(49, 94, 80)'
+                    support_background = 'rgba(0, 0, 0, 0)' if name == 'support.html' else 'rgb(29, 95, 49)'
+                    assert support.evaluate("el => getComputedStyle(el).backgroundColor") == support_background
                     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), (width,name)
+                    check_navigation_presentation(page, name, coarse)
                     if name == 'gramanna.html':
                         assert page.locator('.pilot-state-card').count() == 11
                     if name == 'support.html':
@@ -104,6 +163,17 @@ def main():
                     page.get_by_role('link',name='Contact',exact=True).click()
                     expect(page).to_have_url(ORIGIN+'/contact.html')
                     expect(page.get_by_role('heading',name='Contact Us',exact=True)).to_be_visible()
+                if navigation_only:
+                    for target in ['index.html', 'about.html', 'gramanna.html', 'faq.html', 'contact.html', 'support.html']:
+                        page.locator(f'.site-header nav a[href="{target}"]').click()
+                        expect(page).to_have_url(ORIGIN + '/' + target)
+                        expect(page.locator('.site-header nav a[aria-current="page"]')).to_have_attribute('href', target)
+                    page.mouse.move(0, 0)
+                    page.screenshot(path=str(screenshot_dir / f'navigation-{width}-{"coarse" if coarse else "fine"}.png'))
+                    assert not sender.called and not state.submit.called and not subscriptions.mock_calls
+                    context.close()
+                    print(f'PASS: Navigation {width}px, {"coarse" if coarse else "fine"} pointer; dimensions, all six pages/routes, hover/current/pressed states, focus and overflow.', flush=True)
+                    continue
                 page.goto(ORIGIN+'/index.html')
                 expect(page.locator('.how-it-works-heading')).to_contain_text('an overview')
                 page.get_by_role('link',name='Contact Us',exact=True).click()
@@ -216,8 +286,15 @@ def main():
             assert not unexpected, unexpected
         finally:
             browser.close()
-    print('PASS: Contact Chromium + Flask checks at 1280, 390 and 320px; all six pages, both entry points, keyboard/focus, validation, real CSRF/cookies, limits, duplicates, mocked mail success/failure, safe errors, service isolation and no overflow. Zero page errors or external HTTP requests; no real SMTP, credentials or database access.')
+    if navigation_only:
+        print('PASS: Focused navigation Chromium checks; zero page errors or external requests; no SMTP, credentials or database access. Owner visual acceptance pending.')
+    else:
+        print('PASS: Contact Chromium + Flask checks at 1280, 390 and 320px; all six pages, both entry points, keyboard/focus, validation, real CSRF/cookies, limits, duplicates, mocked mail success/failure, safe errors, service isolation and no overflow. Zero page errors or external HTTP requests; no real SMTP, credentials or database access.')
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--navigation-only', action='store_true')
+    parser.add_argument('--artifacts', type=Path)
+    args = parser.parse_args()
+    main(navigation_only=args.navigation_only, artifacts=args.artifacts)

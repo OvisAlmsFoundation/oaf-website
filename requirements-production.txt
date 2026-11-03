@@ -1,0 +1,5 @@
+# Python 3.11; portable WSGI, no fork, scheduler or provider startup hooks.
+-r requirements.txt
+# Reviewed release/security notes and Python support:
+# https://docs.pylonsproject.org/projects/waitress/en/v3.0.2/index.html
+waitress==3.0.2

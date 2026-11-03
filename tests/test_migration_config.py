@@ -19,6 +19,16 @@ from sqlalchemy.engine import Engine
 
 from migration_offline import SECRET
 from oaf_website import database_config as db, migration_config as c
+import oaf_website.migrate  # Exercise guarded import even when this file runs alone.
+
+
+REAL_METADATA_READER = c._read_production_metadata
+
+
+@pytest.fixture(autouse=True)
+def production_migration_metadata(monkeypatch):
+    monkeypatch.setattr(c, "_read_production_metadata", lambda: {
+        "database_host": "db.production.example", "database_owner": "render_provider_owner"})
 
 
 @pytest.mark.parametrize("environment", c.IDENTITIES)
@@ -40,7 +50,7 @@ def test_explicit_registry_and_selected_credential(monkeypatch, environment):
 @pytest.mark.parametrize("environment,environ", [
     ("testing", {}), ("testing", {"OAF_ENV": "development"}),
     ("testing", {"OAF_ENV": "Testing"}), ("Testing", {"OAF_ENV": "Testing"}),
-    ("production", {"OAF_ENV": "production"}), ("unknown", {"OAF_ENV": "unknown"}),
+    ("unknown", {"OAF_ENV": "unknown"}),
     (None, {}), ("testing", {"OAF_ENV": " testing"}),
 ])
 def test_invalid_environment_precedes_credentials(monkeypatch, environment, environ):
@@ -374,14 +384,19 @@ def test_stage5_database_and_login_substitutions_rejected(environment, case):
     other = next(j for j in c.IDENTITIES.values() if j != i)
     url = URL.create('postgresql+psycopg', username=i.migrator, password=SECRET,
                      host=i.host, port=i.port, database=i.database)
+    if environment == 'production':
+        url = url.set(host='db.production.example', query=c.TLS_QUERY)
     changes = {
         'database': {'database': other.database}, 'admin_database': {'database': 'postgres'},
         'runtime': {'username': i.runtime}, 'other_runtime': {'username': other.runtime},
         'other_migrator': {'username': other.migrator}, 'owner': {'username': i.owner},
         'administrator': {'username': 'postgres'},
     }
-    with pytest.raises(c.MigrationError, match=c.Failure.INVALID_CONFIGURATION):
-        c.MigrationConfig(i, url.set(**changes[case]))
+    if environment == 'production' and case == 'owner':
+        assert c.MigrationConfig(i, url.set(**changes[case])).url.username == i.migrator
+    else:
+        with pytest.raises(c.MigrationError, match=c.Failure.INVALID_CONFIGURATION):
+            c.MigrationConfig(i, url.set(**changes[case]))
 
 
 @pytest.mark.parametrize('environment', c.IDENTITIES)
@@ -400,9 +415,78 @@ def test_stage5_selected_vault_to_runner_isolation(runner, stage5_vault, monkeyp
     runner.m.create_engine.assert_called_once()
     url = runner.m.create_engine.call_args.args[0]
     assert (url.database, url.username, url.password) == (i.database, i.migrator, SECRET)
-    assert url.host == '127.0.0.1' and url.port == 5432 and not url.query
+    assert url.host == ('db.production.example' if environment == 'production' else '127.0.0.1')
+    assert url.port == 5432
+    assert url.query == (c.TLS_QUERY if environment == 'production' else {})
     role_commands = [q for q in runner.connection.calls if q.startswith('SET LOCAL ROLE')]
     assert role_commands == [f'SET LOCAL ROLE "{i.owner}"'] * 2
     assert not any('public' in q.lower() for q in runner.connection.calls)
     assert SECRET not in repr(result) + repr(runner.sink.events) + repr(runner.sink.final_events)
     assert capsys.readouterr() == ('', '') and SECRET not in caplog.text
+
+
+@pytest.mark.parametrize('change', [
+    {}, {'database_host': '127.0.0.1'}, {'database_host': 'localhost'},
+    {'database_host': 'dpg-synthetic-a'},
+    {'database_host': 'db.local'}, {'database_owner': c.MIGRATOR_ROLE},
+    {'database_owner': c.RUNTIME_ROLE}, {'database_owner': 'wrong;role'},
+    {'database_owner': ''}, {'database_owner': c.IDENTITIES['testing'].owner},
+    {'sslmode': 'require'}, {'sslrootcert': SECRET}, {'port': 5433},
+    {'password': SECRET}, {'database': 'other'}, {'url': SECRET},
+])
+def test_production_metadata_fails_before_credentials(monkeypatch, change):
+    document = {'database_host': 'db.production.example', 'database_owner': 'render_provider_owner'}
+    document.update(change)
+    if not change:
+        document = {}
+    monkeypatch.setattr(c, '_read_production_metadata', lambda: document)
+    provider = Mock()
+    monkeypatch.setattr(c, '_windows_password', provider)
+    with pytest.raises(c.MigrationError, match=c.Failure.INVALID_CONFIGURATION) as caught:
+        c.load_migration_config(environment='production', environ={'OAF_ENV': 'production'})
+    assert SECRET not in ''.join(traceback.format_exception(caught.value))
+    provider.assert_not_called()
+
+
+@pytest.mark.parametrize('key', ['DATABASE_URL', 'PGSSLMODE', 'PGSSLROOTCERT', 'PGHOSTADDR',
+    'OAF_MIGRATION_CONFIG', 'SSL_CERT_FILE', 'SSL_CERT_DIR', 'SSLKEYLOGFILE'])
+def test_production_overrides_fail_before_metadata_or_credentials(monkeypatch, key):
+    reader, provider = Mock(), Mock()
+    monkeypatch.setattr(c, '_read_production_metadata', reader)
+    monkeypatch.setattr(c, '_windows_password', provider)
+    with pytest.raises(c.MigrationError):
+        c.load_migration_config(environment='production', environ={'OAF_ENV': 'production', key: SECRET})
+    reader.assert_not_called()
+    provider.assert_not_called()
+
+
+@pytest.mark.parametrize('query', [{}, {'sslmode': 'require'},
+    *[{**c.TLS_QUERY, 'sslmode': mode} for mode in ('disable', 'allow', 'prefer', 'verify-full')],
+    {**c.TLS_QUERY, 'sslmode': 'verify-ca'}, {**c.TLS_QUERY, 'sslrootcert': 'arbitrary.pem'},
+    {**c.TLS_QUERY, 'sslsni': '0'}, {**c.TLS_QUERY, 'hostaddr': '192.0.2.1'},
+    {**c.TLS_QUERY, 'ssl_min_protocol_version': 'TLSv1.1'}, {**c.TLS_QUERY, 'options': SECRET}])
+def test_production_migration_url_cannot_override_tls(query):
+    i = c.IDENTITIES['production']
+    with pytest.raises(c.MigrationError):
+        c.MigrationConfig(i, URL.create('postgresql+psycopg', host='db.production.example',
+            port=5432, database=i.database, username=i.migrator, password=SECRET, query=query))
+
+
+@pytest.mark.parametrize('case', ['valid', 'missing', 'malformed', 'duplicate', 'redirect'])
+def test_fixed_production_metadata_file_reader(monkeypatch, tmp_path, case):
+    # Restore only this reader, against a synthetic path; never config/local.
+    path = tmp_path / 'metadata.toml'
+    payload = 'database_host="db.production.example"\ndatabase_owner="render_provider_owner"\n'
+    if case == 'malformed':
+        payload = 'broken="' + SECRET
+    elif case == 'duplicate':
+        payload += 'database_owner="other"\n'
+    if case != 'missing':
+        path.write_text(payload, encoding='utf-8')
+    monkeypatch.setattr(c, 'PRODUCTION_METADATA_PATH', path if case != 'redirect' else tmp_path / '..' / tmp_path.name / path.name)
+    monkeypatch.setattr(c, '_read_production_metadata', REAL_METADATA_READER)
+    if case == 'valid':
+        assert c.production_metadata()['database_owner'] == 'render_provider_owner'
+    else:
+        with pytest.raises(c.MigrationError, match=c.Failure.INVALID_CONFIGURATION):
+            c.production_metadata()

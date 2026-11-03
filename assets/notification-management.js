@@ -6,7 +6,7 @@
   window.addEventListener('hashchange', () => {
     if (location.hash.startsWith('#manage=') || location.hash.startsWith('#unsubscribe=')) location.reload();
   });
-  const managementShape = /^m2\.(testing|development)\.[0-9a-f]{64}\.[0-9]{1,10}\.[0-9]{1,12}\.[0-9]{1,12}\.[0-9a-f]{64}\.[0-9a-f]{64}$/;
+  const managementShape = /^m2\.(testing|development|production)\.[0-9a-f]{64}\.[0-9]{1,10}\.[0-9]{1,12}\.[0-9]{1,12}\.[0-9a-f]{64}\.[0-9a-f]{64}$/;
   let token = fragment.startsWith('#manage=') ? fragment.slice(8) : null;
   if (!managementShape.test(token || '')) token = null;
   let legacy = fragment.startsWith('#unsubscribe=') ? fragment.slice(13) : null;

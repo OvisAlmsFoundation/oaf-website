@@ -1,0 +1,9 @@
+# NONSECRET TEMPLATE ONLY. Owner approval and provisioning remain separate.
+# Windows migration issuer/runner: fixed config/local/production-postgres.toml.
+# Use the exact approved Render EXTERNAL DNS for the same database as Web/Cron.
+# Web/Cron use its separate internal hostname; never substitute an IP here (SNI).
+# Fixed TLS: sslmode=require, minimum TLS 1.2; no certificate management required.
+# Restrict Render external access to approved operator IPs during configuration.
+# Replace both examples with approved values. No URL/password/TLS/path overrides.
+database_host = "approved-external-postgres.example"
+database_owner = "approved_provider_database_owner"

@@ -74,7 +74,7 @@ def test_even_rehashed_revision_cannot_bypass_reviewed_shape(artifact_copy, old,
         artifacts()
 
 
-@pytest.mark.parametrize('environment', ['development','testing'])
+@pytest.mark.parametrize('environment', ['development','testing','production'])
 def test_matching_owner_only_grants_no_commit_and_only_withdrawal_column_update(environment):
     identity = IDENTITIES[environment]
     sql = []
@@ -174,7 +174,7 @@ class NotificationCatalog(FeatureCatalog):
         return super().execute(sql, parameters)
 
 
-@pytest.mark.parametrize('environment',['development','testing'])
+@pytest.mark.parametrize('environment',['development','testing','production'])
 def test_exact_catalog_includes_preserved_state_requests(environment):
     catalog = NotificationCatalog(environment)
     assert v.catalog_state(catalog,catalog.i) == v.NOTIFICATIONS

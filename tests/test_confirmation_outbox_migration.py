@@ -80,7 +80,7 @@ class OutboxCatalog(DeliveryCatalog):
         return super().execute(sql, parameters)
 
 
-@pytest.mark.parametrize("environment", ["testing","development"])
+@pytest.mark.parametrize("environment", ["testing","development","production"])
 def test_0005_exact_catalog_and_narrow_runtime_privileges(environment):
     catalog = OutboxCatalog(environment)
     assert v.catalog_state(catalog,catalog.i) == v.OUTBOX
@@ -107,7 +107,7 @@ def test_outbox_drift_is_rejected(case):
     with pytest.raises(MigrationError,match=Failure.DRIFT): v.catalog_state(c,c.i)
 
 
-@pytest.mark.parametrize("environment", ["testing","development"])
+@pytest.mark.parametrize("environment", ["testing","development","production"])
 def test_additive_source_ddl_only_uses_expected_owner(environment):
     sql=[]
     def execute(statement):

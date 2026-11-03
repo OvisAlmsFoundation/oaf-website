@@ -60,7 +60,7 @@ class BrevoConfig:
     api_key: str = field(repr=False)
 
     def __post_init__(self):
-        if (type(self.environment) is not str or self.environment not in {"development", "testing"}
+        if (type(self.environment) is not str or self.environment not in {"development", "testing", "production"}
                 or type(self.api_key) is not str
                 or re.fullmatch(r"[A-Za-z0-9_-]{16,256}", self.api_key, re.ASCII) is None):
             raise diagnostic_error(BrevoConfigurationError("Brevo configuration unavailable."), "provider_configuration", "provider_key_format", stage="startup")
@@ -70,11 +70,20 @@ def load_brevo_config(expected_profile, *, credential_account, environ=None, cre
     """Explicit invocation only; use existing exact-target pinned WinVault loader.
 
     The owner supplies the existing record's nonsecret account metadata. There is
-    no discovery, fallback, keyring plugin selection, env key or production path.
+    no discovery, fallback, keyring plugin selection or environment key. Production
+    instead uses its fixed protected file only after explicit processing activation.
     """
     try:
         environment = dict(os.environ if environ is None else environ)
         _validate_environment(environment, expected_profile)
+        if expected_profile == "production":
+            from .production_config import read_secret, load_production_settings
+            if credential_account is not None:
+                raise diagnostic_error(ValueError(), "provider_configuration", "production_processing_activation", stage="startup")
+            settings = load_production_settings(environ=environment)
+            if not settings.processing_enabled:
+                raise diagnostic_error(ValueError(), "provider_configuration", "production_processing_activation", stage="startup")
+            return BrevoConfig("production", read_secret("brevo-api-key"))
         if (expected_profile not in {"development", "testing"}
                 or type(credential_account) is not str
                 or re.fullmatch(r"[A-Za-z0-9@._/-]{1,128}", credential_account, re.ASCII) is None

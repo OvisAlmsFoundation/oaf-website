@@ -280,11 +280,13 @@ def test_process_environment_is_used_without_a_default_profile(monkeypatch, sett
 
 
 def test_production_never_reads_local_config_or_windows_credentials(monkeypatch):
+    from oaf_website import production_config
+    monkeypatch.setattr(production_config, "_read_file", Mock(side_effect=FileNotFoundError()))
     read = Mock(side_effect=AssertionError("Production touched a local file"))
     credential = Mock(side_effect=AssertionError("Production touched Windows credentials"))
     monkeypatch.setattr(db, "_read_settings", read)
     monkeypatch.setattr(db, "_windows_password", credential)
-    with pytest.raises(db.DatabaseConfigurationError, match="independently approved"):
+    with pytest.raises(db.DatabaseConfigurationError, match="Production configuration unavailable"):
         db.load_database_config(expected_profile="production", environ={"OAF_ENV": "production"})
     read.assert_not_called()
     credential.assert_not_called()

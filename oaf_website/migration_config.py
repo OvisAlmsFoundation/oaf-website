@@ -1,17 +1,24 @@
 """Separate fixed migration identities. Importing this module accesses no secrets.
 
-There is no local migration settings file or URL override. The registry is the
-entire nonsecret configuration authority. The existing runtime loader is intact.
+The registry fixes local settings and all role/database identities. Production
+adds one fixed nonsecret metadata file for its approved DNS/provider database
+owner, with no URL or caller settings override. Runtime secret loading is separate.
 """
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 import os
+from pathlib import Path
+import re
+import tomllib
 from types import MappingProxyType
 
 from sqlalchemy.engine import URL
 
 from .database_config import _windows_password, WINDOWS_BACKEND
+from .production_config import DATABASE, RUNTIME_ROLE, MIGRATOR_ROLE, TLS_QUERY, valid_database_host
+
+PRODUCTION_METADATA_PATH = Path(__file__).resolve().parents[1] / "config/local/production-postgres.toml"
 
 
 @dataclass(frozen=True)
@@ -23,7 +30,7 @@ class MigrationIdentity:
     runtime: str
     credential_service: str
     schema: str = "oaf_website"
-    host: str = "127.0.0.1"
+    host: str | None = "127.0.0.1"
     port: int = 5432
     postgres_major: int = 17
 
@@ -39,7 +46,51 @@ IDENTITIES = MappingProxyType({
         "oaf_website_test_schema_owner", "oaf_website_test_app",
         "OAF Website/testing/PostgreSQL/Migrations",
     ),
+    "production": MigrationIdentity(
+        "production", DATABASE, MIGRATOR_ROLE, MIGRATOR_ROLE, RUNTIME_ROLE,
+        "OAF Website/production/PostgreSQL/Migrations", host=None,
+    ),
 })
+
+
+def catalog_identities(identity):
+    """Separate managed production cluster; preserve both local role checks."""
+    if identity != IDENTITIES.get(identity.environment):
+        raise MigrationError(Failure.WRONG_IDENTITY)
+    return ((identity,) if identity.environment == "production" else
+            tuple(i for i in IDENTITIES.values() if i.environment != "production"))
+
+
+def _read_production_metadata():
+    # Owner-provisioned nonsecret metadata, never a caller-selected path/URL.
+    path = PRODUCTION_METADATA_PATH
+    if path.resolve() != path or any(p.is_symlink() for p in (path, *path.parents)):
+        raise ValueError
+    with path.open("rb") as stream:
+        payload = stream.read(8193)
+    if len(payload) > 8192:
+        raise ValueError
+    return tomllib.loads(payload.decode("utf-8"))
+
+
+def production_metadata():
+    """Exact DNS and preserved provider owner; absent/unapproved settings halt.
+
+    Approval/provisioning is administrative, like the existing local settings.
+    No live configuration is shipped, inferred from libpq, or activated here.
+    """
+    try:
+        document = _read_production_metadata()
+        if (type(document) is dict and set(document) == {"database_host", "database_owner"}
+                and valid_database_host(document["database_host"])
+                and type(document["database_owner"]) is str
+                and re.fullmatch(r"[a-z_][a-z0-9_]{0,62}", document["database_owner"])
+                and document["database_owner"] not in {
+                    name for i in IDENTITIES.values() for name in (i.owner, i.migrator, i.runtime)}):
+            return document
+    except Exception:
+        pass
+    raise MigrationError(Failure.INVALID_CONFIGURATION) from None
 
 
 class Failure:
@@ -114,7 +165,7 @@ def select_identity(
     environment: str, *, environ: Mapping[str, str] | None = None,
     settings: Mapping[str, object] | None = None,
 ) -> MigrationIdentity:
-    """Pure validation; production and every unknown key fail before credentials."""
+    """Pure environment validation; unknown keys fail before credentials."""
     source = os.environ if environ is None else environ
     if environment not in IDENTITIES or source.get("OAF_ENV") != environment:
         raise MigrationError(Failure.INVALID_CONFIGURATION)
@@ -127,6 +178,8 @@ def select_identity(
             or name.startswith(("PG", "DB_", "DATABASE_"))
             or name in {"DATABASE_URL", "SQLALCHEMY_DATABASE_URI", "SQLALCHEMY_URL"}
             or "KEYRING_PROPERTY_" in name
+            or environment == "production" and name in {
+                "SSL_CERT_FILE", "SSL_CERT_DIR", "SSLKEYLOGFILE"}
         ):
             raise MigrationError(Failure.INVALID_CONFIGURATION)
     if source.get("PYTHON_KEYRING_BACKEND", WINDOWS_BACKEND) != WINDOWS_BACKEND:
@@ -144,10 +197,13 @@ class MigrationConfig:
         if i != IDENTITIES.get(i.environment) or (
             not isinstance(self.url, URL)
             or self.url.drivername != "postgresql+psycopg"
-            or self.url.host != i.host or self.url.port != i.port
+            or self.url.host != (production_metadata()["database_host"]
+                                if i.environment == "production" else i.host)
+            or self.url.port != i.port
             or type(self.url.port) is not int
             or self.url.database != i.database or self.url.username != i.migrator
-            or self.url.query or not isinstance(self.url.password, str)
+            or self.url.query != (TLS_QUERY if i.environment == "production" else {})
+            or not isinstance(self.url.password, str)
             or not self.url.password
         ):
             raise MigrationError(Failure.INVALID_CONFIGURATION)
@@ -162,10 +218,12 @@ def load_migration_config(
     _windows_password binds WinVaultKeyring directly and requires the exact
     Stage 4C service target/account, generic type and machine-local persistence.
     It does not discover backends, write secrets, or open a connection.
-    Offline tests can patch that adapter; production has no alternate provider.
+    Production uses the same protected Windows issuer/runner, separate from
+    Render Web/Cron. It never reads runtime or provider-administrator secrets.
     """
     source = dict(os.environ if environ is None else environ)
     identity = select_identity(environment, environ=source, settings=settings)
+    host = (production_metadata()["database_host"] if environment == "production" else identity.host)
     try:
         password = _windows_password(
             identity.credential_service, identity.migrator, source, exact_target=True,
@@ -176,5 +234,6 @@ def load_migration_config(
         raise MigrationError(Failure.CREDENTIAL_UNAVAILABLE)
     return MigrationConfig(identity, URL.create(
         "postgresql+psycopg", username=identity.migrator, password=password,
-        host=identity.host, port=identity.port, database=identity.database,
+        host=host, port=identity.port, database=identity.database,
+        query=TLS_QUERY if environment == "production" else {},
     ))

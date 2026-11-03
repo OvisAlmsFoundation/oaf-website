@@ -8,7 +8,7 @@ import re
 from sqlalchemy import Boolean, CheckConstraint, ForeignKeyConstraint, PrimaryKeyConstraint, String, Integer
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.schema import AddConstraint, CreateIndex
-from .migration_config import IDENTITIES, Failure, MigrationError
+from .migration_config import Failure, MigrationError, catalog_identities
 from .notification_delivery_schema import TABLES, MUTABLE, FK_TRIGGERS
 
 
@@ -300,7 +300,7 @@ def verify_delivery(connection, identity, *, tables=TABLES, mutable=MUTABLE, exp
                AND t.typacl IS NOT NULL AND a.typacl IS NULL
             FROM pg_catalog.pg_type t JOIN pg_catalog.pg_type a ON a.oid=t.typarray WHERE t.oid=CAST(CAST(:table AS pg_catalog.text) AS pg_catalog.regtype)
         """, table=name) is True)
-        for registered in IDENTITIES.values():
+        for registered in catalog_identities(identity):
             for role in (registered.owner, registered.runtime, registered.migrator):
                 for privilege in privileges:
                     permitted = role == identity.owner or role == identity.runtime and privilege in {"SELECT", "INSERT"}

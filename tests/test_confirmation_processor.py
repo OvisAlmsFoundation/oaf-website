@@ -100,7 +100,7 @@ def test_import_has_no_runtime_side_effects(runtime, monkeypatch):
 @pytest.mark.parametrize("enabled", [True, False])
 @pytest.mark.parametrize("profile,environment", [
     ("testing", {}), ("testing", {"OAF_ENV": "development"}),
-    ("development", {"OAF_ENV": "testing"}), ("production", {"OAF_ENV": "production"}),
+    ("development", {"OAF_ENV": "testing"}),
     ("Testing", {"OAF_ENV": "Testing"}),
     *[("testing", {"OAF_ENV": "testing", name: "synthetic-private"}) for name in
       ("OAF_CONFIRMATION_ENABLED", "PGHOST", "DATABASE_URL", "DB_PASSWORD", "SQLALCHEMY_DATABASE_URI")],

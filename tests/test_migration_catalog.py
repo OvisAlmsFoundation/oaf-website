@@ -5,10 +5,16 @@ isolation.require_early_registration()
 
 from copy import deepcopy
 
+from types import SimpleNamespace
+from sqlalchemy.engine import URL
+
 import pytest
 
 from migration_offline import Result
 from oaf_website import migration_config as c, migration_validation as v
+
+
+LOCAL_IDENTITIES = {k: i for k, i in c.IDENTITIES.items() if k != "production"}
 
 
 class Catalog:
@@ -18,14 +24,15 @@ class Catalog:
         self.target = target
         self.calls = []
         self.scalar_changes = {}
-        owners = {j.owner for j in c.IDENTITIES.values()}
+        selected = c.catalog_identities(i)
+        owners = {j.owner for j in selected if j.owner != j.migrator}
         self.roles = [dict(oid=n, rolname=name, rolsuper=False, rolcreatedb=False,
             rolcreaterole=False, rolreplication=False, rolbypassrls=False,
             rolinherit=False, rolcanlogin=name not in owners, exceptional=False)
-            for n, name in enumerate(sorted({name for j in c.IDENTITIES.values()
+            for n, name in enumerate(sorted({name for j in selected
                          for name in (j.runtime, j.migrator, j.owner)}), 1)]
         self.memberships = [dict(member=j.migrator, parent=j.owner, inherit_option=False,
-                                  set_option=True, admin_option=False) for j in c.IDENTITIES.values()]
+                                  set_option=True, admin_option=False) for j in selected if j.owner != j.migrator]
         self.schema_owner = [{"owner": i.owner}]
         self.schema_acl = [dict(grantee=i.owner, grantor=i.owner, privilege=p, grantable=False)
                            for p in ("USAGE", "CREATE")]
@@ -56,7 +63,12 @@ class Catalog:
             deferrable=False, deferred=False, definition="PRIMARY KEY (version_num)")]
         self.marker = [{"version_num": v.BASELINE}]
         self.identity = [dict(database=i.database, authenticated=i.migrator, effective=i.migrator,
-                              host=i.host, port=i.port, major=17)]
+                              host="10.0.0.15" if environment == "production" else i.host, port=i.port, major=17)]
+        if environment == "production":
+            self.connection = SimpleNamespace(driver_connection=SimpleNamespace(
+                info=SimpleNamespace(host="db.production.example"),
+                pgconn=SimpleNamespace(ssl_in_use=True)))
+            self.engine = SimpleNamespace(url=URL.create("postgresql+psycopg", query=c.TLS_QUERY))
 
     def execute(self, sql, parameters=None):
         q, p = str(sql), parameters or {}
@@ -79,12 +91,14 @@ class Catalog:
             if "privilege" in p:
                 return Result(False)
             permitted = any(p["db"] == j.database and p["name"] in (j.runtime, j.migrator)
-                            for j in c.IDENTITIES.values())
+                            for j in c.catalog_identities(self.i))
             return Result(permitted)
+        if "has_parameter_privilege" in q:
+            return Result(False)
         if "n.nspname !~" in q or "pg_shdepend" in q or "datdba" in q:
             return Result(False)
         if "has_schema_privilege" in q:
-            return Result("'USAGE'" in q)
+            return Result("'USAGE'" in q or p.get("name") == self.i.owner)
         if "pg_default_acl d" in q:
             return Result(False)
         if "t.typrelid='oaf_website.alembic_version'" in q or "i.indisunique" in q:
@@ -126,7 +140,9 @@ def test_unknown_default_acl_object_kind_is_drift():
 
 @pytest.mark.parametrize("environment", c.IDENTITIES)
 @pytest.mark.parametrize("target", [False, True])
-def test_approved_catalog_state_and_six_role_isolation(environment, target):
+def test_approved_catalog_state_and_cluster_isolation(environment, target, monkeypatch):
+    monkeypatch.setattr(c, "_read_production_metadata", lambda: {
+        "database_host": "db.production.example", "database_owner": "render_provider_owner"})
     catalog = Catalog(environment, target)
     v.verify_identity(catalog, catalog.i)
     catalog.identity[0]["effective"] = catalog.i.owner
@@ -134,7 +150,7 @@ def test_approved_catalog_state_and_six_role_isolation(environment, target):
     v.verify_authority(catalog, catalog.i)
     assert v.catalog_state(catalog, catalog.i) == (v.BASELINE if target else v.BASE)
     names = {p["name"] for q, p in catalog.calls if "has_database_privilege" in q}
-    assert names == {name for j in c.IDENTITIES.values() for name in (j.owner, j.runtime, j.migrator)}
+    assert names == {name for j in c.catalog_identities(catalog.i) for name in (j.owner, j.runtime, j.migrator)}
 
 
 @pytest.mark.parametrize("field,value", [("database", "wrong"), ("authenticated", "postgres"),
@@ -146,7 +162,7 @@ def test_connection_identity_mismatch(field, value):
         v.verify_identity(catalog, catalog.i)
 
 
-@pytest.mark.parametrize("name", sorted({name for i in c.IDENTITIES.values() for name in (i.owner, i.runtime, i.migrator)}))
+@pytest.mark.parametrize("name", sorted({name for i in LOCAL_IDENTITIES.values() for name in (i.owner, i.runtime, i.migrator)}))
 @pytest.mark.parametrize("attribute", ["rolsuper", "rolcreatedb", "rolcreaterole", "rolreplication", "rolbypassrls", "exceptional", "rolcanlogin"])
 def test_all_six_roles_reject_elevation_or_wrong_login(name, attribute):
     catalog = Catalog()
@@ -157,7 +173,7 @@ def test_all_six_roles_reject_elevation_or_wrong_login(name, attribute):
 
 
 @pytest.mark.parametrize("attribute", ["inherit_option", "set_option", "admin_option"])
-@pytest.mark.parametrize("environment", c.IDENTITIES)
+@pytest.mark.parametrize("environment", LOCAL_IDENTITIES)
 def test_exact_membership_options(environment, attribute):
     catalog = Catalog()
     member = next(m for m in catalog.memberships if m["member"] == c.IDENTITIES[environment].migrator)
@@ -170,7 +186,7 @@ def test_exact_membership_options(environment, attribute):
     "shared_inherit", "shared_set", "shared_admin", "indirect", "incoming_indirect", "role_missing", "inherit"])
 def test_membership_paths_fail_closed(case):
     catalog = Catalog()
-    dev, test = c.IDENTITIES.values()
+    dev, test = LOCAL_IDENTITIES.values()
     def edge(member, parent, inherit=False, set_role=True, admin=False):
         return dict(member=member, parent=parent, inherit_option=inherit, set_option=set_role, admin_option=admin)
     external = dict(catalog.roles[0], rolname="external", oid=999, rolcanlogin=True)
@@ -373,7 +389,7 @@ def test_metadata_grants_objects_and_revision_marker(case):
         v.catalog_state(catalog, catalog.i)
 
 
-@pytest.mark.parametrize("name", sorted({name for i in c.IDENTITIES.values() for name in (i.owner, i.migrator)}))
+@pytest.mark.parametrize("name", sorted({name for i in LOCAL_IDENTITIES.values() for name in (i.owner, i.migrator)}))
 def test_each_owner_and_migrator_must_be_noinherit(name):
     catalog = Catalog()
     next(role for role in catalog.roles if role["rolname"] == name)["rolinherit"] = True
@@ -381,7 +397,7 @@ def test_each_owner_and_migrator_must_be_noinherit(name):
         v.verify_authority(catalog, catalog.i)
 
 
-@pytest.mark.parametrize("name", sorted({name for i in c.IDENTITIES.values() for name in (i.owner, i.runtime, i.migrator)}))
+@pytest.mark.parametrize("name", sorted({name for i in LOCAL_IDENTITIES.values() for name in (i.owner, i.runtime, i.migrator)}))
 def test_cross_database_material_ownership_rejected_for_every_identity(name):
     catalog = Catalog()
     catalog.scalar_changes["AND d.dbid<>0"] = lambda p: p["name"] == name
@@ -389,7 +405,7 @@ def test_cross_database_material_ownership_rejected_for_every_identity(name):
         v.verify_authority(catalog, catalog.i)
 
 
-@pytest.mark.parametrize("name", sorted({name for i in c.IDENTITIES.values() for name in (i.owner, i.runtime, i.migrator)} - {c.IDENTITIES["testing"].owner}))
+@pytest.mark.parametrize("name", sorted({name for i in LOCAL_IDENTITIES.values() for name in (i.owner, i.runtime, i.migrator)} - {c.IDENTITIES["testing"].owner}))
 @pytest.mark.parametrize("privilege", ["SELECT", "INSERT", "UPDATE", "DELETE", "TRUNCATE", "REFERENCES", "TRIGGER", "MAINTAIN"])
 def test_each_nonowner_metadata_privilege_rejected(name, privilege):
     catalog = Catalog()
@@ -398,7 +414,7 @@ def test_each_nonowner_metadata_privilege_rejected(name, privilege):
         v.catalog_state(catalog, catalog.i)
 
 
-@pytest.mark.parametrize("name", sorted({name for i in c.IDENTITIES.values() for name in (i.owner, i.runtime, i.migrator)} - {c.IDENTITIES["testing"].owner}))
+@pytest.mark.parametrize("name", sorted({name for i in LOCAL_IDENTITIES.values() for name in (i.owner, i.runtime, i.migrator)} - {c.IDENTITIES["testing"].owner}))
 def test_each_nonowner_column_privilege_rejected(name):
     catalog = Catalog()
     catalog.scalar_changes["has_any_column_privilege"] = lambda p: p["name"] == name
@@ -406,10 +422,113 @@ def test_each_nonowner_column_privilege_rejected(name):
         v.catalog_state(catalog, catalog.i)
 
 
-@pytest.mark.parametrize("role", sorted({name for i in c.IDENTITIES.values() for name in (i.owner, i.runtime, i.migrator)} - {c.IDENTITIES["testing"].owner}))
+@pytest.mark.parametrize("role", sorted({name for i in LOCAL_IDENTITIES.values() for name in (i.owner, i.runtime, i.migrator)} - {c.IDENTITIES["testing"].owner}))
 @pytest.mark.parametrize("type_name", ["oaf_website.alembic_version", "oaf_website._alembic_version"])
 def test_generated_type_nonowner_grant_options_rejected(role, type_name):
     catalog = Catalog()
     catalog.scalar_changes["has_type_privilege(:role, :name, 'USAGE WITH GRANT OPTION')"] = lambda p: p["role"] == role and p["name"] == type_name
     with pytest.raises(c.MigrationError, match=c.Failure.DRIFT):
         v.catalog_state(catalog, catalog.i)
+
+
+@pytest.fixture
+def production_catalog(monkeypatch):
+    monkeypatch.setattr(c, '_read_production_metadata', lambda: {
+        'database_host': 'db.production.example', 'database_owner': 'render_provider_owner'})
+    return Catalog('production')
+
+
+@pytest.mark.parametrize('case', ['outgoing_runtime', 'outgoing_migrator', 'incoming', 'elevation',
+    'missing_login', 'runtime_owner', 'database_owner', 'database_create', 'temporary',
+    'cross_database_owner', 'outside_schema', 'runtime_metadata', 'runtime_column', 'grant_option'])
+def test_production_two_role_authority_denials(production_catalog, case):
+    catalog = production_catalog
+    if case.startswith('outgoing') or case == 'incoming':
+        member, parent = ((catalog.i.runtime, catalog.i.migrator) if case == 'outgoing_runtime'
+            else (catalog.i.migrator, catalog.i.runtime) if case == 'outgoing_migrator'
+            else ('ordinary_external', catalog.i.migrator))
+        catalog.roles.append(dict(catalog.roles[0], rolname='ordinary_external', oid=900))
+        catalog.memberships.append(dict(member=member, parent=parent,
+            inherit_option=False, set_option=True, admin_option=False))
+    elif case in {'elevation', 'missing_login'}:
+        next(r for r in catalog.roles if r['rolname'] == catalog.i.migrator)[
+            'rolcreaterole' if case == 'elevation' else 'rolcanlogin'] = case == 'elevation'
+    elif case == 'runtime_owner':
+        catalog.schema_owner = [{'owner': catalog.i.runtime}]
+    else:
+        needle, value = {
+            'database_owner': ('datdba', True),
+            'database_create': ('has_database_privilege(:name, :db, :privilege)', lambda p: p['privilege'] == 'CREATE'),
+            'temporary': ('has_database_privilege(:name, :db, :privilege)', lambda p: p['privilege'] == 'TEMPORARY'),
+            'cross_database_owner': ('AND d.dbid<>0', True),
+            'outside_schema': ('n.nspname !~', True),
+            'runtime_metadata': ('has_table_privilege', True),
+            'runtime_column': ('has_any_column_privilege', True),
+            'grant_option': ("has_type_privilege(:role, :name, 'USAGE WITH GRANT OPTION')", True),
+        }[case]
+        catalog.scalar_changes[needle] = value
+    with pytest.raises(c.MigrationError):
+        v.verify_authority(catalog, catalog.i)
+        v.catalog_state(catalog, catalog.i)
+
+
+@pytest.mark.parametrize('case', ['dns', 'tls_absent', 'tls_policy', 'ip', 'runtime_login', 'version'])
+def test_production_connection_identity_and_tls_fail_closed(production_catalog, case):
+    catalog = production_catalog
+    driver = catalog.connection.driver_connection
+    if case == 'dns':
+        driver.info.host = 'other.production.example'
+    elif case == 'tls_absent':
+        driver.pgconn.ssl_in_use = False
+    elif case == 'tls_policy':
+        catalog.engine.url = catalog.engine.url.set(query={**c.TLS_QUERY, 'sslmode': 'disable'})
+    elif case == 'ip':
+        catalog.identity[0]['host'] = 'db.production.example'
+    elif case == 'runtime_login':
+        catalog.identity[0]['authenticated'] = catalog.i.runtime
+    else:
+        catalog.identity[0]['major'] = 16
+    with pytest.raises(c.MigrationError, match=c.Failure.WRONG_IDENTITY):
+        v.verify_identity(catalog, catalog.i)
+
+
+def test_production_catalog_has_only_two_roles_and_one_database(production_catalog):
+    catalog = production_catalog
+    v.verify_authority(catalog, catalog.i)
+    assert v.catalog_state(catalog, catalog.i) == v.BASELINE
+    roles = {p['role'] if 'role' in p else p['name'] for q, p in catalog.calls
+             if 'privilege' in q and ('role' in p or 'name' in p)}
+    assert roles == {catalog.i.runtime, catalog.i.migrator}
+    assert {p['db'] for q, p in catalog.calls if 'db' in p} == {catalog.i.database}
+    assert catalog.memberships == []
+    assert {r['rolname'] for r in catalog.roles} == roles
+    assert any(p.get('database_owner') == 'render_provider_owner' for q, p in catalog.calls)
+
+
+@pytest.mark.parametrize('role', ['oaf_website_prod_app', 'oaf_website_prod_migrator'])
+@pytest.mark.parametrize('parameter_privilege', ["p.parname, 'ALTER SYSTEM'", "p.name, 'SET'"])
+def test_production_direct_parameter_authority_is_rejected(production_catalog, role, parameter_privilege):
+    catalog = production_catalog
+    # All role attributes, membership, ownership and normal ACLs stay valid.
+    # Model an effective direct or PUBLIC grant independently of those facts.
+    catalog.scalar_changes[parameter_privilege] = lambda p: p['name'] == role
+    with pytest.raises(c.MigrationError, match=c.Failure.UNAUTHORIZED_MEMBERSHIP):
+        v.verify_authority(catalog, catalog.i)
+    assert any(parameter_privilege in q and p.get('name') == role for q, p in catalog.calls)
+
+
+@pytest.mark.parametrize('parameter_privilege', ["p.parname, 'ALTER SYSTEM'", "p.name, 'SET'"])
+def test_production_public_parameter_authority_is_rejected(production_catalog, parameter_privilege):
+    catalog = production_catalog
+    # PUBLIC exposure makes the effective inquiry true for either ordinary role.
+    catalog.scalar_changes[parameter_privilege] = True
+    with pytest.raises(c.MigrationError, match=c.Failure.UNAUTHORIZED_MEMBERSHIP):
+        v.verify_authority(catalog, catalog.i)
+
+
+def test_local_authority_keeps_its_existing_validation_scope():
+    catalog = Catalog('testing')
+    v.verify_authority(catalog, catalog.i)
+    assert not any('has_parameter_privilege' in q for q, p in catalog.calls)
+    assert {p['db'] for q, p in catalog.calls if 'db' in p} == {
+        'oaf_website_dev', 'oaf_website_test'}

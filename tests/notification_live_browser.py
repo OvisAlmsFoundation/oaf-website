@@ -61,7 +61,7 @@ def main():
             def visit(page):
                 assert page.goto(origin + "/gramanna.html").status == 200
                 expect(page.get_by_role("button", name="Subscribe", exact=True)).to_be_enabled()
-                expect(page.get_by_role("button", name="Request consideration")).to_be_enabled()
+                expect(page.get_by_role("button", name="Submit")).to_be_enabled()
 
             def api(page, data, path="/api/notifications", *, raw=False,
                     content_type="application/json", csrf=True):
@@ -401,7 +401,7 @@ def main():
                 desktop.get_by_label("Your state", exact=True).select_option(state)
                 with desktop.expect_response(lambda r: r.url == origin + "/api/state-requests"
                                              and r.request.method == "POST") as pending:
-                    desktop.get_by_role("button", name="Request consideration").click()
+                    desktop.get_by_role("button", name="Submit").click()
                 assert pending.value.status == (201 if accepted else 200)
                 assert pending.value.json()["status"] == ("accepted" if accepted else "duplicate")
                 if accepted:
@@ -431,7 +431,7 @@ def main():
             assert statuses["invalid"] == [400] * 3 and statuses["repeated"] == [200] * 8
             assert statuses["counts"] == expected_counts
             desktop.reload()
-            expect(desktop.get_by_role("button", name="Request consideration")).to_be_enabled()
+            expect(desktop.get_by_role("button", name="Submit")).to_be_enabled()
             state_submit("TX", False)
             record("N", state_requests_accepted=2, duplicate_and_refresh_safe=True,
                    concurrent_duplicates=8, malformed_rejections=3, count_deltas=dict(CA=1, TX=1))

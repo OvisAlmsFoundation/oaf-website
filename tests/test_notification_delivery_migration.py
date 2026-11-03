@@ -126,7 +126,7 @@ class DeliveryCatalog(NotificationCatalog):
         return super().execute(sql, parameters)
 
 
-@pytest.mark.parametrize("environment", ["testing", "development"])
+@pytest.mark.parametrize("environment", ["testing", "development", "production"])
 def test_complete_0004_catalog_and_least_privilege(environment):
     c = DeliveryCatalog(environment)
     assert v.catalog_state(c,c.i) == v.DELIVERY
@@ -166,10 +166,10 @@ def test_original_type_pair_bind_has_incompatible_oid_alias_contexts():
 
 
 @pytest.mark.parametrize("revision", ["0004", "0005"])
-@pytest.mark.parametrize("environment", ["testing", "development"])
+@pytest.mark.parametrize("environment", ["testing", "development", "production"])
 def test_actual_delivery_path_uses_text_before_distinct_oid_lookups(monkeypatch, revision, environment):
     catalog = pg_catalog(revision)
-    if environment == "development":
+    if environment != "testing":
         catalog = type(catalog)(environment)
     original_scalar = v.scalar
     queries = {}
@@ -267,7 +267,7 @@ def test_check_parser_preserves_grouping_and_supports_pg17_rendering():
     assert validator.check_tree("CHECK ((a AND b) AND c)") == validator.check_tree("CHECK (a AND b AND c)")
 
 
-@pytest.mark.parametrize("environment", ["testing","development"])
+@pytest.mark.parametrize("environment", ["testing","development","production"])
 def test_upgrade_source_ddl_only_expected_owner_and_no_historical_alter(environment):
     identity=IDENTITIES[environment]
     sql=[]
@@ -381,7 +381,7 @@ def test_revision_docstring_is_optional_but_body_is_exact(artifact_copy):
     assert artifacts().target==v.DELIVERY
 
 
-@pytest.mark.parametrize("environment", ["testing", "development"])
+@pytest.mark.parametrize("environment", ["testing", "development", "production"])
 def test_prior_state_dispatch_and_preservation_checks_remain_authoritative(environment):
     from test_migration_catalog import Catalog
     from test_state_request_migration import FeatureCatalog
@@ -480,7 +480,7 @@ def r10_toast(monkeypatch):
 
 
 @pytest.mark.parametrize("revision", ["0004", "0005"])
-@pytest.mark.parametrize("environment", ["testing", "development"])
+@pytest.mark.parametrize("environment", ["testing", "development", "production"])
 def test_r10_generated_toast_with_exact_managed_dependencies(r10_toast, revision, environment):
     catalog = r10_toast(revision, environment)
     assert v.catalog_state(catalog, catalog.i) == catalog.marker[0]["version_num"]

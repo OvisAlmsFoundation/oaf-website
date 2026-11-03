@@ -94,6 +94,9 @@
       csrf = data.csrf_token;
       confirmationEnabled = data.confirmation_enabled === true;
       confirmationForm.hidden = !confirmationEnabled;
+      if (confirmationEnabled && location.hash === '#confirmation-request-title') {
+        document.getElementById('confirmation-request-title').scrollIntoView();
+      }
     }).finally(() => { sessionLoading = null; });
     await sessionLoading;
   }

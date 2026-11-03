@@ -83,7 +83,7 @@ def main():
                 page.on('pageerror', lambda error: errors.append(str(error)))
                 page.goto(ORIGIN + '/gramanna.html')
                 state = page.get_by_label('Your state', exact=True)
-                button = page.get_by_role('button', name='Request consideration')
+                button = page.get_by_role('button', name='Submit')
                 note = page.locator('#request-note')
                 expect(button).to_be_enabled()
                 assert state.locator('option').count() == 51

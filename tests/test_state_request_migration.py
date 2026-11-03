@@ -83,7 +83,7 @@ def test_manifest_cannot_silently_change_feature_contract(artifact_copy, field, 
                              manifest_hash=v.digest(manifest), revision_hash=payload['revisions'][1]['sha256'])
 
 
-@pytest.mark.parametrize('environment', ['testing', 'development'])
+@pytest.mark.parametrize('environment', ['testing', 'development', 'production'])
 def test_revision_only_grants_matching_runtime_and_does_not_commit(environment):
     from oaf_website.migration_config import IDENTITIES
     identity = IDENTITIES[environment]
@@ -181,7 +181,7 @@ class FeatureCatalog(Catalog):
         return super().execute(sql, parameters)
 
 
-@pytest.mark.parametrize('environment', ['development', 'testing'])
+@pytest.mark.parametrize('environment', ['development', 'testing', 'production'])
 def test_exact_feature_catalog_and_metadata_protections(environment):
     catalog = FeatureCatalog(environment)
     assert v.catalog_state(catalog, catalog.i) == v.STATE_REQUESTS

@@ -15,7 +15,7 @@ import re
 
 from sqlalchemy import text
 
-from .migration_config import IDENTITIES, Failure, MigrationError
+from .migration_config import IDENTITIES, Failure, MigrationError, catalog_identities, production_metadata, TLS_QUERY
 from .state_request_schema import STATE_REQUESTS, REQUEST_OBJECTS, REQUEST_GRANTS, REQUEST_EDGES
 from .notification_schema import NOTIFICATIONS, NOTIFICATION_OBJECTS, NOTIFICATION_GRANTS, NOTIFICATION_EDGES
 from .notification_delivery_schema import DELIVERY, TABLES as DELIVERY_TABLES, OBJECTS as DELIVERY_OBJECTS, GRANTS as DELIVERY_GRANTS, EDGES as DELIVERY_EDGES
@@ -32,10 +32,12 @@ ROOT = Path(__file__).resolve().parents[1]
 BASELINE = "0001_migration_baseline"
 BASE = "base"
 FRAMEWORK_FILES = frozenset({
+    "ops/local_postgres_bootstrap/07_production_schema.sql",
+    "config/production-postgres.example.toml",
     "requirements-migrations.txt", "alembic.ini", "migrations/env.py",
     "migrations/script.py.mako", "oaf_website/migration_config.py",
     "oaf_website/migrate.py", "oaf_website/migration_validation.py",
-    "oaf_website/database_config.py", "oaf_website/__init__.py",
+    "oaf_website/database_config.py", "oaf_website/production_config.py", "oaf_website/__init__.py",
     "oaf_website/migration_authority.py",
     "requirements.txt", "oaf_website/confirmation_outbox_schema.py",
     "oaf_website/state_request_schema.py", "oaf_website/state_request_validation.py",
@@ -511,6 +513,7 @@ def scalar(connection, sql, **parameters):
 
 
 def verify_identity(connection, identity, *, assumed=False):
+    catalog_identities(identity)
     found = rows(connection, """
         SELECT pg_catalog.current_database() AS database,
                session_user AS authenticated, current_user AS effective,
@@ -518,34 +521,48 @@ def verify_identity(connection, identity, *, assumed=False):
                pg_catalog.inet_server_port() AS port,
                pg_catalog.current_setting('server_version_num')::int / 10000 AS major
     """)[0]
+    host = identity.host
+    if identity.environment == "production":
+        from ipaddress import ip_address
+        host = found["host"]
+        try:
+            ip_address(host)
+            driver = connection.connection.driver_connection
+            if (driver.info.host != production_metadata()["database_host"]
+                    or driver.pgconn.ssl_in_use is not True
+                    or connection.engine.url.query != TLS_QUERY):
+                raise ValueError
+        except (AttributeError, TypeError, ValueError):
+            raise MigrationError(Failure.WRONG_IDENTITY) from None
     if found != {
         "database": identity.database, "authenticated": identity.migrator,
         "effective": identity.owner if assumed else identity.migrator,
-        "host": identity.host, "port": identity.port, "major": identity.postgres_major,
+        "host": host, "port": identity.port, "major": identity.postgres_major,
     }:
         raise MigrationError(Failure.WRONG_IDENTITY)
 
 
 def verify_authority(connection, identity):
-    """All six ordinary identities; exceptional administrators stay separate.
+    """Selected cluster identities; exceptional administrators stay separate.
 
     Incoming exceptional paths must already possess superuser authority or the
     ability to SET the preserved shared database owner. CREATEDB/CREATEROLE alone
     does not qualify. Authorizing/provisioning administrators is never done here.
     """
-    if identity != IDENTITIES.get(identity.environment):
-        raise MigrationError(Failure.WRONG_IDENTITY)
-    registered = {name for i in IDENTITIES.values()
+    selected = catalog_identities(identity)
+    database_owner = (production_metadata()["database_owner"]
+                      if identity.environment == "production" else "oaf_website_owner")
+    registered = {name for i in selected
                   for name in (i.runtime, i.migrator, i.owner)}
-    owners = {i.owner for i in IDENTITIES.values()}
-    allowed = {(i.migrator, i.owner, False, True, False) for i in IDENTITIES.values()}
+    owners = {i.owner for i in selected if i.owner != i.migrator}
+    allowed = {(i.migrator, i.owner, False, True, False) for i in selected if i.owner != i.migrator}
     roles = rows(connection, """
         SELECT oid, rolname, rolsuper, rolcreatedb, rolcreaterole, rolreplication,
                rolbypassrls, rolinherit, rolcanlogin,
-               (rolsuper OR pg_catalog.pg_has_role(oid, 'oaf_website_owner', 'SET'))
+               (rolsuper OR pg_catalog.pg_has_role(oid, :database_owner, 'SET'))
                    AS exceptional
         FROM pg_catalog.pg_roles ORDER BY rolname
-    """)
+    """, database_owner=database_owner)
     rolemap = {r["rolname"]: r for r in roles}
     if not registered.issubset(rolemap):
         raise MigrationError(Failure.UNAUTHORIZED_MEMBERSHIP)
@@ -556,6 +573,18 @@ def verify_authority(connection, identity):
                 or role["rolcanlogin"] != (name not in owners)
                 or (name in owners or name.endswith("_migrator")) and role["rolinherit"]):
             raise MigrationError(Failure.UNAUTHORIZED_MEMBERSHIP)
+        if identity.environment == "production":
+            # Retain the local bootstrap's effective parameter-ACL safeguard.
+            # Role attributes/memberships alone do not reveal these grants.
+            if scalar(connection, """
+                SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_parameter_acl p
+                    WHERE pg_catalog.has_parameter_privilege(:name, p.parname, 'ALTER SYSTEM'))
+            """, name=name) or scalar(connection, """
+                SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_settings p
+                    WHERE p.context IN ('superuser', 'superuser-backend')
+                      AND pg_catalog.has_parameter_privilege(:name, p.name, 'SET'))
+            """, name=name):
+                raise MigrationError(Failure.UNAUTHORIZED_MEMBERSHIP)
     memberships = rows(connection, """
         SELECT member.rolname AS member, parent.rolname AS parent,
                m.inherit_option, m.set_option, m.admin_option
@@ -601,12 +630,12 @@ def verify_authority(connection, identity):
                                                  or not rolemap[edge[0]]["exceptional"]):
                         raise MigrationError(Failure.UNAUTHORIZED_MEMBERSHIP)
                     pending.append(edge[0])
-    for i in IDENTITIES.values():
+    for i in selected:
         for name in (i.runtime, i.migrator, i.owner):
-            for db in (j.database for j in IDENTITIES.values()):
+            for db in (j.database for j in selected):
                 # Runtime and migrator CONNECT only to their own database;
                 # NOLOGIN schema owners need no database privilege grant.
-                expected_connect = db == i.database and name != i.owner
+                expected_connect = db == i.database and name in (i.runtime, i.migrator)
                 if bool(scalar(connection,
                         "SELECT pg_catalog.has_database_privilege(:name, :db, 'CONNECT')",
                         name=name, db=db)) != expected_connect:
@@ -627,16 +656,16 @@ def verify_authority(connection, identity):
             """, name=name, owner=identity.owner):
                 raise MigrationError(Failure.UNAUTHORIZED_MEMBERSHIP)
     if scalar(connection, """
-        SELECT pg_catalog.pg_get_userbyid(datdba) <> 'oaf_website_owner'
+        SELECT pg_catalog.pg_get_userbyid(datdba) <> :database_owner
         FROM pg_catalog.pg_database WHERE datname=:db
-    """, db=identity.database):
+    """, db=identity.database, database_owner=database_owner):
         raise MigrationError(Failure.UNAUTHORIZED_MEMBERSHIP)
     # pg_shdepend is the general ownership inventory, covering collations,
     # operators, extensions, languages, large objects, foreign servers/wrappers,
     # event triggers, publications/subscriptions, statistics and future catalogs.
     # Only selected-owner schema, baseline objects and restrictive defaults may
     # have ownership dependencies here. No six-role shared-object ownership.
-    for i in IDENTITIES.values():
+    for i in selected:
         for name in (i.runtime, i.migrator, i.owner):
             if scalar(connection, """
                 SELECT EXISTS (
@@ -699,7 +728,7 @@ def verify_schema(connection, identity):
     if actual != expected:
         raise MigrationError(Failure.DRIFT)
     for name in (identity.runtime, identity.migrator):
-        if scalar(connection, "SELECT pg_catalog.has_schema_privilege(:name, 'oaf_website', 'CREATE')", name=name):
+        if bool(scalar(connection, "SELECT pg_catalog.has_schema_privilege(:name, 'oaf_website', 'CREATE')", name=name)) != (name == identity.owner):
             raise MigrationError(Failure.DRIFT)
     if not scalar(connection, "SELECT pg_catalog.has_schema_privilege(:name, 'oaf_website', 'USAGE')", name=identity.runtime):
         raise MigrationError(Failure.DRIFT)
@@ -917,7 +946,7 @@ def verify_generated_type_privileges(connection, identity):
     if actual != expected or len(acl) != len(expected):
         raise MigrationError(Failure.DRIFT)
     for name in ('oaf_website.alembic_version', 'oaf_website._alembic_version'):
-        for i in IDENTITIES.values():
+        for i in catalog_identities(identity):
             for role in (i.owner, i.runtime, i.migrator):
                 if not scalar(connection,
                         "SELECT pg_catalog.has_type_privilege(:role, :name, 'USAGE')",
@@ -1160,13 +1189,13 @@ def verify_version_table(connection, identity):
         if not scalar(connection, "SELECT pg_catalog.has_table_privilege(:name, 'oaf_website.alembic_version', :privilege)",
                       name=identity.owner, privilege=privilege):
             raise MigrationError(Failure.DRIFT)
-        for i in IDENTITIES.values():
+        for i in catalog_identities(identity):
             for name in (i.runtime, i.migrator, i.owner):
                 if name != identity.owner and scalar(connection,
                         "SELECT pg_catalog.has_table_privilege(:name, 'oaf_website.alembic_version', :privilege)",
                         name=name, privilege=privilege):
                     raise MigrationError(Failure.DRIFT)
-    for i in IDENTITIES.values():
+    for i in catalog_identities(identity):
         for name in (i.runtime, i.migrator, i.owner):
             if name != identity.owner and scalar(connection,
                     "SELECT pg_catalog.has_any_column_privilege(:name, 'oaf_website.alembic_version', 'SELECT, INSERT, UPDATE, REFERENCES')",

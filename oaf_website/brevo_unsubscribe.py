@@ -30,7 +30,7 @@ class BrevoWebhookConfig:
     token: str = field(repr=False)
 
     def __post_init__(self):
-        if (self.environment not in {"testing", "development"} or type(self.token) is not str
+        if (self.environment not in {"testing", "development", "production"} or type(self.token) is not str
                 or re.fullmatch(r"[A-Za-z0-9_-]{32,256}", self.token, re.ASCII) is None):
             raise diagnostic_error(ValueError("Protected webhook configuration unavailable."), "webhook_configuration", "webhook_token_format", stage="startup")
 

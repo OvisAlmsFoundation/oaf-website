@@ -89,7 +89,7 @@ class ManagementCatalog(OutboxCatalog):
         return super().execute(sql,parameters)
 
 
-@pytest.mark.parametrize('environment',['testing','development'])
+@pytest.mark.parametrize('environment',['testing','development','production'])
 def test_complete_successor_catalog_and_effective_grants(environment):
     catalog=ManagementCatalog(environment)
     assert v.catalog_state(catalog,catalog.i)==v.MANAGEMENT
@@ -121,7 +121,7 @@ def test_successor_drift_is_rejected(case):
     with pytest.raises(MigrationError,match=Failure.DRIFT): v.catalog_state(c,c.i)
 
 
-@pytest.mark.parametrize('environment',['testing','development'])
+@pytest.mark.parametrize('environment',['testing','development','production'])
 def test_minimal_additive_ddl_and_only_demonstrated_runtime_grants(environment):
     statements=[]
     def execute(statement):
@@ -287,7 +287,7 @@ class StateCatalog(WebCatalog):
                 refobjid=target[1], refobjsubid=column, deptype="a") for column in columns]
 
 
-@pytest.mark.parametrize("environment", ["testing", "development"])
+@pytest.mark.parametrize("environment", ["testing", "development", "production"])
 def test_state_catalog_preserves_ownership_least_privilege_and_exact_scope(environment):
     catalog = StateCatalog(environment)
     assert v.catalog_state(catalog, catalog.i) == v.STATE_AVAILABILITY
@@ -421,7 +421,7 @@ def test_state_revision_exact_shape(artifact_copy, mutation):
         with pytest.raises(MigrationError, match=Failure.ARTIFACT_HASH): verify(artifact_copy)
 
 
-@pytest.mark.parametrize("environment", ["testing", "development"])
+@pytest.mark.parametrize("environment", ["testing", "development", "production"])
 def test_state_ddl_only_changes_event_checks_and_scoped_uniqueness_under_registered_owner(environment, monkeypatch):
     from oaf_website import state_availability_schema as state
     statements = []
@@ -446,7 +446,7 @@ def test_state_ddl_only_changes_event_checks_and_scoped_uniqueness_under_registe
     with pytest.raises(RuntimeError): revision["downgrade"]()
 
 
-@pytest.mark.parametrize("environment", ["testing", "development"])
+@pytest.mark.parametrize("environment", ["testing", "development", "production"])
 def test_web_catalog_extends_only_typed_event_checks_and_preserves_all_acl(environment):
     catalog = WebCatalog(environment)
     assert v.catalog_state(catalog, catalog.i) == v.WEB_LAUNCH
@@ -504,7 +504,7 @@ def test_web_revision_exact_shape(artifact_copy, mutation):
         with pytest.raises(MigrationError, match=Failure.ARTIFACT_HASH): verify(artifact_copy)
 
 
-@pytest.mark.parametrize("environment", ["testing", "development"])
+@pytest.mark.parametrize("environment", ["testing", "development", "production"])
 def test_web_ddl_only_alters_two_checks_and_requires_registered_owner(environment, monkeypatch):
     from oaf_website import web_launch_schema as web
     statements = []
@@ -543,7 +543,7 @@ def test_web_synthetic_authorization_evidence_and_separate_noop(operational, mon
     assert len(records(op, "claim-*.json")) == 2
 
 
-@pytest.mark.parametrize("environment", ["testing","development"])
+@pytest.mark.parametrize("environment", ["testing","development","production"])
 def test_release_approval_catalog_uses_append_only_grants_and_exact_dependencies(environment):
     catalog = ReleaseCatalog(environment)
     assert v.catalog_state(catalog,catalog.i) == v.RELEASE_APPROVALS
@@ -586,7 +586,7 @@ def test_release_revision_source_is_exactly_declarative(artifact_copy, mutation)
     with pytest.raises(MigrationError, match=Failure.ARTIFACT_HASH): verify(artifact_copy)
 
 
-@pytest.mark.parametrize("environment", ["testing", "development"])
+@pytest.mark.parametrize("environment", ["testing", "development", "production"])
 def test_release_approval_ddl_is_additive_owner_only_and_not_executed(environment, monkeypatch):
     statements=[]
     def execute(statement):

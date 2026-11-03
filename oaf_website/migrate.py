@@ -654,7 +654,7 @@ class _Parser(argparse.ArgumentParser):
 def main(argv=None):
     parser = _Parser(description="Guarded OAF Website migrations", allow_abbrev=False)
     parser.add_argument("action", choices=("plan", "verify", "upgrade"))
-    parser.add_argument("--environment", required=True, choices=("development", "testing"))
+    parser.add_argument("--environment", required=True, choices=("development", "testing", "production"))
     parser.add_argument("--expected-start", required=True)
     parser.add_argument("--target", required=True)
     parser.add_argument("--manifest-sha256", required=True)

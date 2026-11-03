@@ -1,0 +1,24 @@
+# Nonsecret template only. Never read from the repository at runtime.
+# Provision /etc/secrets/oaf-production.toml separately on Web and Cron services.
+public_origin = "https://ovisalmsfoundation.org"
+# Exact owner-approved Render INTERNAL hostname (dpg-...); same database on Web/Cron.
+# Same Render account/region as the database. Do not use its external DNS here.
+# Fixed TLS: sslmode=require, minimum TLS 1.2; no certificate management required.
+database_host = "REQUIRES-OWNER-APPROVED-INTERNAL-DATABASE-HOST"
+# Required owner-reviewed ingress peers. No wildcard; verify Render's actual
+# proxy chain/CIDRs and spoof resistance before deployment. Never copy a guess.
+trusted_proxy_cidrs = []
+confirmation_enabled = false
+management_enabled = false
+integrations_enabled = false
+releases_enabled = false
+webhook_enabled = false
+processing_enabled = false
+
+# Optional Contact metadata; approved port/TLS pairs: ssl/465 or starttls/587.
+# [smtp]
+# host = "REQUIRES-OWNER-APPROVED-SMTP-HOST"
+# port = 465
+# tls_mode = "ssl"
+# username = "REQUIRES-OWNER-APPROVED-SMTP-ACCOUNT"
+# from_email = "contact@ovisalmsfoundation.org"

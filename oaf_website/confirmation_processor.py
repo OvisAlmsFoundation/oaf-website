@@ -42,7 +42,17 @@ def process_confirmations(*, expected_profile, enabled=False, credential_account
         environment = dict(os.environ if environ is None else environ)
         profile = _validate_environment(environment, expected_profile)
         if profile == "production":
-            raise diagnostic_error(DatabaseConfigurationError("Production processing is deferred."), "process_confirmations", "production_processing_deferred", stage="processor")
+            if not enabled:
+                return BatchResult("disabled")
+            from . import production_config
+            production = production_config.load_production_settings(environ=environment)
+            if (not production.processing_enabled or not management_enabled
+                    or not production.management_enabled or not production.webhook_enabled
+                    or releases_enabled != production.releases_enabled
+                    or confirmation_page != production_config.PUBLIC_ORIGIN + "/confirm-email.html"
+                    or credential_account is not None):
+                raise diagnostic_error(ValueError("Production processing activation unavailable."),
+                    "configuration", "production_processing_activation", stage="processor")
         if not enabled:
             return BatchResult("disabled")
         # TESTING has no unscoped enabled invocation. Other profiles retain their
@@ -68,7 +78,8 @@ def process_confirmations(*, expected_profile, enabled=False, credential_account
         # Never generate a replacement key on restart: existing capabilities and
         # durable intent recovery require the same protected key as the public API.
         operation = "protected_key"
-        secret = recognition_secret(require_existing=True)
+        secret = (production_config.recognition_secret() if profile == "production"
+                  else recognition_secret(require_existing=True))
         operation = "engine"
         engine = create_engine(
             config.url, echo=False, hide_parameters=True, pool_pre_ping=True,

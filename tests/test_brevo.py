@@ -70,8 +70,8 @@ def test_missing_or_invalid_key_and_loader_errors_are_sanitized(key):
     assert KEY not in str(error.value) and error.value.__context__ is None
 
 
-@pytest.mark.parametrize("env", [None, [], "production", "unexpected"])
-def test_config_never_enables_production(env):
+@pytest.mark.parametrize("env", [None, [], "unexpected"])
+def test_config_rejects_unregistered_environments(env):
     with pytest.raises(b.BrevoConfigurationError): b.BrevoConfig(env, KEY)
 
 

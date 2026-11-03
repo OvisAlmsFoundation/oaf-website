@@ -6,7 +6,7 @@
 - Repository: `oaf-website`
 - Purpose: Public website for Ovis Alms Foundation and GraManna.
 - Hosting target: Render.
-- Site type: Primarily static public website with a separate Flask API for dynamic features.
+- Site type: Public HTML/assets and the existing Flask API share one production Web Service and origin.
 - Technology: Plain HTML, CSS, and limited JavaScript for public pages; an independent Python 3.11 / Flask backend with SQLAlchemy database integration.
 - Repository structure: Separate from the GraManna application repository.
 - Development model: May be developed in parallel with GraManna using a separate VS Code window and separate Codex session.
@@ -89,14 +89,156 @@ Detailed social features, tier mechanics, internal workflows, exact thresholds, 
 ## 9. Current Technical Direction
 
 - Hosting target: Render.
-- Public-page deployment target: Render Static Site; the public-facing website remains primarily static.
+- Production deployment target: one Render Flask Web Service at `https://ovisalmsfoundation.org`, serving the strict approved public-file allowlist and existing `/api` routes together; one separate protected PostgreSQL 17 database.
 - Public-page technology: plain HTML, CSS, and limited JavaScript.
-- Dynamic features will be supported by a separate, independent Python 3.11 / Flask API with SQLAlchemy database integration and the Psycopg PostgreSQL driver.
+- Dynamic features use the existing independent Python 3.11 / Flask factory, SQLAlchemy and Psycopg. Pinned Waitress 3.0.2 serves one process/thread on Render's `PORT`; keep one service instance and no autoscaling while existing Contact limits are process-local.
 - Backend dependencies are installed only in the website's dedicated `.venv`; the backend and database remain independent of GraManna.
 - Local development and database integration testing use PostgreSQL 17.11 at `127.0.0.1:5432`, with separate development and testing databases and application accounts.
 - Production-relevant database behavior must be validated against PostgreSQL before launch; deterministic unit tests alone are insufficient.
 - Continue using the existing shared Playwright test environment documented in `WORKFLOW.md` for browser tests. Do not install Playwright in the website `.venv`.
 - Backend hosting and production database provisioning remain separate from local development readiness and require approval before activating paid resources.
+
+### WU1 production source and mandatory email launch direction (current)
+
+This current direction supersedes historical static-site/separate-API deployment
+and email-deferral wording below; accepted WU1-WU3, TESTING/DEVELOPMENT migrations
+0001-0009, owner frontend work and earlier evidence retain their original scope.
+The Foundation website can launch before the GraManna public application.
+
+Public launch requires collection with consent, automatic confirmation email,
+explicit confirmation through `confirm-email.html`, preference management/recovery,
+unsubscribe/suppression, authenticated required provider feedback and automatic
+processing of officially approved Android/iOS/web/state announcements. Existing
+eligibility, stable IDs, cutoff, correction/withdrawal, audit, expiry, attempt,
+claim/retry and uncertain-delivery protections govern all environments. There is
+no routine administrator Send action or AI runtime dependency. No new database,
+queue, delivery ledger or email system is introduced. All activation stays OFF
+until separately authorized; a deployed default-OFF site is not launch readiness.
+
+`production.py`, `production_config.py`, `requirements-production.txt` and the
+nonsecret `config/production.example.toml` provide the host/finite processor and
+fixed protected configuration seams. `/healthz` reports process/composition
+liveness only, including Render's probe Host; it never checks database/provider
+availability. Startup, public GETs and health never migrate or process mail.
+
+Production metadata and role-specific secrets must be separately provisioned
+under `/etc/secrets`, with explicit `OAF_ENV=production`, exact origin, persistent
+shared recognition key, fixed runtime identity and verified TLS. No database URL,
+path/backend override or local fallback is accepted. Required owner-reviewed
+proxy peer CIDRs plus a validated single forwarded hop protect client addresses;
+Render's actual chain, header handling and protected-file permissions remain
+deployment verification gates. There is no guessed ingress range in the template.
+
+One separate Render Cron Job must call `python -m oaf_website.production process`
+on a proposed once-per-minute UTC schedule after authorization. It reuses the
+existing finite processor and PostgreSQL claims/outcomes, with at most 22 provider
+submissions per invocation when releases are enabled. Windows Task Scheduler is
+not a production dependency. No worker loop runs in Flask. Cron cannot mount a
+persistent disk; Render allows only one active run per Cron service, delays an
+overlapping schedule, cancels an active run on manual trigger and stops runs after
+12 hours. Original durable claims/uncertainty survive cancellation; no automatic
+blind resend is added. Capacity/delay and deployed scheduling remain launch gates.
+[Render Cron documentation](https://render.com/docs/cronjobs).
+
+Cron adds a **$1/service/month minimum**, with compute billed by active duration;
+the listed smallest compute rate is **$0.00016/minute**. These are incremental to
+the paid Web Service, protected database/storage/backups, domain and SMTP/Brevo
+usage. No flat total or new paid resource is approved. For scale, a 30-day month
+at one minute/run every minute is 43,200 compute minutes, about $6.91; short runs
+may remain at the $1 minimum. Confirm selected current plans/usage before purchase.
+[Render pricing](https://render.com/pricing).
+
+**Production two-role source compatibility is prepared; activation remains blocked.**
+The production registry is `oaf_website_prod`, restricted LOGIN
+`oaf_website_prod_app` and LOGIN/schema-object owner `oaf_website_prod_migrator`.
+There is no third production schema owner. Provider-controlled database ownership
+is preserved. Existing revision-defined grants and runtime metadata denial remain;
+the migrator has no cluster administration or persistent database CREATE privilege.
+DEVELOPMENT/TESTING retain their existing identities, security arrangements and
+both-local-database validation. Production catalog/ACL validation does not require
+local roles/databases on Render; membership traversal, outside-schema/shared/
+cross-database ownership checks and exact object/grant checks remain mandatory.
+
+Use the existing Windows issuer/runner, exact protected production migration vault
+target and durable authorization/audit/claims; no execution/audit system moves to
+Render Web/Cron. Fixed nonsecret `config/local/production-postgres.toml` supplies
+only the owner-approved external DNS and provider database owner. No environment,
+URL, port, identity, credential/backend/path or TLS override is accepted. The
+proposed `07_production_schema.sql` extends the existing bootstrap assets only:
+preprovisioned exact LOGIN roles, provider-owner administrator, transactional
+migrator-owned application schema/restrictive defaults/runtime USAGE, temporary
+CREATE revoked before commit, database/public-schema ownership preserved. It
+creates no roles/secrets and executes no revision. Nine revision bytes are unchanged.
+
+Accepted Render 17.11 foundational provider evidence is reused without retesting.
+It is not full production migration readiness. The owner-approved WU2 connection
+policy supersedes the former verify-full/system-root requirement and historical
+WU1 TLS gate wording below. Render Web/Cron use the private internal hostname in
+the same account/region; owner-controlled Windows migrations use the corresponding
+exact external DNS, preserving hostname/SNI. Both require `sslmode=require`, minimum
+TLS 1.2 and SNI enabled; existing SCRAM authentication remains. Require mode provides
+encryption but does not independently verify server identity. No custom certificate
+management is required. Plaintext fallback, disable mode and arbitrary endpoint/TLS
+overrides remain prohibited. Restrict external access to approved operator IPs
+during operational configuration; no provider configuration occurs in WU2. See
+[Render connection methods](https://render.com/docs/postgresql-creating-connecting).
+Activation still requires owner-approved matching metadata/separate protected
+credentials, independently approved current artifacts and separately authorized
+bootstrap/migration validation. Single-use authorization, durable auditing/locking,
+one-revision transactions and uncertain-outcome protections remain unchanged.
+See the current `WORKFLOW.md` production compatibility contract.
+
+**WU2 Render connection compatibility (2026-11-02): source/offline PASS.**
+The approved internal/runtime and exact external/Windows paths require encryption
+with require mode, minimum TLS 1.2 and SNI enabled, without custom certificates.
+Focused guarded validation: 508 PASS, native exit 0, zero unexpected external
+access and two existing runpy warnings. Independent fresh-context security review
+PASS with no material finding or correction. Accepted WU1 evidence is reused;
+no canonical suite, Render role retest or live operation occurred. Nine revision
+bytes, manifest history/approval, two-role credentials and existing security controls
+remain intact; only required framework hashes changed. Full evidence and exact
+changed files: `.pytest_cache/wu2-render-connection-20261102/REPORT.txt`.
+Operational metadata/credentials, approved external IP restrictions, independent
+artifact approval, separate authority and later live validation remain future
+gates. Next: owner review of paired endpoints/provider owner and approved IPs,
+without provisioning or connecting.
+
+**WU1 two-role conditional source/offline acceptance (2026-11-02): PASS.**
+The initial focused 14-file run had 1,840 PASS / 3 assertions corrected by a
+621-PASS rerun. A reduced-run import-order test dependency was also corrected.
+Fresh-context independent review found one production parameter-ACL gap; one
+bounded correction batch added effective ALTER SYSTEM/superuser-parameter SET
+denials to bootstrap and runner, retaining local behavior. Correction validation:
+377 PASS plus 6 parameter-exposure cases PASS, native exits 0 and zero unexpected
+external access. The reviewer closed that finding with no remaining material
+source defects. Exact revision/local bootstrap bytes and historical migration
+metadata are preserved; artifact approval stays `pending_independent_review`.
+Evidence and exact changed-file list: `.pytest_cache/wu1-render-two-role-20261102/REPORT.txt`.
+This conditionally accepts source only; production activation remains BLOCKED on
+the TLS and separately authorized operational dependencies above. No live operation,
+provider retest, secret activation, restart, deployment or Git delivery occurred.
+
+Remaining live gates: owner-reviewed deployment/configuration; protected secrets
+and key continuity; PostgreSQL 17 bootstrap/least privileges/TLS; compatible approved
+production migration artifacts and separate authorization/execution; SMTP and Brevo
+sender/domain authentication, webhook authentication, real confirmation/management/
+unsubscribe/retry/restart proof; paid scheduler provisioning/activation; monitoring
+of existing sanitized first-failure output and retained hosting logs. The public
+GraManna URL and handoff credentials remain separately approved/configured, with
+no invented URL or announcements enabled. Both legal pages' Effective Date and
+Last Updated publication placeholders remain mandatory prelaunch checks; no dates
+are assigned here. No credential, infrastructure, DNS, provider, Git or live action
+is performed by this source/offline checkpoint.
+
+Prior production host focused evidence: `.pytest_cache/wu1-production-20261030T174710Z/REPORT.txt`.
+647 distinct guarded Python cases and 10 direct JavaScript fragment-parser cases
+PASS. New/changed Python statement and branch coverage is reported with its exact
+scope in that packet; this is not canonical-suite or live certification. The one
+security/deterministic-autonomy review includes the installed Psycopg TLS metadata
+contract and existing durable delivery boundaries. Original failed attempts and
+their corrections remain recorded. No browser/layout campaign or GraManna access
+was needed for the production environment token extension. Overall launch readiness
+remains INCOMPLETE because the migration/hosting and other live gates above remain.
 
 ### Secure Database Configuration Foundation
 

@@ -70,6 +70,9 @@ def load_contact_config(expected_profile, *, local_config_path=CONFIG_PATH,
     try:
         environment = dict(os.environ if environ is None else environ)
         _validate_environment(environment, expected_profile)
+        if expected_profile == "production":
+            from .production_config import load_contact
+            return load_contact(environ=environment)
         if expected_profile not in {"development", "testing"}:
             raise diagnostic_error(ValueError, "load_contact_config", "contact_profile", stage="startup")
         for path in (ROOT, ROOT / "config", local_config_path.parent, local_config_path):

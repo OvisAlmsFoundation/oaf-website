@@ -106,6 +106,12 @@ PRECISE_PREDICATES |= frozenset(p for p in FAILURE_PREDICATES if p.startswith("w
 # Extends the existing bounded notification record; no alternate logging framework.
 FAILURE_STAGES = frozenset({"processor", "outbox", "schedule", "notifications", "startup", "request", "provider"})
 EVIDENCE_PATH = Path(__file__).resolve().parents[1] / "instance/failures.jsonl"
+PRECISE_PREDICATES |= frozenset({"production_protected_file", "production_secret_scope",
+    "production_secret_read", "production_key_format", "production_metadata",
+    "production_smtp_metadata", "production_activation_dependencies",
+    "production_python_version", "production_port", "production_processing_activation",
+    "production_proxy_metadata", "production_arguments"})
+FAILURE_PREDICATES |= PRECISE_PREDICATES
 _EVIDENCE_LOCK = RLock()
 
 

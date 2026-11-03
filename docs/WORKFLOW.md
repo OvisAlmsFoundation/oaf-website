@@ -1,5 +1,196 @@
 ## Codex Execution Workflow
 
+### WU1 production host and autonomous email processing (current)
+
+This production direction governs over historical deployment/email deferrals;
+accepted development/testing implementation, owner content and evidence remain
+intact. Use 5P: SIMPLE, DIRECT, SUFFICIENT, EFFICIENT, SAFE. One Render Python 3.11
+Web Service serves the approved public files and existing Flask API at exactly
+`https://ovisalmsfoundation.org`; a separate protected PostgreSQL 17 database
+persists application state. The GraManna public app need not launch first.
+
+| Boundary | Prepared source/configuration; provisioning and activation unperformed |
+| --- | --- |
+| Build/runtime | `.python-version` selects Python 3.11; build `pip install -r requirements-production.txt`. Pinned Waitress 3.0.2 adds no fork/startup scheduler. Start `python -m oaf_website.production`. One instance, one process, one thread; no autoscaling or second Web Service. Existing Contact/integration memory budgets retain their accepted single-process/restart limits. |
+| WSGI/public files | `production_app()` reuses `create_app` and `PUBLIC_FILES`; no static directory catch-all or repository serving. `/healthz` is only process/composition liveness and accepts hosting probes without revealing configuration. No database checkout, provider submission or migration on import/startup/health/public-file GET. Existing data GETs retain their authorized read behavior. |
+| Metadata | Fixed `/etc/secrets/oaf-production.toml`, based on `config/production.example.toml`; explicit `OAF_ENV=production`, exact public origin, owner-approved Render internal database hostname and ingress peer CIDRs. Unknown settings, URL/libpq/database/credential/TLS environment overrides, insecure origin and activation type/dependency conflicts fail closed with fixed diagnostics. No local file/Windows credential fallback. |
+| Secret injection | Exact files: `recognition-key` (persistent 32-byte random key encoded as 64 lowercase hex), `runtime-db-password`; Web only `smtp-password`, `webhook-token`, and enabled integration `integration-submission`/`integration-reporting`/`integration-release`; Cron only `brevo-api-key` in addition to key/runtime DB password. Recognition key is shared unchanged across Web/Cron/redeploys. Secret files must be regular, nonredirected, root/service-UID owned and have no group/other permissions; metadata must not be group/other writable. Verify Render's actual file protection before activation. Never mount migration/administrator credentials into Web/Cron or mount Brevo API keys into Web. Values remain outside Git, commands, reports and logs. |
+| Database | Fixed `oaf_website_prod` / `oaf_website_prod_app`; separate LOGIN `oaf_website_prod_migrator` owns the application schema and revision-defined objects. The provider administrator retains database ownership. Web/Cron use the approved Render private internal endpoint in the same account/region; Windows migrations use its separately approved full external DNS. Both require libpq `sslmode=require`, minimum TLS 1.2, SNI enabled and existing SCRAM authentication. Every checkout checks authenticated/effective/database identity, PostgreSQL 17, server port, actual IP, configured hostname and actual TLS use. Require mode encrypts traffic but does not independently verify server identity. No arbitrary role/query/URL settings. Runtime credentials must receive only existing revision-defined privileges. |
+| Proxy | Only metadata-approved peer networks may supply one `X-Forwarded-For` hop and exact HTTPS proto. Other forwarded authority is stripped; caller prefixes do not select rate-limit IPs; public Host is fixed. No wildcard default. Verify peer CIDRs, actual Render chain length and spoof resistance before deployment; add no external proxy without reviewing the trust contract. |
+| Contact | Optional strict `[smtp]` metadata; SMTP SSL/465 or STARTTLS/587 only, with separate protected `smtp-password`. Loaded lazily on POST. Existing fixed recipient, Reply-To, origin/CSRF, bounds/rates, privacy and acknowledged/uncertain outcomes remain. Missing configuration yields the existing safe unavailable response. |
+| Email activation | All six template controls default false. `confirmation_enabled`, `management_enabled`, `webhook_enabled` prepare the accepted public lifecycle; `processing_enabled` separately activates the finite processor and requires all three. Webhook token is separate from outbound API key. `integrations_enabled`/`releases_enabled` remain separate; releases additionally require management/webhook and protected release authority. `GRAMANNA_WEB_LAUNCH_URL` remains separately approved with no default. |
+| Autonomous schedule | Separate Render Cron Job, same approved source/version/runtime and fixed protected metadata; command `python -m oaf_website.production process`, proposed `* * * * *` UTC. Disabled invocation exits 2 without provider/DB/key loading; successful finite processing exits 0; unavailable returns nonzero with sanitized first failure. No routine Send action, AI or in-process loop. |
+
+Subscription consent, automatic confirmation sending, explicit public confirmation,
+preferences/recovery, unsubscribe/suppression, required authenticated feedback and
+officially approved announcements are mandatory Foundation public-launch features.
+Owner approval governs deployment, credentials, official events, policy, migrations
+and exceptional correction. Once activated, ordinary claims, eligibility, dispatch,
+retry, recovery and suppression remain server-owned. No second subscriber store,
+queue, ledger or provider system is added. Accepted consent/expiry/attempt budgets,
+stable event IDs, audience cutoff, deduplication/correction/withdrawal and uncertainty
+holds remain authoritative, including across restart/cancellation.
+
+Render's [Cron Job](https://render.com/docs/cronjobs) is a paid separate scheduled
+resource, not another public Web Service. One active run is guaranteed per Cron
+service; schedule overlap waits, manual triggering cancels an existing run, and
+runs stop after 12 hours. No persistent disk is available. All delivery authority
+already persists in PostgreSQL; local diagnostic files are supplemental and
+ephemeral there. Retain sanitized Render terminal logs under the existing owner
+evidence policy; log retention/first-failure operational delivery and recovery are
+deployment gates, not a new logging platform or queue. Provisioning, scheduler
+activation and failure-notification delivery remain unperformed launch gates.
+Incremental minimum: **$1/month per Cron service**, duration-based compute beyond
+the minimum; smallest listed rate **$0.00016/minute**. Paid Web, database/storage/
+backups and email usage remain additional. See [current pricing](https://render.com/pricing)
+and the cost example/production gates in `WEBSITE_PLAN.md`; no spend is authorized.
+
+**Production source compatibility is prepared; activation remains blocked.** The
+fixed production registry now uses exactly the app/migrator pair, with no third
+production schema-owner role. The existing Windows issuer, WinVault migration
+credential, durable local audit/claims and one-revision runner remain the execution
+path; Render Web/Cron never receives migration or administrator credentials and
+never issues migrations. Local DEVELOPMENT/TESTING identities, owner memberships,
+both-local-database checks and credential references retain their existing design.
+Production catalog/ACL checks use only its selected database and two ordinary
+roles, while still traversing all membership paths and rejecting outside-schema,
+shared-object and cross-database protected-role ownership.
+
+Production runner metadata is fixed at `config/local/production-postgres.toml`
+(nonsecret template `config/production-postgres.example.toml`): exactly the approved
+external `database_host` and provider `database_owner`. No actual metadata is
+provisioned here. The database/roles/port/backend and credential target are fixed
+in source: `OAF Website/production/PostgreSQL/Migrations`, account
+`oaf_website_prod_migrator`, exact WinVault target/type/machine-local persistence.
+No arbitrary connection, file, password, backend or TLS overrides are accepted.
+The external DNS and runtime internal hostname must identify the same approved
+Render database; they are different endpoints. Preserve the exact external hostname
+for SNI; never replace it with a resolved IP. During operational configuration,
+restrict Render external access to approved operator IP addresses. Both paths use
+fixed `sslmode=require`, minimum TLS 1.2 and SNI enabled; existing SCRAM and role
+controls remain. Identity checks compare the configured hostname and require actual
+TLS, server IP, port, major version, database and session/effective roles. These
+checks do not independently authenticate server identity under require mode.
+
+`ops/local_postgres_bootstrap/07_production_schema.sql` is a proposed, separately
+reviewed/authorized bootstrap asset within the existing psql workflow. It requires
+the already provisioned exact LOGIN roles, the preserved provider database owner
+as administrator and an empty application starting state. It contains no role
+creation or credential provisioning. It revokes database privileges from PUBLIC
+and the two roles, grants only CONNECT, briefly grants migrator database CREATE,
+creates the migrator-owned schema, installs restrictive defaults/runtime USAGE,
+then revokes CREATE before the same transaction can commit. It preserves database
+ownership and the existing public schema. Revisions 0001-0009 stay byte-for-byte
+unchanged; actual feature grants remain defined by those existing revisions.
+
+Accepted Render PostgreSQL 17.11 provider evidence is reused: encrypted external
+connection, administrator CREATEROLE/database CREATE, transactional role/schema
+behavior, migrator ownership, runtime CREATE denial, temporary CREATE removal and
+rollback cleanup all passed. These foundational checks are not repeated and do
+not prove the complete bootstrap, catalog checks or migration chain. The accepted
+`sslmode=require` connection evidence is compatible with the owner-approved WU2
+policy, without establishing full operational readiness. Render documents internal
+self-signed TLS with require mode and external full-hostname/SNI connections:
+[Render PostgreSQL connections](https://render.com/docs/postgresql-creating-connecting).
+WU2 supersedes the former verify-full/system-root prerequisite, including historical
+WU1 TLS gate wording below. No custom certificate management is required. Require
+mode provides encryption but does not independently verify server identity. Missing
+approval, metadata, credentials, actual TLS or bootstrap prerequisites halts; no
+plaintext fallback, disable mode or arbitrary endpoint/TLS override is permitted.
+Activation still requires independently approved matching artifacts, protected
+metadata/credentials, separate bootstrap/execution authority, approved external
+IP restrictions and later authorized operational validation.
+Framework hashes include the new bootstrap/template and current changed sources;
+`pending_independent_review` remains. No independent artifact approval or execution
+authorization is issued by this source task.
+
+Validate only changed boundaries and necessary regressions with guarded synthetic
+secrets/database/provider transports; never use actual production resources in
+this phase. Preserve visible native exits, simultaneous sanitized logging and
+original first failures/NOT_RUN dependencies. The unchanged outer `Invoke-OAFCodex`
+remains the sole final clipboard copy/read-back and visual-alert owner; do not
+claim its completion before an observed receipt. No interim clipboard writes or
+service/task changes. Both legal-page date placeholders remain owner prelaunch
+checks, and no publication dates are assigned.
+
+ONE smallest next checkpoint: owner review of the paired internal/external
+endpoint metadata, preserved provider owner and approved external IP restrictions,
+without provisioning or connecting. Retain separate artifact/execution gates. Stop
+before Git delivery, credential provisioning, infrastructure, production migration
+or external activation.
+
+### WU2 Render database connection compatibility (2026-11-02)
+
+**PASS: focused source/offline implementation and independent security review.**
+The owner-approved internal/external require-mode policy above replaces WU1's
+system-root verify-full dependency. Runtime accepts the private Render hostname;
+Windows migrations preserve exact approved external DNS/SNI. Both require TLS,
+minimum TLS 1.2 and SNI enabled. Require mode encrypts but does not independently
+verify server identity; no custom certificate management is required.
+
+Focused guarded validation: **508 PASS**, native exit 0, zero unexpected external
+access; two existing runpy warnings. Scope: database configuration, migration
+configuration, production consumers, artifact integrity and the six production
+connection identity/TLS denials. Accepted WU1 role/security evidence is reused;
+no canonical suite or Render role-compatibility tests were repeated. Fresh-context
+independent security review PASS, no material finding or correction required.
+Evidence: `.pytest_cache/wu2-render-connection-20261102/REPORT.txt`, `focused-1.log`,
+`independent-review.txt`, task-only diff and source/preservation identities.
+
+All nine revisions and manifest history/approval are unchanged; only three affected
+framework hashes were refreshed. Fixed database/two-role identities, separate
+credentials, authorization, durable audit, transactions, privileges, recovery and
+DEVELOPMENT/TESTING behavior remain. Source review is not operational artifact
+approval or execution authorization. No live DB/provider/credential operation,
+restart, activation, deployment, GraManna change or Git mutation occurred. The
+smallest next checkpoint is owner review of paired endpoint metadata/provider
+owner and approved external IP restrictions, with no connection or provisioning.
+
+### WU1 Render PostgreSQL two-role source acceptance (2026-11-02)
+
+**Conditional source/offline acceptance PASS; production activation BLOCKED.**
+Evidence: `.pytest_cache/wu1-render-two-role-20261102/REPORT.txt`, focused logs,
+source/preservation identities and `independent-review-closure.txt`. The bounded
+14-file run completed 1,840 PASS / 3 assertion failures; the corrected directly
+affected four-file rerun passed 621 cases (native 0). An intermediate reduced run
+exposed an existing guard-test import-order dependency; the final test explicitly
+loads the guarded module and passes independently. Original failures/logs remain.
+The fresh-context independent security review found one material parameter-ACL
+omission. One bounded correction batch restored the local bootstrap protection
+for production: effective ALTER SYSTEM and SET on superuser/superuser-backend
+parameters are rejected for both roles in bootstrap and runner authority checks,
+including PUBLIC exposure. Focused correction results: 377 PASS and 6 PASS, native
+0 each, zero unexpected external-access attempts. The reviewer closed F1 with no
+remaining material source finding and conditional source/offline acceptance.
+
+All nine revision bytes, revision/catalog manifest history, six local bootstrap
+assets and existing local security arrangements remain unchanged. Framework hashes
+match; manifest `pending_independent_review` remains. This source review is not an
+operational artifact approval, execution authorization or live Render certificate.
+Actual `verify-full`/system-root certificate trust remains unresolved on Windows and
+Render; credentials/metadata, separately authorized bootstrap/migration-chain and
+runtime operational validation remain unperformed. No database/secret access,
+capability retest, role creation, migration/bootstrap, restart, paid resource,
+deployment or Git delivery occurred. The smallest next checkpoint is resolving the
+approved endpoint's system-root `verify-full` compatibility, without weakening TLS.
+
+Prior production host focused evidence: `.pytest_cache/wu1-production-20261030T174710Z/REPORT.txt`,
+`validation*.log`, `focused-results*.txt`, `coverage-scope-complete.txt` and
+`source-identities.json`. **647 distinct Python cases and 10 JavaScript parser
+cases PASS**; focused continuations preserve completed checks and original
+failure/NOT_RUN history. No canonical suite or repeated migration certification.
+An initially omitted production management token environment was corrected in
+the accepted parser and its existing JavaScript shape check. The final dependency
+review corrected the TLS observation to Psycopg's `connection.pgconn.ssl_in_use`
+and exercised its actual installed `ConnectionInfo` wrapper with a fake transport.
+The offline guard blocked one attempted numeric bind-address normalization in a
+test; final checks mock that boundary, with no actual network/database/provider
+access. A rejected health-method expectation and missing synthetic driver encoding
+were test-fixture corrections. Existing owner-dirty files, nine revision files,
+historical manifest revision entries and legal pages are preserved. Source/offline
+PASS does not close the explicit production migration/hosting/live or final outer
+clipboard/read-back receipt gates; production readiness remains INCOMPLETE.
+
 - Codex work for the OAF Website must be launched from the OAF Website repository so the website and GraManna workstreams remain isolated.
 - Codex prompts should normally be provided as a one-step PowerShell block that the owner can paste directly into the OAF Website terminal.
 - Use `Invoke-OAFCodex` for normal website Codex runs.

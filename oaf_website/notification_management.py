@@ -22,7 +22,7 @@ UNAVAILABLE = "This link is unavailable. Use your latest email or request a new 
 RECOVERY_RECEIVED = "If a link is needed and permitted, we'll email it. Check your inbox."
 MANAGEMENT_SESSION_AGE = 30 * 60
 WITHDRAWAL_RECEIPT_AGE = 10 * 60
-TOKEN = re.compile(r"m2\.(testing|development)\.([0-9a-f]{64})\.([0-9]{1,10})\.([0-9]{1,12})\.([0-9]{1,12})\.([0-9a-f]{64})\.([0-9a-f]{64})", re.ASCII)
+TOKEN = re.compile(r"m2\.(testing|development|production)\.([0-9a-f]{64})\.([0-9]{1,10})\.([0-9]{1,12})\.([0-9]{1,12})\.([0-9a-f]{64})\.([0-9a-f]{64})", re.ASCII)
 
 
 class ManagementUnavailable(ValueError):
@@ -47,7 +47,7 @@ class ManagementCapabilities:
     def __init__(self, secret, environment):
         from .notifications import UnsubscribeCapabilities
         UnsubscribeCapabilities(secret)
-        if environment not in {"testing", "development"}:
+        if environment not in {"testing", "development", "production"}:
             raise ValueError("An explicit management environment is required.")
         self.secret, self.environment = secret, environment
 

@@ -51,6 +51,9 @@ ATTEMPTS = []
 EARLY_REGISTERED = False
 PRODUCTION_IMPORTS = []
 APPROVED_TESTS = frozenset({
+    "tests/test_production_roles.py",
+    "tests/test_navigation_presentation.py",
+    "tests/test_production.py",
     "tests/test_failure_diagnostics.py",
     "tests/test_database_config.py", "tests/test_migration_config.py",
     "tests/test_migration_artifacts.py", "tests/test_migration_authorization.py",

@@ -3,29 +3,32 @@
   "hash_mode": "sha256-utf8-lf",
   "approval_status": "pending_independent_review",
   "framework": {
+    "oaf_website/production_config.py": "562419eb1d729156395f6aa3f1173d592699c62912cf329ec961de1998954932",
     "alembic.ini": "c72a8cc54828755974765ab8df60c03744cd448b7d16bed81b1157569548f736",
     "migrations/env.py": "09fcd94121f9ba0287d33d9b779f2b7845be56f23fea23aaafb5ae891fe661d4",
     "migrations/script.py.mako": "ed31327e01d48ec1ba1e91f5dc5b347fed7e9a8c9733b50d49c8085e86815bdc",
     "oaf_website/__init__.py": "ad4cfd8e9137a2e69abe6fdad18114a9918fccf918cbe59e181a9edd78436eb5",
     "oaf_website/confirmation_outbox_schema.py": "82bf813978acdafe87b6e0d802e0b5d4fca4fa71cac910bd14228cdb298fea47",
-    "oaf_website/database_config.py": "f5901b32c8db06dfa7743623ffff4f350ce88f28b0bfee33c6b6163cabb0119e",
-    "oaf_website/migrate.py": "706a6fefaca086f43bd2729c1cafefdb5bfe3bbd2f71e7a404e2e922454ae1e0",
+    "oaf_website/database_config.py": "4e1010defb0469e4f93a9a238c16124e0ab7fae57be6d75e98429539186beb55",
+    "oaf_website/migrate.py": "5798d5267f99dd46c66e1f560a20d183a3ae79ba37fb1a6f9d2a0f3411894b4d",
     "oaf_website/migration_authority.py": "20068408a669f43c1d225a59f93ababb10de2910a629309ff3e2d587d8580652",
-    "oaf_website/migration_config.py": "9c537cceaed6c84b3050f4db0a2510e6588e4259e927b35322e86cab91ab3587",
-    "oaf_website/migration_validation.py": "0b4e9eb1078cdb6bb305130c841e9e3912477026959200f6c3fe58ec4c576293",
+    "oaf_website/migration_config.py": "be4adfda1348333165a254de68eeefc915432e0f7f2f2d07bc2e2a5249ad0bbe",
+    "oaf_website/migration_validation.py": "d0834cbb1d58fc60cc318a1c84f071fe162e325a4a60e6a458e3022413f59da8",
     "oaf_website/notification_delivery_schema.py": "e9ade89429338037648922a06e96da77418556285a94ac4fb7e12c91b0928c92",
-    "oaf_website/notification_delivery_validation.py": "740d56742f30558084d93b2626c4d6c8c3170abe3f74794edc3f3d2881a83e4a",
-    "oaf_website/notification_dispatch.py": "a251b0d85eac8d6a7af1d4a0539d27211dab3ed9905af8dd2f229122ca0b6d10",
+    "oaf_website/notification_delivery_validation.py": "a8374f5635842e047b42e156ea296f0424da2f89c89c427e8a32726ff241f9fe",
+    "oaf_website/notification_dispatch.py": "221fb611cc005cbce46a67cf22938b03c14250620be20f4af5fc75b3f711a96b",
     "oaf_website/notification_management_schema.py": "74de2a323ae9575e1d5546a12805578ca6db53f40796ab70660a54dd560d2b9f",
     "oaf_website/notification_schema.py": "8609e44436663db7d7a99ec7964ebaec4658b0491412d366b17f4d7850bd77e4",
-    "oaf_website/notification_validation.py": "26dea44c3369c879af545478477fc99e4c29f780e6fe70f39305ed4a305a0638",
+    "oaf_website/notification_validation.py": "6ca6bd090801ed18ee62be0c21ccf0c3a1b2a32f9997f833addd85c33342230c",
     "oaf_website/release_approval_schema.py": "94a2ac546c4f1cd19c368eb6829f72b1166d6af0ab9fb9bf1015e3ef9afae27b",
     "oaf_website/state_availability_schema.py": "e58e88645b20da3787571bbe44e683696b5846e410cbd2cbbd2088491a1cd1aa",
     "oaf_website/state_request_schema.py": "440924c43651c6b7d1e5c8745de705dd0ceeb589eb10422e805131ede51f9647",
-    "oaf_website/state_request_validation.py": "a04e8a50bf353dd1de03a3f310445adb9392a33d0ae8c441ebd877d03d32db5d",
+    "oaf_website/state_request_validation.py": "99b9eaa8c6da89b06bc105818f0a17c9ab49e6d4169b27c790f9c5b130fd513d",
     "oaf_website/web_launch_schema.py": "e3b9ccfbdf987ff4014c666cdaf0abbf689b52966ffedfd4666a9b2dc27751f2",
     "requirements-migrations.txt": "3154eef6a20748636332276d9a39e13b1d03585df55ab681b706362d294de33e",
-    "requirements.txt": "3f8e4f324231e88e0c7a9e1be05c9a26be0a1d5628a5b9947b2ee7794b96fb9d"
+    "requirements.txt": "3f8e4f324231e88e0c7a9e1be05c9a26be0a1d5628a5b9947b2ee7794b96fb9d",
+    "config/production-postgres.example.toml": "1c79cd5dbb68df01c16b89b7f9e869a24b11048985cadea36309cc558d793812",
+    "ops/local_postgres_bootstrap/07_production_schema.sql": "cd1262528be07c8b1a75c81f7d9485e35b8df115e6dc424f47778a4c9476f780"
   },
   "revisions": [
     {
@@ -3951,7 +3954,8 @@
     "schema": "oaf_website",
     "owners": {
       "development": "oaf_website_dev_schema_owner",
-      "testing": "oaf_website_test_schema_owner"
+      "testing": "oaf_website_test_schema_owner",
+      "production": "oaf_website_prod_migrator"
     },
     "schema_runtime_privileges": [
       "USAGE"
