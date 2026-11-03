@@ -10,6 +10,7 @@ from threading import Event
 from types import SimpleNamespace
 from unittest.mock import Mock
 import ssl
+import traceback
 
 import pytest
 
@@ -349,6 +350,24 @@ def test_config_exact_protected_credential_and_no_fallback(tmp_path):
     result = mail.load_contact_config('testing', local_config_path=path, environ={'OAF_ENV':'testing'}, credential_loader=provider)
     assert result.from_email == 'sender@example.com' and result.password == 'synthetic-password'
     provider.assert_called_once_with('OAF Website/testing/Contact/SMTP','smtp-account',{'OAF_ENV':'testing'},exact_target=True)
+
+
+@pytest.mark.parametrize('profile', [None, 'staging', 'private-profile-sentinel'])
+def test_unsupported_contact_profile_precedes_config_and_credentials(profile, capsys, caplog):
+    path, provider = Mock(), Mock()
+    with pytest.raises(mail.DeliveryUnavailable) as caught:
+        mail.load_contact_config(profile, local_config_path=path,
+                                 environ={'OAF_ENV': 'testing'}, credential_loader=provider)
+    assert not str(caught.value)
+    assert caught.value.__context__ is None
+    failure = caught.value.notification_failure
+    assert failure['predicate'] == 'contact_profile'
+    assert failure['stage'] == 'startup' and failure['side_effects'] == 'none'
+    assert not path.mock_calls
+    provider.assert_not_called()
+    captured = capsys.readouterr()
+    assert 'private-profile-sentinel' not in (
+        ''.join(traceback.format_exception(caught.value)) + captured.out + captured.err + caplog.text)
 
 
 @pytest.mark.parametrize('text,environment', [

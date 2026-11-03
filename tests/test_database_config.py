@@ -331,6 +331,23 @@ def test_configuration_object_cannot_hold_an_unapproved_url(change, settings_pat
         db.DatabaseConfig("testing", URL.create(**values))
 
 
+@pytest.mark.parametrize("profile", [None, "staging", FAKE_PASSWORD],
+                         ids=["missing", "unsupported", "private-input"])
+def test_configuration_object_rejects_unapproved_profile(profile, capsys, caplog):
+    url = URL.create("postgresql+psycopg", username="oaf_website_test_app",
+                     password=FAKE_PASSWORD, host="127.0.0.1", port=5432,
+                     database="oaf_website_test")
+    with pytest.raises(db.DatabaseConfigurationError, match="Production database configuration is deferred") as caught:
+        db.DatabaseConfig(profile, url)
+    assert caught.value.__context__ is None
+    failure = caught.value.notification_failure
+    assert failure["predicate"] == "production_deferred"
+    assert failure["stage"] == "startup" and failure["side_effects"] == "none"
+    captured = capsys.readouterr()
+    assert FAKE_PASSWORD not in (
+        "".join(traceback.format_exception(caught.value)) + captured.out + captured.err + caplog.text)
+
+
 def test_configuration_location_is_repository_relative():
     assert db.LOCAL_CONFIG_PATH == Path(__file__).resolve().parents[1] / "config/local/database.toml"
 

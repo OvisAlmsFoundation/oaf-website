@@ -69,12 +69,12 @@ def load_contact_config(expected_profile, *, local_config_path=CONFIG_PATH,
     """
     try:
         environment = dict(os.environ if environ is None else environ)
+        if expected_profile not in {"development", "testing", "production"}:
+            raise diagnostic_error(ValueError, "load_contact_config", "contact_profile", stage="startup")
         _validate_environment(environment, expected_profile)
         if expected_profile == "production":
             from .production_config import load_contact
             return load_contact(environ=environment)
-        if expected_profile not in {"development", "testing"}:
-            raise diagnostic_error(ValueError, "load_contact_config", "contact_profile", stage="startup")
         for path in (ROOT, ROOT / "config", local_config_path.parent, local_config_path):
             if path.is_symlink() or (path.exists() and getattr(path.lstat(), "st_file_attributes", 0)
                                      & stat.FILE_ATTRIBUTE_REPARSE_POINT):

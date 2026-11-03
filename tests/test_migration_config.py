@@ -490,3 +490,38 @@ def test_fixed_production_metadata_file_reader(monkeypatch, tmp_path, case):
     else:
         with pytest.raises(c.MigrationError, match=c.Failure.INVALID_CONFIGURATION):
             c.production_metadata()
+
+
+@pytest.mark.parametrize('size', [8192, 8193])
+def test_production_metadata_size_boundary_before_credentials(monkeypatch, tmp_path, capsys, caplog, size):
+    path = tmp_path / 'metadata.toml'
+    payload = ('database_host="db.production.example"\n'
+               'database_owner="render_provider_owner"\n#' + SECRET).encode('utf-8')
+    payload += b'x' * (size - len(payload))
+    assert len(payload) == size
+    path.write_bytes(payload)
+    monkeypatch.setattr(c, 'PRODUCTION_METADATA_PATH', path)
+    monkeypatch.setattr(c, '_read_production_metadata', REAL_METADATA_READER)
+    # Both payloads are valid TOML; rejection must enforce the byte limit.
+    assert c.tomllib.loads(payload.decode('utf-8')) == {
+        'database_host': 'db.production.example', 'database_owner': 'render_provider_owner'}
+    provider = Mock(return_value=SECRET)
+    monkeypatch.setattr(c, '_windows_password', provider)
+    if size == 8192:
+        config = c.load_migration_config(environment='production', environ={'OAF_ENV': 'production'})
+        identity = c.IDENTITIES['production']
+        assert config.url.host == 'db.production.example' and config.url.query == c.TLS_QUERY
+        assert (config.url.database, config.url.username) == (identity.database, identity.migrator)
+        assert config.url.password == SECRET and SECRET not in repr(config) + str(config.url)
+        provider.assert_called_once_with(identity.credential_service, identity.migrator,
+                                         {'OAF_ENV': 'production'}, exact_target=True)
+    else:
+        with pytest.raises(c.MigrationError) as caught:
+            c.load_migration_config(environment='production', environ={'OAF_ENV': 'production'})
+        assert caught.value.classification == c.Failure.INVALID_CONFIGURATION
+        assert str(caught.value) == c.Failure.INVALID_CONFIGURATION
+        assert caught.value.__suppress_context__
+        assert SECRET not in ''.join(traceback.format_exception(caught.value))
+        provider.assert_not_called()
+    captured = capsys.readouterr()
+    assert SECRET not in captured.out + captured.err + caplog.text
