@@ -3,7 +3,7 @@
   "hash_mode": "sha256-utf8-lf",
   "approval_status": "pending_independent_review",
   "framework": {
-    "oaf_website/production_config.py": "562419eb1d729156395f6aa3f1173d592699c62912cf329ec961de1998954932",
+    "oaf_website/production_config.py": "ae740377a3c8de7d2250c26a1a6d02280b97312a46bc2925b3af1d48da7504c7",
     "alembic.ini": "c72a8cc54828755974765ab8df60c03744cd448b7d16bed81b1157569548f736",
     "migrations/env.py": "09fcd94121f9ba0287d33d9b779f2b7845be56f23fea23aaafb5ae891fe661d4",
     "migrations/script.py.mako": "ed31327e01d48ec1ba1e91f5dc5b347fed7e9a8c9733b50d49c8085e86815bdc",

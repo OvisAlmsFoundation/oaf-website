@@ -5,7 +5,6 @@ account, credential backend or development fallback can be selected by environme
 """
 
 from dataclasses import dataclass
-from ipaddress import ip_network
 import os
 from pathlib import Path
 import re
@@ -101,7 +100,6 @@ def recognition_secret():
 @dataclass(frozen=True)
 class ProductionSettings:
     database_host: str
-    trusted_proxy_cidrs: tuple = ()
     confirmation_enabled: bool = False
     management_enabled: bool = False
     integrations_enabled: bool = False
@@ -120,21 +118,11 @@ def load_production_settings(*, environ=None):
         if isinstance(exc, DatabaseConfigurationError):
             raise
     else:
-        if (set(document) <= {"public_origin", "database_host", "smtp", "trusted_proxy_cidrs"} | FLAGS
+        if (set(document) <= {"public_origin", "database_host", "smtp"} | FLAGS
                 and document.get("public_origin") == PUBLIC_ORIGIN
                 and valid_database_host(document.get("database_host"), internal=True)
                 and all(type(document.get(flag, False)) is bool for flag in FLAGS)):
             settings = ProductionSettings(**{k: v for k, v in document.items() if k != "public_origin"})
-            try:
-                if (type(settings.trusted_proxy_cidrs) is not list
-                        or not 1 <= len(settings.trusted_proxy_cidrs) <= 16
-                        or any(type(value) is not str or ip_network(value).prefixlen == 0
-                               for value in settings.trusted_proxy_cidrs)):
-                    raise ValueError
-                settings = ProductionSettings(**{**settings.__dict__, "trusted_proxy_cidrs":
-                    tuple(ip_network(value) for value in settings.trusted_proxy_cidrs)})
-            except (TypeError, ValueError):
-                raise reject("production_proxy_metadata") from None
             if ((settings.management_enabled and not settings.confirmation_enabled)
                     or (settings.webhook_enabled and not settings.management_enabled)
                     or (settings.processing_enabled and not (settings.confirmation_enabled

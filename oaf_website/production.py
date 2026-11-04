@@ -5,7 +5,6 @@ import sys
 from ipaddress import ip_address
 
 from flask import abort, jsonify, request, send_file
-from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.wrappers import Response
 
 from . import production_config as config
@@ -14,12 +13,15 @@ from .notification_dispatch import report_failure
 from .state_requests import create_app
 
 
-class TrustedRenderProxy:
-    """Honor one forwarded hop only from explicitly approved ingress peers."""
+class RenderPublicEdge:
+    """Use Render's public HTTPS edge and owner-controlled private workspace.
 
-    def __init__(self, app, networks):
-        self.app, self.networks = app, networks
-        self.forwarded = ProxyFix(app, x_for=1, x_proto=1, x_host=0, x_port=0, x_prefix=0)
+    Private requests are not cryptographically authenticated by these headers.
+    Services in the same workspace/region must remain owner-controlled.
+    """
+
+    def __init__(self, app):
+        self.app = app
 
     def __call__(self, environ, start_response):
         if environ.get("PATH_INFO") == "/healthz" and environ.get("REQUEST_METHOD") in {"GET", "HEAD"}:
@@ -28,21 +30,21 @@ class TrustedRenderProxy:
             return Response('{"status":"ok"}\n', content_type="application/json",
                 headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"})(environ, start_response)
         try:
-            peer = ip_address(environ.get("REMOTE_ADDR"))
-            client = ip_address(environ.get("HTTP_X_FORWARDED_FOR", "").split(",")[-1].strip())
-            trusted = (any(peer in network for network in self.networks)
-                       and environ.get("HTTP_X_FORWARDED_PROTO") == "https")
+            value = environ.get("HTTP_CF_CONNECTING_IP", "")
+            # No lists, duplicates, ports, scope identifiers or fallback to XFF.
+            client = ip_address(value)
+            valid = "%" not in value and environ.get("HTTP_X_FORWARDED_PROTO") == "https"
         except (ValueError, TypeError):
-            trusted = False
+            valid = False
         for name in tuple(environ):
-            if name == "HTTP_FORWARDED" or name.startswith("HTTP_X_FORWARDED_"):
-                if not trusted or name not in {"HTTP_X_FORWARDED_FOR", "HTTP_X_FORWARDED_PROTO"}:
-                    del environ[name]
-        if trusted:
-            # Canonicalize only the final edge-supplied address; caller prefixes
-            # never affect existing Contact limits or backend-origin decisions.
-            environ["HTTP_X_FORWARDED_FOR"] = str(client)
-            return self.forwarded(environ, start_response)
+            if (name in {"HTTP_FORWARDED", "HTTP_X_REAL_IP", "HTTP_CF_CONNECTING_IP"}
+                    or name.startswith("HTTP_X_FORWARDED_")):
+                del environ[name]
+        if not valid:
+            return Response('{"status":"unavailable"}\n', status=400, content_type="application/json",
+                headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"})(environ, start_response)
+        environ["REMOTE_ADDR"] = str(client)
+        environ["wsgi.url_scheme"] = "https"
         return self.app(environ, start_response)
 
 
@@ -75,13 +77,13 @@ def production_app():
             releases_enabled=settings.releases_enabled, brevo_webhook_config=webhook,
             web_launch_url=os.environ.get("GRAMANNA_WEB_LAUNCH_URL"))
         app.config["TRUSTED_HOSTS"] = ["ovisalmsfoundation.org"]
-        # Render's single edge hop only. No forwarded host/port/prefix authority.
-        # Deployment must prohibit direct access to the application listener.
-        app.wsgi_app = TrustedRenderProxy(app.wsgi_app, settings.trusted_proxy_cidrs)
+        # Public ingress is Render's managed HTTPS edge. Same-workspace/region
+        # private service access is an explicit owner-controlled trust assumption.
+        app.wsgi_app = RenderPublicEdge(app.wsgi_app)
 
         @app.before_request
         def require_https():
-            if request.path != "/healthz" and not request.is_secure:
+            if request.path != "/healthz" and (not request.is_secure or request.host != "ovisalmsfoundation.org"):
                 return jsonify(status="unavailable"), 400
 
         for number, name in enumerate(PUBLIC_FILES):

@@ -5,9 +5,9 @@ public_origin = "https://ovisalmsfoundation.org"
 # Same Render account/region as the database. Do not use its external DNS here.
 # Fixed TLS: sslmode=require, minimum TLS 1.2; no certificate management required.
 database_host = "REQUIRES-OWNER-APPROVED-INTERNAL-DATABASE-HOST"
-# Required owner-reviewed ingress peers. No wildcard; verify Render's actual
-# proxy chain/CIDRs and spoof resistance before deployment. Never copy a guess.
-trusted_proxy_cidrs = []
+# Render's managed public HTTPS edge supplies CF-Connecting-IP and exact HTTPS
+# forwarding. Same-workspace/region private services are owner-controlled;
+# headers do not cryptographically authenticate private requests. No CIDR list.
 confirmation_enabled = false
 management_enabled = false
 integrations_enabled = false

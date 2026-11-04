@@ -124,10 +124,39 @@ availability. Startup, public GETs and health never migrate or process mail.
 Production metadata and role-specific secrets must be separately provisioned
 under `/etc/secrets`, with explicit `OAF_ENV=production`, exact origin, persistent
 shared recognition key, fixed runtime identity and verified TLS. No database URL,
-path/backend override or local fallback is accepted. Required owner-reviewed
-proxy peer CIDRs plus a validated single forwarded hop protect client addresses;
-Render's actual chain, header handling and protected-file permissions remain
-deployment verification gates. There is no guessed ingress range in the template.
+path/backend override or local fallback is accepted. Render's managed public HTTPS
+edge is the public ingress trust boundary. Require one valid IPv4/IPv6
+`CF-Connecting-IP` and exact `X-Forwarded-Proto: https`; absent, malformed,
+ambiguous and duplicate values are rejected. The visitor address and HTTPS scheme
+are set directly; unused forwarding authority is discarded, and caller-controlled
+`X-Forwarded-For` prefixes never select the visitor. Fixed Host/Origin, secure
+cookies, CSRF, backend authorization, Contact/API budgets and the public-file
+allowlist remain. No mandatory proxy CIDRs, peer matching, extra proxy or dependency.
+
+Same-workspace, same-region private service access is an explicitly accepted
+owner-controlled infrastructure trust assumption for this informational charity
+website. Headers do not cryptographically authenticate private requests or provide
+immunity to a compromised internal service. This bounded risk does not disable
+ordinary application security. Offline acceptance and later live Render edge,
+HTTPS, header, health/cookie and mounted-file permission checks are distinct;
+live ingress proof is not an offline source acceptance gate.
+
+As of 2026-11-03, simplified source validation and fresh-context independent review
+**PASS**: 767 guarded focused tests plus one direct framework-integrity check,
+native exits 0, zero unexpected external-access attempts. Accepted GREEN CI,
+Available PostgreSQL 17 and all nine production migration PASS results are reused
+unchanged. Initial deployment is pending; Auto-Deploy remains OFF. Local preparation
+of `oaf-production.toml`, permanent `recognition-key` and existing-credential
+`runtime-db-password` is complete under
+`C:\Users\ovisa\AppData\Local\OAF Website\ProductionSecrets\Render`, with
+protected Windows ACLs. Canonical origin, approved internal database host, fixed
+runtime identity/TLS and all six explicitly false activation flags are preserved.
+Reuse the permanent key; do not rotate the database password. No secret values
+are recorded in this plan. Sanitized evidence/report:
+`.pytest_cache/render-simple-20261103/`; details are in the current WORKFLOW entry.
+Next deployment action after separately authorized Git delivery: upload these
+three Render Secret Files to the pending Starter Web Service with Auto-Deploy OFF
+and activation false. No Render configuration or deployment occurs in this task.
 
 One separate Render Cron Job must call `python -m oaf_website.production process`
 on a proposed once-per-minute UTC schedule after authorization. It reuses the

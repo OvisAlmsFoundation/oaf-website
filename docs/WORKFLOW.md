@@ -13,13 +13,58 @@ persists application state. The GraManna public app need not launch first.
 | --- | --- |
 | Build/runtime | `.python-version` selects Python 3.11; build `pip install -r requirements-production.txt`. Pinned Waitress 3.0.2 adds no fork/startup scheduler. Start `python -m oaf_website.production`. One instance, one process, one thread; no autoscaling or second Web Service. Existing Contact/integration memory budgets retain their accepted single-process/restart limits. |
 | WSGI/public files | `production_app()` reuses `create_app` and `PUBLIC_FILES`; no static directory catch-all or repository serving. `/healthz` is only process/composition liveness and accepts hosting probes without revealing configuration. No database checkout, provider submission or migration on import/startup/health/public-file GET. Existing data GETs retain their authorized read behavior. |
-| Metadata | Fixed `/etc/secrets/oaf-production.toml`, based on `config/production.example.toml`; explicit `OAF_ENV=production`, exact public origin, owner-approved Render internal database hostname and ingress peer CIDRs. Unknown settings, URL/libpq/database/credential/TLS environment overrides, insecure origin and activation type/dependency conflicts fail closed with fixed diagnostics. No local file/Windows credential fallback. |
+| Metadata | Fixed `/etc/secrets/oaf-production.toml`, based on `config/production.example.toml`; explicit `OAF_ENV=production`, exact public origin and owner-approved Render internal database hostname. No proxy CIDR setting. Unknown settings, URL/libpq/database/credential/TLS environment overrides, insecure origin and activation type/dependency conflicts fail closed with fixed diagnostics. No local file/Windows credential fallback. |
 | Secret injection | Exact files: `recognition-key` (persistent 32-byte random key encoded as 64 lowercase hex), `runtime-db-password`; Web only `smtp-password`, `webhook-token`, and enabled integration `integration-submission`/`integration-reporting`/`integration-release`; Cron only `brevo-api-key` in addition to key/runtime DB password. Recognition key is shared unchanged across Web/Cron/redeploys. Secret files must be regular, nonredirected, root/service-UID owned and have no group/other permissions; metadata must not be group/other writable. Verify Render's actual file protection before activation. Never mount migration/administrator credentials into Web/Cron or mount Brevo API keys into Web. Values remain outside Git, commands, reports and logs. |
 | Database | Fixed `oaf_website_prod` / `oaf_website_prod_app`; separate LOGIN `oaf_website_prod_migrator` owns the application schema and revision-defined objects. The provider administrator retains database ownership. Web/Cron use the approved Render private internal endpoint in the same account/region; Windows migrations use its separately approved full external DNS. Both require libpq `sslmode=require`, minimum TLS 1.2, SNI enabled and existing SCRAM authentication. Every checkout checks authenticated/effective/database identity, PostgreSQL 17, server port, actual IP, configured hostname and actual TLS use. Require mode encrypts traffic but does not independently verify server identity. No arbitrary role/query/URL settings. Runtime credentials must receive only existing revision-defined privileges. |
-| Proxy | Only metadata-approved peer networks may supply one `X-Forwarded-For` hop and exact HTTPS proto. Other forwarded authority is stripped; caller prefixes do not select rate-limit IPs; public Host is fixed. No wildcard default. Verify peer CIDRs, actual Render chain length and spoof resistance before deployment; add no external proxy without reviewing the trust contract. |
+| Proxy | Render's managed public HTTPS edge is the ingress trust boundary. Require exactly one valid IPv4/IPv6 `CF-Connecting-IP` and exact `X-Forwarded-Proto: https`; reject absent, malformed, ambiguous and duplicate values. Set the visitor address and HTTPS scheme directly, then discard those headers and all `X-Forwarded-*`, `Forwarded` and `X-Real-IP` authority. `X-Forwarded-For` never selects the visitor. Exact public Host/Origin, secure cookies, CSRF, authorization and budgets remain. Same-workspace, same-region private service access is an explicitly accepted owner-controlled infrastructure assumption; headers do not cryptographically authenticate private requests or protect against a compromised internal service. No peer registry or extra proxy is required. |
 | Contact | Optional strict `[smtp]` metadata; SMTP SSL/465 or STARTTLS/587 only, with separate protected `smtp-password`. Loaded lazily on POST. Existing fixed recipient, Reply-To, origin/CSRF, bounds/rates, privacy and acknowledged/uncertain outcomes remain. Missing configuration yields the existing safe unavailable response. |
 | Email activation | All six template controls default false. `confirmation_enabled`, `management_enabled`, `webhook_enabled` prepare the accepted public lifecycle; `processing_enabled` separately activates the finite processor and requires all three. Webhook token is separate from outbound API key. `integrations_enabled`/`releases_enabled` remain separate; releases additionally require management/webhook and protected release authority. `GRAMANNA_WEB_LAUNCH_URL` remains separately approved with no default. |
 | Autonomous schedule | Separate Render Cron Job, same approved source/version/runtime and fixed protected metadata; command `python -m oaf_website.production process`, proposed `* * * * *` UTC. Disabled invocation exits 2 without provider/DB/key loading; successful finite processing exits 0; unavailable returns nonzero with sanitized first failure. No routine Send action, AI or in-process loop. |
+
+### Simplified Render configuration and local secret preparation (2026-11-03)
+
+**COMPLETE for the authorized source/offline and local preparation scope.**
+Reuse accepted GREEN CI, the Available PostgreSQL 17 database and all nine
+production migration PASS results; none was repeated or changed. The Render
+Starter Web Service still awaits initial deployment, with Auto-Deploy OFF.
+
+Guarded focused validation passed **767 tests**, native exit 0, covering production
+composition, header validation, fixed Host/Origin, CSRF/cookies, Contact and
+protected API budgets/authorization, health, configuration and DEVELOPMENT/TESTING
+compatibility. A single direct artifact-integrity check passed, native exit 0,
+after refreshing only the changed configuration module's framework digest.
+Both runs recorded zero unexpected external-access attempts. The initial new-test
+syntax collection failure (native exit 2) was corrected; its evidence remains.
+One fresh-context independent review **PASS**, no material findings. Evidence and
+the consolidated sanitized report: `.pytest_cache/render-simple-20261103/`.
+
+The three files are prepared in
+`C:\Users\ovisa\AppData\Local\OAF Website\ProductionSecrets\Render`:
+`oaf-production.toml` uses the canonical origin, approved internal host
+`dpg-dbkd8m8n74is73etoh3g-a` and all six activation flags explicitly false;
+fixed database/role/TLS settings remain unchanged. `recognition-key` is a newly
+generated permanent cryptographically random 32-byte key encoded as 64 lowercase
+hexadecimal characters; preserve it unchanged for future Web/Cron deployments.
+`runtime-db-password` reuses the exact existing Generic Credential
+`OAF Website/production/PostgreSQL`, verified username `oaf_website_prod_app` and
+machine-local persistence; no reset or rotation. Directory/file inheritance is
+disabled and access is restricted to the current Windows account and SYSTEM.
+Values are absent from Git, commands, logs and reports.
+
+Offline source acceptance does not certify live Render behavior. After a
+separately authorized deployment, verify public edge header replacement and
+duplicate handling, HTTPS, canonical Host/Origin, health and cookie behavior,
+and mounted secret-file ownership/permissions. Keep the private workspace
+owner-controlled. No speculative live-ingress proof blocks this offline result.
+Contact SMTP/email/provider activation and remaining public-launch checks retain
+their existing separate scope. No production database connection, migration,
+Render/DNS change, activation, paid provisioning or Git delivery occurred here.
+
+One next deployment action, after separately authorized Git delivery: upload the
+three prepared files as Render Secret Files to the pending Starter Web Service,
+keeping Auto-Deploy OFF and all six activation flags false. This task stops before
+that action. Technical completion is independent of the outer reporting channel;
+no clipboard copy/read-back or visual-alert receipt is claimed.
 
 Subscription consent, automatic confirmation sending, explicit public confirmation,
 preferences/recovery, unsubscribe/suppression, required authenticated feedback and

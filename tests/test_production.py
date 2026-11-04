@@ -4,7 +4,6 @@ isolation.require_early_registration()
 
 from contextlib import contextmanager
 import importlib
-from ipaddress import ip_network
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -31,8 +30,13 @@ REAL_READER = pc._read_file
 ORIGIN = pc.PUBLIC_ORIGIN
 SECRET = bytes.fromhex("ab" * 32)
 METADATA = ('public_origin = "' + ORIGIN + '"\n'
-            'database_host = "dpg-synthetic-a"\n'
-            'trusted_proxy_cidrs = ["10.20.30.0/24"]\n')
+            'database_host = "dpg-synthetic-a"\n')
+
+
+def render_client(app):
+    client = app.test_client()
+    client.environ_base.update(HTTP_CF_CONNECTING_IP="203.0.113.9", HTTP_X_FORWARDED_PROTO="https")
+    return client
 
 
 @pytest.fixture
@@ -83,7 +87,7 @@ def test_import_and_default_off_composition_are_passive(production):
 
 def test_allowlist_same_origin_api_and_health_never_connect(production):
     app = host.production_app()
-    client = app.test_client()
+    client = render_client(app)
     for name in host.PUBLIC_FILES:
         result = client.get("/" + name, base_url=ORIGIN)
         assert result.status_code == 200
@@ -105,7 +109,7 @@ def test_allowlist_same_origin_api_and_health_never_connect(production):
     "/requirements.txt", "/oaf_website/production.py", "/docs/WORKFLOW.md", "/assets/", "/instance/failures.jsonl",
     "/../requirements.txt", "/assets/%2e%2e/requirements.txt", "/etc/secrets/recognition-key"])
 def test_private_paths_denied(production, path):
-    assert host.production_app().test_client().get(path, base_url=ORIGIN).status_code == 404
+    assert render_client(host.production_app()).get(path, base_url=ORIGIN).status_code == 404
     assert not production.model.statements
 
 
@@ -119,7 +123,7 @@ def test_public_redirected_or_missing_file_fails_closed(production, monkeypatch)
 def test_public_file_removed_after_startup_is_denied(production, monkeypatch, tmp_path):
     app = host.production_app()
     monkeypatch.setattr(host, "ROOT", tmp_path)
-    assert app.test_client().get("/index.html", base_url=ORIGIN).status_code == 404
+    assert render_client(app).get("/index.html", base_url=ORIGIN).status_code == 404
 
 
 @pytest.mark.parametrize("environ", [{}, {"OAF_ENV": "testing"}, {"OAF_ENV": "development"},
@@ -139,8 +143,7 @@ def test_environment_rejected_before_file_or_secret_reads(production, environ):
         'dpg-synthetic-a,other', 'dpg-synthetic-a:5432', 'dpg-synthetic-a/other', 'dpg-synthetic-a-')],
     METADATA + 'sslmode="disable"\n', METADATA + 'sslrootcert="arbitrary.pem"\n',
     METADATA + 'sslsni="0"\n',
-    METADATA.replace('["10.20.30.0/24"]', '["0.0.0.0/0"]'),
-    METADATA.replace('["10.20.30.0/24"]', '[]'),
+    METADATA + 'trusted_proxy_cidrs=["10.20.30.0/24"]\n',
     METADATA + 'password="synthetic-private-value"\n',
     METADATA + 'confirmation_enabled="false"\n', METADATA + 'processing_enabled=true\n',
     METADATA + 'management_enabled=true\n', METADATA + 'releases_enabled=true\n',
@@ -267,31 +270,132 @@ def test_checkout_verifies_production_dns_tls_version_and_identities(production,
     connection.rollback.assert_called_once()
 
 
-@pytest.mark.parametrize("peer,forwarded,proto,expected", [
-    ("10.20.30.5", "198.51.100.1, 203.0.113.9", "https", "203.0.113.9"),
-    ("192.0.2.5", "203.0.113.9", "https", "192.0.2.5"),
-    ("10.20.30.5", "invalid", "https", "10.20.30.5"),
-    ("10.20.30.5", "203.0.113.9", "http", "10.20.30.5")])
-def test_proxy_peer_validation_and_caller_prefix_spoof_resistance(peer, forwarded, proto, expected):
+@pytest.mark.parametrize("visitor,expected", [
+    ("203.0.113.9", "203.0.113.9"), ("2001:0DB8:0:0::9", "2001:db8::9")])
+@pytest.mark.parametrize("forwarded", [None, "198.51.100.1, 192.0.2.9", "invalid", "127.0.0.1"])
+def test_edge_visitor_and_unused_forwarding_authority(visitor, expected, forwarded):
     def echo(environ, start_response):
-        return Response(json.dumps({k: environ.get(k) for k in (
-            "REMOTE_ADDR", "wsgi.url_scheme", "HTTP_HOST", "HTTP_X_FORWARDED_HOST", "HTTP_FORWARDED")}))(environ, start_response)
-    client = Client(host.TrustedRenderProxy(echo, (ip_network("10.20.30.0/24"),)), Response)
-    result = client.get("/", headers={"X-Forwarded-For": forwarded, "X-Forwarded-Proto": proto,
-        "X-Forwarded-Host": "evil.example", "Forwarded": "for=evil"},
-        environ_overrides={"REMOTE_ADDR": peer})
+        names = (
+            "REMOTE_ADDR", "wsgi.url_scheme", "HTTP_HOST", "SERVER_PORT", "SCRIPT_NAME",
+            "HTTP_X_FORWARDED_HOST", "HTTP_X_FORWARDED_FOR", "HTTP_X_FORWARDED_PROTO",
+            "HTTP_X_FORWARDED_PORT", "HTTP_X_FORWARDED_PREFIX", "HTTP_X_FORWARDED_SSL",
+            "HTTP_FORWARDED", "HTTP_X_REAL_IP", "HTTP_CF_CONNECTING_IP")
+        return Response(json.dumps({k: environ.get(k) for k in names}))(environ, start_response)
+    client = Client(host.RenderPublicEdge(echo), Response)
+    headers = {"CF-Connecting-IP": visitor, "X-Forwarded-Proto": "https",
+        "X-Forwarded-Host": "evil.example", "X-Forwarded-Port": "666",
+        "X-Forwarded-Prefix": "/evil", "X-Forwarded-SSL": "on",
+        "Forwarded": "for=evil;host=evil.example;proto=http", "X-Real-IP": "127.0.0.1"}
+    if forwarded is not None:
+        headers["X-Forwarded-For"] = forwarded
+    result = client.get("/", headers=headers, environ_overrides={"REMOTE_ADDR": "192.0.2.5"})
+    assert result.status_code == 200
     data = json.loads(result.data)
     assert data["REMOTE_ADDR"] == expected
-    assert data["HTTP_HOST"] == "localhost"
-    assert data["HTTP_X_FORWARDED_HOST"] is None and data["HTTP_FORWARDED"] is None
+    assert data["wsgi.url_scheme"] == "https"
+    assert (data["HTTP_HOST"], data["SERVER_PORT"], data["SCRIPT_NAME"]) == ("localhost", "80", "")
+    assert all(value is None for key, value in data.items() if key.startswith("HTTP_") and key != "HTTP_HOST")
+
+
+@pytest.mark.parametrize("visitor", [None, "", "invalid", "203.0.113.999", "203.0.113.09",
+    "203.0.113.9:443", "[2001:db8::9]", "2001:db8::9%eth0", "203.0.113.9, 198.51.100.1",
+    "203.0.113.9, 203.0.113.9", "203.0.113.9 198.51.100.1", " 203.0.113.9", "203.0.113.9 "])
+def test_invalid_edge_visitor_rejected_even_with_https_wsgi_and_spoofed_xff(production, visitor):
+    client = host.production_app().test_client()
+    headers = {"X-Forwarded-Proto": "https", "X-Forwarded-For": "127.0.0.1, 203.0.113.9"}
+    if visitor is not None:
+        headers["CF-Connecting-IP"] = visitor
+    result = client.get("/api/contact/session", base_url=ORIGIN, headers=headers)
+    assert result.status_code == 400 and result.json == {"status": "unavailable"}
+    assert "Set-Cookie" not in result.headers
+    assert not production.model.statements
+
+
+@pytest.mark.parametrize("proto", [None, "", "http", "HTTPS", "https ", "https,http", "https, https"])
+def test_exact_forwarded_https_required_even_with_secure_wsgi(production, proto):
+    client = host.production_app().test_client()
+    headers = {"CF-Connecting-IP": "203.0.113.9"}
+    if proto is not None:
+        headers["X-Forwarded-Proto"] = proto
+    assert client.get("/", base_url=ORIGIN, headers=headers).status_code == 400
+    assert not production.model.statements
+
+
+@pytest.mark.parametrize("header,value", [("CF-Connecting-IP", "203.0.113.9"), ("X-Forwarded-Proto", "https")])
+def test_duplicate_edge_headers_rejected(production, header, value):
+    headers = [("CF-Connecting-IP", "203.0.113.9"), ("X-Forwarded-Proto", "https"), (header, value)]
+    assert host.production_app().test_client().get("/", base_url=ORIGIN, headers=headers).status_code == 400
 
 
 def test_wrong_host_http_and_foreign_origin_rejected(production):
-    client = host.production_app().test_client()
-    assert client.get("/", base_url="https://evil.example").status_code == 400
-    assert client.get("/", base_url="http://ovisalmsfoundation.org").status_code == 400
+    client = render_client(host.production_app())
+    for wrong in ("evil.example", "ovisalmsfoundation.org.evil.example", "ovisalmsfoundation.org:444"):
+        assert client.get("/", base_url="https://" + wrong,
+            headers={"X-Forwarded-Host": "ovisalmsfoundation.org", "X-Forwarded-Port": "443"}).status_code == 400
+    assert client.get("/", base_url="http://ovisalmsfoundation.org",
+        headers={"X-Forwarded-Proto": "http"}).status_code == 400
     assert client.post("/api/contact", base_url=ORIGIN, headers={"Origin": "https://evil.example"},
                        json={"email": "visitor@example.invalid", "message": "hello"}).status_code == 403
+
+
+def test_edge_https_over_http_listener_keeps_secure_cookie(production):
+    client = render_client(host.production_app())
+    result = client.get("/api/contact/session", base_url="http://ovisalmsfoundation.org")
+    assert result.status_code == 200
+    cookie = result.headers["Set-Cookie"]
+    assert cookie.startswith("__Host-oaf-state-browser=")
+    assert all(part in cookie for part in ("Secure", "HttpOnly", "SameSite=Lax", "Path=/"))
+    assert not production.model.statements
+
+
+@pytest.mark.parametrize("path", ["/api/contact", "/api/notifications", "/api/state-requests"])
+@pytest.mark.parametrize("override", [{"Origin": "https://evil.example"}, {"Origin": "null"},
+    {"Origin": ORIGIN + ":444"}, {"X-CSRF-Token": "0" * 64}, {"X-CSRF-Token": ""},
+    {"Sec-Fetch-Site": "cross-site"}])
+def test_production_browser_protections_survive_edge(production, path, override):
+    client = render_client(host.production_app())
+    csrf = client.get("/api/contact/session", base_url=ORIGIN).json["csrf_token"]
+    headers = {"Origin": ORIGIN, "X-CSRF-Token": csrf, "Sec-Fetch-Site": "same-origin", **override}
+    assert client.post(path, base_url=ORIGIN, json={}, headers=headers).status_code == 403
+    assert not production.model.statements
+    production.transport.assert_not_called()
+
+
+@pytest.mark.parametrize("visitor", ["203.0.113.9", "2001:db8::9"])
+def test_contact_ip_budget_ignores_rotating_xff_and_browser(production, monkeypatch, visitor):
+    sender = Mock()
+    monkeypatch.setattr(contact_mail, "ConfiguredSMTP", lambda profile: sender)
+    app = host.production_app()
+    for attempt in range(7):
+        client = render_client(app)  # A new browser cannot reset the visitor budget.
+        headers = {"CF-Connecting-IP": visitor, "X-Forwarded-For": f"198.51.100.{attempt}, 127.0.0.1"}
+        csrf = client.get("/api/contact/session", base_url=ORIGIN, headers=headers).json["csrf_token"]
+        result = client.post("/api/contact", base_url=ORIGIN,
+            headers={**headers, "Origin": ORIGIN, "X-CSRF-Token": csrf},
+            json={"email": "visitor@example.invalid", "message": "hello"})
+        assert result.status_code == (200 if attempt < 5 else 429)
+    assert result.headers["Retry-After"] == "600"
+    assert sender.call_count == 5
+    assert not production.model.statements
+
+
+def test_protected_backend_api_requires_auth_and_keeps_rate_budget(production):
+    production.files["oaf-production.toml"] += b'integrations_enabled = true\n'
+    client = render_client(host.production_app())
+    path = "/api/integrations/v1/state-requests"
+    assert client.post(path, base_url=ORIGIN, json={}).status_code == 401
+    assert client.post(path, base_url=ORIGIN, json={},
+        headers={"Authorization": "Bearer " + "d" * 64}).status_code == 401
+    auth = {"Authorization": "Bearer " + "a" * 64}
+    assert client.post(path, base_url=ORIGIN, json={}, headers={**auth, "Origin": ORIGIN}).status_code == 403
+    # Invalid input reaches validation only after backend authentication and
+    # consumes the same service budget despite rotating spoofed XFF prefixes.
+    statuses = [client.post(path, base_url=ORIGIN, json={},
+        headers={**auth, "X-Forwarded-For": f"198.51.100.{n}, 127.0.0.1"}).status_code
+        for n in range(125)]
+    assert set(statuses) == {400, 429} and statuses[-1] == 429
+    assert not production.model.statements
+    production.transport.assert_not_called()
 
 
 def test_production_contact_config_and_safe_unavailable_response(production):
@@ -306,7 +410,7 @@ def test_production_contact_config_and_safe_unavailable_response(production):
     assert mail["To"] == contact_mail.RECIPIENT
     assert str(mail["Reply-To"]) == "visitor@example.invalid"
     production.files["oaf-production.toml"] = METADATA.encode()
-    client = host.production_app().test_client()
+    client = render_client(host.production_app())
     session = client.get("/api/contact/session", base_url=ORIGIN)
     result = client.post("/api/contact", base_url=ORIGIN, headers={"Origin": ORIGIN,
         "X-CSRF-Token": session.json["csrf_token"]},
@@ -325,7 +429,7 @@ def test_production_smtp_unapproved_port_pair_fails(production, port, tls):
 def test_confirmation_management_webhook_and_release_factory_seams(production):
     activate(production, releases=True)
     monkey = host.production_app()
-    client = monkey.test_client()
+    client = render_client(monkey)
     session = client.get("/api/notifications/session", base_url=ORIGIN)
     assert session.json["confirmation_enabled"] is True and session.json["management_enabled"] is True
     assert client.post(brevo_unsubscribe.WEBHOOK_PATH, base_url=ORIGIN, json={}).status_code == 401
@@ -338,7 +442,7 @@ def test_production_confirmation_management_and_unsubscribe_lifecycle(production
     from oaf_website import notification_management as management, confirmation_outbox as outbox
     from oaf_website.confirmation_outbox_schema import intents
     activate(production)
-    client = host.production_app().test_client()
+    client = render_client(host.production_app())
     csrf = client.get('/api/notifications/session', base_url=ORIGIN).json['csrf_token']
     def post(path, data):
         return client.post(path, json=data, base_url=ORIGIN,
@@ -490,7 +594,7 @@ def test_health_accepts_render_probe_host_and_head_only(production):
     assert client.get('/healthz', base_url='http://assigned.onrender.com').json == {'status': 'ok'}
     result = client.head('/healthz', base_url='http://assigned.onrender.com')
     assert result.status_code == 200 and result.data == b''
-    assert client.post('/healthz', base_url=ORIGIN).status_code == 404
+    assert render_client(host.production_app()).post('/healthz', base_url=ORIGIN).status_code == 404
     assert not production.model.statements
 
 
@@ -511,15 +615,12 @@ def test_protected_file_redirect_empty_and_oversize_rejected(production, monkeyp
     with pytest.raises(db.DatabaseConfigurationError): REAL_READER('recognition-key', secret=True)
 
 
-def test_protected_read_error_preserves_origin_and_proxy_field_type(production, monkeypatch):
+def test_protected_read_error_preserves_first_failure(production):
     original = pc.reject('production_protected_file')
     production.reader.side_effect = original
     with pytest.raises(db.DatabaseConfigurationError) as exc:
         pc.read_secret('runtime-db-password')
     assert exc.value is original
-    production.reader.side_effect = lambda name, **kw: production.files[name]
-    production.files['oaf-production.toml'] = METADATA.replace('["10.20.30.0/24"]', '"not-a-list"').encode()
-    with pytest.raises(db.DatabaseConfigurationError): pc.load_production_settings()
 
 
 def test_brevo_activation_off_and_invalid_feedback_secret_fail_closed(production):

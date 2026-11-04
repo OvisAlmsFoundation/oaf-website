@@ -187,7 +187,7 @@ def test_application_build_failure_disposes_engine_and_preserves_origin(sink, mo
 def test_contact_production_protected_file_failure_retains_diagnostic(sink, monkeypatch, failed_file):
     from oaf_website import contact_mail as mail, production_config as production
     metadata = (f'public_origin="{production.PUBLIC_ORIGIN}"\n'
-                'database_host="dpg-synthetic-a"\ntrusted_proxy_cidrs=["10.20.30.0/24"]\n'
+                'database_host="dpg-synthetic-a"\n'
                 '[smtp]\nhost="smtp.example.invalid"\nport=465\ntls_mode="ssl"\n'
                 'username="synthetic-account"\nfrom_email="contact@ovisalmsfoundation.org"\n').encode()
     failure = production.reject('production_protected_file')
