@@ -50,21 +50,33 @@ def valid_database_host(value, *, internal=False):
 
 
 def _read_file(name, *, secret=False):
-    """Bounded regular-file read, no redirects, protected against other users.
+    """Bounded regular-file read confined to the trusted secret mount.
 
-    Linux production files must belong to root or the service UID; secrets must
-    have no group/other permissions. Provisioning must verify these properties.
-    Tests supply only synthetic files and file metadata.
+    Provider-managed links may resolve within /etc/secrets, never outside it.
+    Files belong to root or the service UID. Only root-owned secrets may grant
+    group read, and only to a group the process belongs to; no group write/execute
+    or other-user access is allowed. Metadata retains its no-write policy.
     """
     path = SECRETS_DIR / name
     try:
-        for parent in (*path.parents, path):
+        for parent in path.parents:
             if parent.is_symlink():
                 raise ValueError
-        with path.open("rb") as stream:
+        target = path.resolve(strict=True)
+        target.relative_to(SECRETS_DIR)
+
+        def opener(filename, flags):
+            # Do not follow a replaced leaf or block opening a nonregular file.
+            return os.open(filename, flags | getattr(os, "O_NOFOLLOW", 0)
+                           | getattr(os, "O_NONBLOCK", 0))
+
+        with open(target, "rb", opener=opener) as stream:
             info = os.fstat(stream.fileno())
-            if (not stat.S_ISREG(info.st_mode) or info.st_mode & (0o077 if secret else 0o022)
+            if (not stat.S_ISREG(info.st_mode) or info.st_mode & (0o037 if secret else 0o022)
                     or not POSIX or info.st_uid not in {0, os.geteuid()}):
+                raise ValueError
+            if (secret and info.st_mode & 0o040 and (info.st_uid != 0
+                    or info.st_gid not in {os.getegid(), *os.getgroups()})):
                 raise ValueError
             value = stream.read(8193)
         if not value or len(value) > 8192:

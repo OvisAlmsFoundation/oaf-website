@@ -9,24 +9,67 @@ Web Service serves the approved public files and existing Flask API at exactly
 `https://ovisalmsfoundation.org`; a separate protected PostgreSQL 17 database
 persists application state. The GraManna public app need not launch first.
 
-| Boundary | Prepared source/configuration; provisioning and activation unperformed |
+| Boundary | Production contract; deployment evidence recorded below |
 | --- | --- |
 | Build/runtime | `.python-version` selects Python 3.11; build `pip install -r requirements-production.txt`. Pinned Waitress 3.0.2 adds no fork/startup scheduler. Start `python -m oaf_website.production`. One instance, one process, one thread; no autoscaling or second Web Service. Existing Contact/integration memory budgets retain their accepted single-process/restart limits. |
 | WSGI/public files | `production_app()` reuses `create_app` and `PUBLIC_FILES`; no static directory catch-all or repository serving. `/healthz` is only process/composition liveness and accepts hosting probes without revealing configuration. No database checkout, provider submission or migration on import/startup/health/public-file GET. Existing data GETs retain their authorized read behavior. |
 | Metadata | Fixed `/etc/secrets/oaf-production.toml`, based on `config/production.example.toml`; explicit `OAF_ENV=production`, exact public origin and owner-approved Render internal database hostname. No proxy CIDR setting. Unknown settings, URL/libpq/database/credential/TLS environment overrides, insecure origin and activation type/dependency conflicts fail closed with fixed diagnostics. No local file/Windows credential fallback. |
-| Secret injection | Exact files: `recognition-key` (persistent 32-byte random key encoded as 64 lowercase hex), `runtime-db-password`; Web only `smtp-password`, `webhook-token`, and enabled integration `integration-submission`/`integration-reporting`/`integration-release`; Cron only `brevo-api-key` in addition to key/runtime DB password. Recognition key is shared unchanged across Web/Cron/redeploys. Secret files must be regular, nonredirected, root/service-UID owned and have no group/other permissions; metadata must not be group/other writable. Verify Render's actual file protection before activation. Never mount migration/administrator credentials into Web/Cron or mount Brevo API keys into Web. Values remain outside Git, commands, reports and logs. |
+| Secret injection | Exact files: `recognition-key` (persistent 32-byte random key encoded as 64 lowercase hex), `runtime-db-password`; Web only `smtp-password`, `webhook-token`, and enabled integration `integration-submission`/`integration-reporting`/`integration-release`; Cron only `brevo-api-key` in addition to key/runtime DB password. Recognition key is shared unchanged across Web/Cron/redeploys. Provider-managed links may resolve only inside the trusted `/etc/secrets` mount; the mount and its ancestors must not be links. Resolved targets must be regular and root/service-UID owned. Secrets forbid group write/execute and all other-user permissions; root-owned secrets may be group-readable only if the process belongs to that effective or supplementary group. Metadata retains its no-group/other-write policy. Never mount migration/administrator credentials into Web/Cron or mount Brevo API keys into Web. Values remain outside Git, commands, reports and logs. |
 | Database | Fixed `oaf_website_prod` / `oaf_website_prod_app`; separate LOGIN `oaf_website_prod_migrator` owns the application schema and revision-defined objects. The provider administrator retains database ownership. Web/Cron use the approved Render private internal endpoint in the same account/region; Windows migrations use its separately approved full external DNS. Both require libpq `sslmode=require`, minimum TLS 1.2, SNI enabled and existing SCRAM authentication. Every checkout checks authenticated/effective/database identity, PostgreSQL 17, server port, actual IP, configured hostname and actual TLS use. Require mode encrypts traffic but does not independently verify server identity. No arbitrary role/query/URL settings. Runtime credentials must receive only existing revision-defined privileges. |
 | Proxy | Render's managed public HTTPS edge is the ingress trust boundary. Require exactly one valid IPv4/IPv6 `CF-Connecting-IP` and exact `X-Forwarded-Proto: https`; reject absent, malformed, ambiguous and duplicate values. Set the visitor address and HTTPS scheme directly, then discard those headers and all `X-Forwarded-*`, `Forwarded` and `X-Real-IP` authority. `X-Forwarded-For` never selects the visitor. Exact public Host/Origin, secure cookies, CSRF, authorization and budgets remain. Same-workspace, same-region private service access is an explicitly accepted owner-controlled infrastructure assumption; headers do not cryptographically authenticate private requests or protect against a compromised internal service. No peer registry or extra proxy is required. |
 | Contact | Optional strict `[smtp]` metadata; SMTP SSL/465 or STARTTLS/587 only, with separate protected `smtp-password`. Loaded lazily on POST. Existing fixed recipient, Reply-To, origin/CSRF, bounds/rates, privacy and acknowledged/uncertain outcomes remain. Missing configuration yields the existing safe unavailable response. |
 | Email activation | All six template controls default false. `confirmation_enabled`, `management_enabled`, `webhook_enabled` prepare the accepted public lifecycle; `processing_enabled` separately activates the finite processor and requires all three. Webhook token is separate from outbound API key. `integrations_enabled`/`releases_enabled` remain separate; releases additionally require management/webhook and protected release authority. `GRAMANNA_WEB_LAUNCH_URL` remains separately approved with no default. |
 | Autonomous schedule | Separate Render Cron Job, same approved source/version/runtime and fixed protected metadata; command `python -m oaf_website.production process`, proposed `* * * * *` UTC. Disabled invocation exits 2 without provider/DB/key loading; successful finite processing exits 0; unavailable returns nonzero with sanitized first failure. No routine Send action, AI or in-process loop. |
 
+### Render Secret-File runtime compatibility (2026-11-05)
+
+The initial Starter Web Service deployment failed at startup with exact predicate
+`production_protected_file`. Accepted live evidence shows all three required files
+present under `/etc/secrets`, linked through `..data`, with regular targets owned
+by `root:render`, mode `0640`, and sizes 889, 64 and 64 bytes. No credential or
+database error was established. This evidence supersedes the earlier pending
+initial-deployment status and upload checkpoint recorded below.
+
+The production reader now resolves provider-managed links strictly inside the
+trusted mount and opens the resolved target with Linux no-follow/nonblocking
+flags. Descriptor validation retains regular-file and root/service-UID ownership
+checks. Root-owned secrets may grant group read only to an effective or
+supplementary group of the process; group write/execute and other-user permissions
+remain forbidden. Metadata retains its existing no-group/other-write policy.
+Escaping/dangling/looping links, redirected mount ancestors, unsafe targets,
+missing/empty/oversized files and invalid credential formats fail closed with the
+existing redacted diagnostics. Filenames, 8 KiB bounded reads, credential
+validation and all unrelated production settings remain unchanged.
+
+Focused guarded validation: **531 tests PASS**, native exits 0, zero unexpected
+external-access attempts: 248 production tests, including synthetic mounted-file
+and startup loading checks for all three files at the observed sizes, plus 283
+direct configuration/Contact/diagnostic regressions and one included framework
+integrity check. Windows symlink privilege is unavailable, so these local tests
+simulate link resolution and POSIX metadata while opening real synthetic target
+files; hosts supporting symlinks use actual links. Only the changed loader's
+framework digest was refreshed; no migration revision or operation changed.
+Independent review and consolidated evidence are recorded under
+`.pytest_cache/render-secret-runtime-20261105/`. No full canonical suite was run.
+
+Preserve the three existing production files unchanged. Accepted CI and all nine
+production migration PASS results are reused within their recorded scope. No
+credential access/rotation, database connection/migration, Render change or
+redeployment, DNS change, notification activation or Git delivery occurs here.
+
+**One next deployment checkpoint:** after separately authorized Git delivery and
+manual redeployment of this correction, confirm Render startup and `/healthz`
+with the existing three Secret Files, Auto-Deploy OFF and activation flags false.
+Live startup remains **UNCONFIRMED** until Render reports success. Existing
+edge/header/HTTPS/cookie and public-launch checks retain their separate scope.
+
 ### Simplified Render configuration and local secret preparation (2026-11-03)
 
 **COMPLETE for the authorized source/offline and local preparation scope.**
 Reuse accepted GREEN CI, the Available PostgreSQL 17 database and all nine
 production migration PASS results; none was repeated or changed. The Render
-Starter Web Service still awaits initial deployment, with Auto-Deploy OFF.
+Starter Web Service at that checkpoint still awaited initial deployment, with
+Auto-Deploy OFF; the 2026-11-05 entry above records the subsequent failure/fix.
 
 Guarded focused validation passed **767 tests**, native exit 0, covering production
 composition, header validation, fixed Host/Origin, CSRF/cookies, Contact and
@@ -60,7 +103,7 @@ Contact SMTP/email/provider activation and remaining public-launch checks retain
 their existing separate scope. No production database connection, migration,
 Render/DNS change, activation, paid provisioning or Git delivery occurred here.
 
-One next deployment action, after separately authorized Git delivery: upload the
+The next deployment action at that checkpoint, after separately authorized Git delivery: upload the
 three prepared files as Render Secret Files to the pending Starter Web Service,
 keeping Auto-Deploy OFF and all six activation flags false. This task stops before
 that action. Technical completion is independent of the outer reporting channel;

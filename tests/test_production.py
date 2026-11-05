@@ -5,7 +5,9 @@ isolation.require_early_registration()
 from contextlib import contextmanager
 import importlib
 import json
+import os
 from pathlib import Path
+import stat
 from types import SimpleNamespace
 from unittest.mock import Mock
 
@@ -170,27 +172,211 @@ def test_secret_scope_key_format_and_no_creation(production):
     with pytest.raises(db.DatabaseConfigurationError): pc.recognition_secret()
 
 
-@pytest.mark.parametrize("permissions,uid,regular,posix,allowed", [
-    (0o600, 1001, True, True, True), (0o600, 0, True, True, True),
-    (0o644, 1001, True, True, False), (0o620, 1001, True, True, False),
-    (0o600, 1002, True, True, False), (0o600, 1001, False, True, False),
-    (0o600, 1001, True, False, False)])
+@pytest.mark.parametrize("permissions,uid,gid,groups,regular,posix,allowed", [
+    (0o600, 1001, 2001, [], True, True, True),
+    (0o600, 0, 2001, [], True, True, True),
+    (0o400, 1001, 2001, [], True, True, True),
+    (0o640, 0, 1002, [], True, True, True),  # Effective group.
+    (0o440, 0, 2001, [2001], True, True, True),  # Supplementary group.
+    (0o640, 0, 2001, [], True, True, False),
+    (0o640, 1001, 2001, [2001], True, True, False),
+    (0o640, 1003, 2001, [2001], True, True, False),
+    *[(mode, 0, 2001, [2001], True, True, False) for mode in (
+        0o660, 0o620, 0o650, 0o641, 0o642, 0o644, 0o647)],
+    (0o644, 1001, 2001, [], True, True, False),
+    (0o620, 1001, 2001, [], True, True, False),
+    (0o600, 1003, 2001, [], True, True, False),
+    (0o600, 1001, 2001, [], False, True, False),
+    (0o600, 1001, 2001, [], True, False, False)])
 def test_protected_file_checks_real_read_boundary(production, monkeypatch, tmp_path,
-        permissions, uid, regular, posix, allowed):
+        permissions, uid, gid, groups, regular, posix, allowed):
     # Synthetic payload only. Simulated POSIX metadata, actual file open/read.
-    import os
     folder = tmp_path / "protected"
     folder.mkdir()
     (folder / "recognition-key").write_bytes(b"synthetic-file-only")
     monkeypatch.setattr(pc, "SECRETS_DIR", folder)
     monkeypatch.setattr(pc, "POSIX", posix)
     monkeypatch.setattr(os, "geteuid", lambda: 1001, raising=False)
-    monkeypatch.setattr(os, "fstat", lambda fd: SimpleNamespace(st_uid=uid,
+    monkeypatch.setattr(os, "getegid", lambda: 1002, raising=False)
+    monkeypatch.setattr(os, "getgroups", lambda: groups, raising=False)
+    monkeypatch.setattr(os, "fstat", lambda fd: SimpleNamespace(st_uid=uid, st_gid=gid,
         st_mode=(0o100000 if regular else 0o040000) | permissions))
     if allowed:
         assert REAL_READER("recognition-key", secret=True) == b"synthetic-file-only"
     else:
         with pytest.raises(db.DatabaseConfigurationError): REAL_READER("recognition-key", secret=True)
+
+
+@pytest.fixture
+def protected_mount(production, monkeypatch, tmp_path):
+    folder = tmp_path / "protected"
+    folder.mkdir()
+    monkeypatch.setattr(pc, "SECRETS_DIR", folder)
+    monkeypatch.setattr(pc, "POSIX", True)
+    monkeypatch.setattr(pc, "_read_file", REAL_READER)
+    monkeypatch.setattr(os, "geteuid", lambda: 1001, raising=False)
+    monkeypatch.setattr(os, "getegid", lambda: 1002, raising=False)
+    monkeypatch.setattr(os, "getgroups", lambda: [2001], raising=False)
+    info = SimpleNamespace(st_uid=0, st_gid=2001, st_mode=stat.S_IFREG | 0o640)
+    monkeypatch.setattr(os, "fstat", lambda fd: info)
+
+    # Use real links where available. Windows without symlink privilege supplies
+    # synthetic resolution only; targets still use the actual open/bounded read.
+    links = {}
+    real_resolve, real_is_symlink = Path.resolve, Path.is_symlink
+
+    def resolve(candidate, strict=False):
+        seen = set()
+        while candidate not in seen:
+            seen.add(candidate)
+            for link, target in links.items():
+                if candidate == link or link in candidate.parents:
+                    candidate = target / candidate.relative_to(link)
+                    break
+            else:
+                return real_resolve(candidate, strict=strict)
+        raise RuntimeError("Synthetic symlink loop")
+
+    def symlink(path, target):
+        target_path = path.parent / target
+        try:
+            path.symlink_to(target, target_is_directory=target_path.is_dir())
+        except OSError as exc:
+            if os.name != "nt" or exc.winerror != 1314:
+                raise
+            links[path] = target_path
+
+    monkeypatch.setattr(Path, "resolve", resolve)
+    monkeypatch.setattr(Path, "is_symlink", lambda path: path in links or real_is_symlink(path))
+    return SimpleNamespace(root=folder, info=info, symlink=symlink, production=production)
+
+
+@pytest.mark.parametrize("name,secret", [
+    ("oaf-production.toml", False), ("recognition-key", True), ("runtime-db-password", True)])
+def test_render_link_and_0640_layout_for_each_required_file(protected_mount, name, secret):
+    mount = protected_mount
+    version = mount.root / "..2026-version"
+    version.mkdir()
+    payload = mount.production.files[name]
+    (version / name).write_bytes(payload)
+    mount.symlink(mount.root / "..data", version.name)
+    mount.symlink(mount.root / name, "..data/" + name)
+    assert REAL_READER(name, secret=secret) == payload
+
+
+def test_render_mount_production_startup_loads_all_three_files(protected_mount):
+    mount = protected_mount
+    version = mount.root / "..2026-version"
+    version.mkdir()
+    metadata = METADATA + ''.join(f'{flag} = false\n' for flag in sorted(pc.FLAGS))
+    metadata += '#' + ' ' * (889 - len(metadata) - 1)
+    files = {"oaf-production.toml": metadata.encode(), "recognition-key": SECRET.hex().encode(),
+             "runtime-db-password": b"d" * 64}
+    assert [len(value) for value in files.values()] == [889, 64, 64]
+    mount.symlink(mount.root / "..data", version.name)
+    for name, payload in files.items():
+        (version / name).write_bytes(payload)
+        mount.symlink(mount.root / name, "..data/" + name)
+    assert pc.load_production_settings().database_host == "dpg-synthetic-a"
+    assert pc.recognition_secret() == SECRET
+    config = pc.load_runtime_database()
+    assert config.url.password == "d" * 64 and config.url.username == pc.RUNTIME_ROLE
+    assert dict(config.url.query) == pc.TLS_QUERY
+    app = host.production_app()
+    assert app.test_client().get("/healthz", base_url=ORIGIN).json == {"status": "ok"}
+    assert not mount.production.model.statements
+    mount.production.transport.assert_not_called()
+    mount.production.reader.assert_not_called()
+
+
+@pytest.mark.parametrize("kind", ["escape", "prefix-sibling", "data-escape", "missing", "loop",
+                                      "directory", "mount-link", "ancestor-link"])
+@pytest.mark.parametrize("name,secret", [
+    ("oaf-production.toml", False), ("recognition-key", True), ("runtime-db-password", True)])
+def test_protected_mount_unsafe_links_rejected(protected_mount, monkeypatch, kind, name, secret):
+    mount = protected_mount
+    path = mount.root / name
+    outside = mount.root.parent / ("protected-sibling" if kind == "prefix-sibling" else "outside")
+    outside.mkdir()
+    (outside / name).write_bytes(b"synthetic-private-payload")
+    if kind in {"escape", "prefix-sibling"}:
+        mount.symlink(path, outside / name)
+    elif kind == "data-escape":
+        mount.symlink(mount.root / "..data", outside)
+        mount.symlink(path, "..data/" + name)
+    elif kind == "missing":
+        mount.symlink(path, "absent")
+    elif kind == "loop":
+        mount.symlink(path, name)
+    elif kind == "directory":
+        mount.symlink(path, outside)
+    else:
+        # The mount and its ancestors must retain the existing no-link rule.
+        original = Path.is_symlink
+        redirected = mount.root if kind == "mount-link" else mount.root.parent
+        monkeypatch.setattr(Path, "is_symlink", lambda candidate:
+                            candidate == redirected or original(candidate))
+        path.write_bytes(b"synthetic-private-payload")
+    opened = Mock(side_effect=AssertionError("Unsafe path must fail before opening"))
+    if kind != "directory":
+        monkeypatch.setattr(os, "open", opened)
+    with pytest.raises(db.DatabaseConfigurationError) as exc:
+        REAL_READER(name, secret=secret)
+    assert exc.value.notification_failure["predicate"] == "production_protected_file"
+    assert "synthetic-private-payload" not in str(exc.value)
+    opened.assert_not_called()
+
+
+@pytest.mark.parametrize("mode,allowed", [(0o600, True), (0o640, True), (0o644, True),
+                                          (0o660, False), (0o646, False)])
+def test_metadata_preserves_existing_permission_policy(protected_mount, mode, allowed):
+    mount = protected_mount
+    mount.info.st_mode = stat.S_IFREG | mode
+    (mount.root / "oaf-production.toml").write_bytes(METADATA.encode())
+    if allowed:
+        assert pc.load_production_settings().database_host == "dpg-synthetic-a"
+    else:
+        with pytest.raises(db.DatabaseConfigurationError):
+            pc.load_production_settings()
+
+
+@pytest.mark.parametrize("payload", [b"", b"\xff", b"a\nb", b"a\x00b", b"a\x7fb",
+                                      b"x" * 4097, b"x" * 8193])
+def test_render_link_invalid_secret_contents_rejected(protected_mount, payload):
+    mount = protected_mount
+    (mount.root / "target").write_bytes(payload)
+    mount.symlink(mount.root / "runtime-db-password", "target")
+    with pytest.raises(db.DatabaseConfigurationError):
+        pc.read_secret("runtime-db-password")
+
+
+@pytest.mark.parametrize("uid,gid,mode,file_type", [
+    (1003, 2001, 0o600, stat.S_IFREG), (0, 2002, 0o640, stat.S_IFREG),
+    (0, 2001, 0o660, stat.S_IFREG), (0, 2001, 0o644, stat.S_IFREG),
+    *[(0, 2001, 0o640, kind) for kind in (
+        stat.S_IFDIR, stat.S_IFIFO, stat.S_IFSOCK, stat.S_IFCHR, stat.S_IFBLK)]])
+@pytest.mark.parametrize("name", ["recognition-key", "runtime-db-password"])
+def test_render_link_unsafe_secret_metadata_rejected(protected_mount, name, uid, gid, mode, file_type):
+    mount = protected_mount
+    mount.info.st_uid, mount.info.st_gid = uid, gid
+    mount.info.st_mode = file_type | mode
+    (mount.root / "target").write_bytes(mount.production.files[name])
+    mount.symlink(mount.root / name, "target")
+    with pytest.raises(db.DatabaseConfigurationError) as exc:
+        pc.read_secret(name)
+    assert exc.value.notification_failure["predicate"] == "production_protected_file"
+
+
+@pytest.mark.parametrize("size", [4096, 8192])
+def test_protected_file_preserves_valid_content_bounds(protected_mount, size):
+    mount = protected_mount
+    (mount.root / "runtime-db-password").write_bytes(b"x" * size)
+    assert REAL_READER("runtime-db-password", secret=True) == b"x" * size
+    if size == 4096:
+        assert pc.read_secret("runtime-db-password") == "x" * size
+    else:
+        with pytest.raises(db.DatabaseConfigurationError):
+            pc.read_secret("runtime-db-password")
 
 
 def test_database_fixed_identity_tls_and_two_role_migration_selection(production):
@@ -598,21 +784,20 @@ def test_health_accepts_render_probe_host_and_head_only(production):
     assert not production.model.statements
 
 
-def test_protected_file_redirect_empty_and_oversize_rejected(production, monkeypatch, tmp_path):
-    import os
+@pytest.mark.parametrize("name,secret", [
+    ("oaf-production.toml", False), ("recognition-key", True), ("runtime-db-password", True)])
+def test_protected_file_missing_empty_and_oversize_rejected(production, monkeypatch, tmp_path, name, secret):
     folder = tmp_path / 'protected-extra'
     folder.mkdir()
-    path = folder / 'recognition-key'
+    path = folder / name
     monkeypatch.setattr(pc, 'SECRETS_DIR', folder)
     monkeypatch.setattr(pc, 'POSIX', True)
     monkeypatch.setattr(os, 'geteuid', lambda: 1001, raising=False)
     monkeypatch.setattr(os, 'fstat', lambda fd: SimpleNamespace(st_uid=1001, st_mode=0o100600))
+    with pytest.raises(db.DatabaseConfigurationError): REAL_READER(name, secret=secret)
     for payload in (b'', b'x'*8193):
         path.write_bytes(payload)
-        with pytest.raises(db.DatabaseConfigurationError): REAL_READER('recognition-key', secret=True)
-    symlink = Path.is_symlink
-    monkeypatch.setattr(Path, 'is_symlink', lambda candidate: candidate == path or symlink(candidate))
-    with pytest.raises(db.DatabaseConfigurationError): REAL_READER('recognition-key', secret=True)
+        with pytest.raises(db.DatabaseConfigurationError): REAL_READER(name, secret=secret)
 
 
 def test_protected_read_error_preserves_first_failure(production):

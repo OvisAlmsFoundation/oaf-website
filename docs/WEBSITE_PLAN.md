@@ -123,7 +123,12 @@ availability. Startup, public GETs and health never migrate or process mail.
 
 Production metadata and role-specific secrets must be separately provisioned
 under `/etc/secrets`, with explicit `OAF_ENV=production`, exact origin, persistent
-shared recognition key, fixed runtime identity and verified TLS. No database URL,
+shared recognition key, fixed runtime identity and verified TLS. Provider-managed
+links must resolve to regular root/service-UID-owned targets inside the trusted
+mount; the mount and its ancestors remain nonredirected. Secrets forbid group
+write/execute and all other-user access. Root-owned group-readable secrets require
+effective or supplementary process membership in the owning group; metadata
+retains its no-group/other-write policy. No database URL,
 path/backend override or local fallback is accepted. Render's managed public HTTPS
 edge is the public ingress trust boundary. Require one valid IPv4/IPv6
 `CF-Connecting-IP` and exact `X-Forwarded-Proto: https`; absent, malformed,
@@ -145,7 +150,8 @@ As of 2026-11-03, simplified source validation and fresh-context independent rev
 **PASS**: 767 guarded focused tests plus one direct framework-integrity check,
 native exits 0, zero unexpected external-access attempts. Accepted GREEN CI,
 Available PostgreSQL 17 and all nine production migration PASS results are reused
-unchanged. Initial deployment is pending; Auto-Deploy remains OFF. Local preparation
+unchanged. At that checkpoint initial deployment was pending and Auto-Deploy was
+OFF. Local preparation
 of `oaf-production.toml`, permanent `recognition-key` and existing-credential
 `runtime-db-password` is complete under
 `C:\Users\ovisa\AppData\Local\OAF Website\ProductionSecrets\Render`, with
@@ -154,9 +160,25 @@ runtime identity/TLS and all six explicitly false activation flags are preserved
 Reuse the permanent key; do not rotate the database password. No secret values
 are recorded in this plan. Sanitized evidence/report:
 `.pytest_cache/render-simple-20261103/`; details are in the current WORKFLOW entry.
-Next deployment action after separately authorized Git delivery: upload these
+The next deployment action at that checkpoint after separately authorized Git delivery: upload these
 three Render Secret Files to the pending Starter Web Service with Auto-Deploy OFF
 and activation false. No Render configuration or deployment occurs in this task.
+
+As of 2026-11-05, the initial Starter deployment failed with exact predicate
+`production_protected_file`; accepted evidence shows the three files already
+mounted through `..data`, with regular `root:render` targets at `0640` and sizes
+889, 64 and 64 bytes. No credential or database failure was established. The
+production reader now accepts confined provider links and authorized root-owned
+group reads while retaining bounded reads, validation and redacted failures.
+Focused source validation: **531 guarded tests PASS**, native exits 0, zero
+unexpected external-access attempts; local Windows link/POSIX metadata are
+synthetic, target reads are real. Review and consolidated evidence:
+`.pytest_cache/render-secret-runtime-20261105/`. The existing files and accepted
+CI/migration evidence are preserved; no full canonical suite or live operation
+was performed. The earlier upload checkpoint is superseded: after separately
+authorized Git delivery/manual redeployment, confirm startup and `/healthz` on
+Render using the unchanged files, Auto-Deploy OFF and activation false. Live
+startup remains **UNCONFIRMED** until Render confirms it.
 
 One separate Render Cron Job must call `python -m oaf_website.production process`
 on a proposed once-per-minute UTC schedule after authorization. It reuses the
