@@ -42,7 +42,7 @@ def test_revision_docstrings_are_optional_without_changing_operations(artifact_c
     document=json.loads((artifact_copy/'migrations/manifest.json').read_bytes())
     for revision in document['revisions']:
         path=artifact_copy/'migrations/versions'/(revision['id']+'.py')
-        if revision['id'] not in {v.STATE_REQUESTS,v.NOTIFICATIONS,v.MANAGEMENT,v.RELEASE_APPROVALS,v.WEB_LAUNCH}:
+        if revision['id'] not in {v.STATE_REQUESTS,v.NOTIFICATIONS,v.MANAGEMENT,v.RELEASE_APPROVALS,v.WEB_LAUNCH,v.REOPTIN}:
             continue
         source=path.read_text()
         first=ast.parse(source).body[0]
@@ -51,6 +51,34 @@ def test_revision_docstrings_are_optional_without_changing_operations(artifact_c
         revision['sha256']=v.digest(path.read_bytes())
     write_manifest(artifact_copy,document)
     assert verify(artifact_copy).target==v.BASELINE
+
+
+@pytest.mark.parametrize("mutation", [
+    "empty", "leading_call", "leading_number", "operation", "parent", "identity", "downgrade",
+])
+def test_rehashed_reoptin_revision_must_preserve_reviewed_operations(artifact_copy, mutation):
+    path = artifact_copy / v.REOPTIN_REVISION_FILE
+    original = path.read_text(encoding="utf-8")
+    source = {
+        "empty": "",
+        "leading_call": "unapproved_operation()\n" + original,
+        "leading_number": "0\n" + original,
+        "operation": original.replace("upgrade_voluntary_reoptin(op.get_bind())", "op.get_bind().commit()"),
+        "parent": original.replace('down_revision = "0009_state_availability"', 'down_revision = "0008_web_launch"'),
+        "identity": original.replace('revision = "0010_voluntary_reoptin"', 'revision = "0010_unapproved"'),
+        "downgrade": original.replace('raise RuntimeError("Ordinary migration downgrade is prohibited.")', "pass"),
+    }[mutation]
+    assert source != original
+    path.write_text(source, encoding="utf-8")
+    document = json.loads((artifact_copy / "migrations/manifest.json").read_bytes())
+    revision = next(item for item in document["revisions"] if item["id"] == v.REOPTIN)
+    revision["sha256"] = v.digest(path.read_bytes())
+    write_manifest(artifact_copy, document)
+    # Matching synthetic hashes must reach the AST safeguard, not bypass it.
+    with pytest.raises(MigrationError, match=Failure.ARTIFACT_HASH):
+        v.validate_artifacts(expected_start=v.STATE_AVAILABILITY, target=v.REOPTIN,
+            manifest_hash=v.digest((artifact_copy / "migrations/manifest.json").read_bytes()),
+            revision_hash=revision["sha256"])
 
 
 def test_authoritative_manifest_and_single_root():

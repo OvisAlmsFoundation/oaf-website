@@ -127,6 +127,40 @@ def test_lookup_and_recovery_cannot_authorize_reoptin_or_repeat_unblock():
     assert unblock.call_count == 1
 
 
+def test_repeated_reservation_reuses_current_consent_authority_without_writes():
+    model, store, old, current, unblock, send, dispatcher, _ = setup_reoptin()
+    before = deepcopy(model.records)
+    expected = deepcopy(rows_for(model, current, "reoptin")[0])
+    with store._transaction() as (connection, now):
+        subscriber = store._get(connection, notifications, unsubscribe_digest=current)
+        assert reoptin.reserve(store, connection, now, subscriber) == expected
+        assert reoptin.reserve(store, connection, now, subscriber) == expected
+    assert model.records == before
+    unblock.assert_not_called()
+    send.assert_not_called()
+
+
+@pytest.mark.parametrize("phase", ["pending", "backoff", "claimed", "submitting"])
+def test_direct_confirmation_claim_waits_for_unblock_without_consuming_attempts(phase):
+    model, store, old, current, unblock, send, dispatcher, _ = setup_reoptin()
+    authority = rows_for(model, current, "reoptin")[0]
+    confirmation = rows_for(model, current, "confirmation")[0]
+    if phase != "pending":
+        claim = store.claim_confirmation(authority["intent"])
+        assert claim
+        if phase in {"backoff", "submitting"}:
+            assert isinstance(store.prepare_confirmation(authority["intent"], claim, PAGE), o.UnblockRecipient)
+        if phase == "backoff":
+            assert store.confirmation_outcome(authority["intent"], claim, "not_submitted")
+            assert rows_for(model, current, "reoptin")[0]["status"] == "failed"
+    before = deepcopy(model.records)
+    assert store.claim_confirmation(confirmation["intent"]) is None
+    assert model.records == before
+    assert confirmation["status"] == "pending" and confirmation["attempts"] == 0
+    unblock.assert_not_called()
+    send.assert_not_called()
+
+
 def test_duplicate_consent_concurrency_reserves_one_unblock_and_preserves_preferences():
     model, store, old, current, unblock, send, dispatcher, _ = setup_reoptin()
     model.elapse(seconds=61)
@@ -446,6 +480,46 @@ def test_waiting_dependency_does_not_starve_an_unrelated_mailbox(phase):
 def test_provider_unblock_acknowledgement_contract(status, data, expected):
     reply = b.ProviderResponse(status, "application/json", json.dumps(data).encode() if data else b"")
     assert b.classify_unblock(reply, KEY).outcome == expected
+
+
+@pytest.mark.parametrize("body", [
+    b"{", b"x" * (b.MAX_RESPONSE + 1),
+    b'{"code":"document_not_found","code":"document_not_found","message":"Absent"}',
+])
+def test_malformed_or_oversized_unblock_acknowledgement_stays_uncertain(body):
+    result = b.classify_unblock(b.ProviderResponse(404, "application/json", body), KEY)
+    assert result.outcome == "submission_unknown" and result.message_id is None
+    assert result.first_failure["predicate"] == "provider_response_contract"
+    assert KEY not in repr(result)
+
+
+def test_unblock_recipient_scope_is_checked_before_transport():
+    unblock = Mock(return_value=b.ProviderResponse(204, "", b""))
+    send = Mock()
+    adapter = b.BrevoAdapter(CONFIG, transport=send, unblock_transport=unblock,
+        recipient_scope=b.TestingRecipientScope("testing", EMAIL))
+    with pytest.raises(b.BrevoConfigurationError, match="Controlled recipient scope mismatch"):
+        adapter.unblock("other@example.invalid")
+    unblock.assert_not_called()
+    assert adapter.unblock(EMAIL) == b.ProviderOutcome("provider_accepted")
+    unblock.assert_called_once_with(KEY, EMAIL)
+    send.assert_not_called()
+
+
+@pytest.mark.parametrize("value,predicate", [
+    (None, "provider_transport_result"), ({}, "provider_transport_result"),
+    (b.ProviderOutcome("provider_accepted", "<send-only@relay.example>"), "provider_transport_result"),
+    (RuntimeError(KEY), "provider_transport_exception"),
+])
+def test_invalid_unblock_transport_results_never_acknowledge_or_send(value, predicate):
+    unblock = Mock(side_effect=value) if isinstance(value, Exception) else Mock(return_value=value)
+    send = Mock()
+    result = b.BrevoAdapter(CONFIG, transport=send, unblock_transport=unblock).unblock(EMAIL)
+    assert result.outcome == "submission_unknown" and result.message_id is None
+    assert result.first_failure["predicate"] == predicate
+    assert KEY not in repr(result)
+    unblock.assert_called_once_with(KEY, EMAIL)
+    send.assert_not_called()
 
 
 def test_https_unblock_uses_one_fixed_host_encoded_delete_without_email_send(monkeypatch):
