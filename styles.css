@@ -90,15 +90,35 @@ h3 {
 }
 
 .site-header {
+  --header-height: 76px;
+  --header-compact-height: 44px;
   position: sticky;
   top: 0;
   z-index: 100;
-  height: 76px;
-  padding: 0 7%;
+  min-height: var(--header-height);
+  padding: 6px 7%;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
   background: white;
+  transition: min-height 180ms ease, margin-bottom 180ms ease;
+}
+
+.site-header.is-compact {
+  min-height: var(--header-compact-height);
+  /* Reserve the removed space in flow so scrolling and anchors stay stable. */
+  margin-bottom: calc(var(--header-height) - var(--header-compact-height));
+}
+
+html {
+  scroll-padding-top: 84px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-header {
+    transition: none;
+  }
 }
 
 .foundation-name {
@@ -109,7 +129,7 @@ h3 {
 nav {
   display: flex;
   align-items: center;
-  gap: 28px;
+  gap: 28px 20.16px;
 }
 
 nav a,
@@ -131,6 +151,10 @@ nav a,
 }
 
 @media (pointer: coarse) {
+  .site-header {
+    --header-compact-height: 52px;
+  }
+
   .site-header nav a {
     min-height: 44px;
   }
@@ -184,8 +208,10 @@ nav a,
 }
 
 .hero {
+  --hero-tab-depth: min(20px, calc(clamp(1.25rem, 3.75vw, 1.5rem) - 1px));
   position: relative;
-  min-height: clamp(28rem, 40vw, 40rem);
+  /* Fit the complete landscape in the right 48% without narrowing the text. */
+  min-height: min(calc(48vw * 941 / 1672), 40rem);
   overflow: hidden;
   background:
     linear-gradient(
@@ -199,6 +225,39 @@ nav a,
   align-items: center;
 }
 
+/* GraManna home.css: centered inward half-ellipses, height = depth * 8/3.
+   Keep these above the existing image/mask without altering its composition. */
+.hero::before,
+.hero::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: var(--hero-tab-depth);
+  height: calc(var(--hero-tab-depth) * 8 / 3);
+  transform: translateY(-50%);
+  background: #fff;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.hero::before {
+  left: 0;
+  border-radius: 0 100% 100% 0 / 0 50% 50% 0;
+}
+
+.hero::after {
+  right: 0;
+  border-radius: 100% 0 0 100% / 50% 0 0 50%;
+}
+
+.hero-edge-accents {
+  position: absolute;
+  inset: 0;
+  border-inline: 3px solid #fff;
+  pointer-events: none;
+  z-index: 3;
+}
+
 .hero-overlay {
   width: 58%;
   padding: clamp(3rem, 6vw, 5rem) 7%;
@@ -209,20 +268,26 @@ nav a,
 .hero-image {
   position: absolute;
   inset: 0 0 0 auto;
-  width: 48%;
-  /* Reveal the existing hero background at both side edges. */
-  -webkit-mask-image: linear-gradient(to right, transparent, black 18%, black 88%, transparent);
-  mask-image: linear-gradient(to right, transparent, black 18%, black 88%, transparent);
+  width: auto;
+  aspect-ratio: 1672 / 941;
 }
 
 .hero-image img {
   position: absolute;
-  inset: 0;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
   display: block;
-  width: 100%;
+  width: auto;
   height: 100%;
-  object-fit: cover;
-  object-position: center;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  object-position: right center;
+  /* Fade the full background margins; keep all seven cards fully opaque.
+     Mask the fitted image itself so letterboxing cannot move the side fades. */
+  -webkit-mask-image: linear-gradient(to right, transparent, black 14%, black 85%, transparent);
+  mask-image: linear-gradient(to right, transparent, black 14%, black 85%, transparent);
 }
 
 .hero-content {
@@ -477,7 +542,6 @@ h2 {
   color: white;
   text-decoration: none;
   border-radius: 3px;
-  transition: background-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
 }
 
 .button:hover {
@@ -497,8 +561,66 @@ h2 {
   outline-offset: 3px;
 }
 
+/* Interpolate the gradient stops while preserving the existing CTA states. */
+@property --cta-start {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: transparent;
+}
+
+@property --cta-end {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: transparent;
+}
+
+.button:not(:disabled),
+.site-header nav .nav-support:not([aria-current="page"]) {
+  --cta-start: var(--brand-green);
+  --cta-end: color-mix(in srgb, var(--brand-green) 80%, white);
+  background-image: linear-gradient(to right, var(--cta-start), var(--cta-end));
+  transition: background-color 160ms ease, transform 160ms ease, box-shadow 160ms ease,
+    --cta-start 160ms ease, --cta-end 160ms ease;
+}
+
+.button:not(:disabled):hover,
+.site-header nav .nav-support:not([aria-current="page"]):is(:hover, :focus-visible) {
+  --cta-start: color-mix(in srgb, var(--brand-aubergine) 80%, white);
+  --cta-end: var(--brand-aubergine);
+}
+
+.button:not(:disabled):active,
+.site-header nav .nav-support:not([aria-current="page"]):active {
+  background-image: none;
+}
+
+.contact-success {
+  width: min(32rem, calc(100% - 2rem));
+  max-height: calc(100% - 2rem);
+  margin: auto;
+  padding: clamp(1.5rem, 5vw, 2.5rem);
+  border: 0;
+  border-radius: 12px;
+  color: var(--brand-green);
+  text-align: center;
+  box-shadow: 0 16px 64px rgb(0 0 0 / 25%);
+}
+
+.contact-success::backdrop {
+  background: rgb(0 0 0 / 55%);
+}
+
+.contact-success h2 {
+  margin-top: 0;
+}
+
+.contact-success p {
+  color: #333;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .button {
+  .button:not(:disabled),
+  .site-header nav .nav-support:not([aria-current="page"]) {
     transition: none;
   }
 }
@@ -1183,17 +1305,62 @@ button.button {
 
 @media (max-width: 900px) {
   .site-header {
-    height: auto;
-    padding-top: 20px;
-    padding-bottom: 20px;
+    min-height: 0;
+    /* Arial's visible capitals start 3px into the 26.4px name line box. */
+    padding-top: 1px;
+    padding-bottom: 4px;
     flex-direction: column;
     align-items: flex-start;
-    gap: 18px;
+    gap: 0;
   }
 
-  nav {
-    gap: 14px 18px;
+  .site-header.is-compact {
+    min-height: 0;
+    margin-bottom: 0;
+  }
+
+  html {
+    scroll-padding-top: 144px;
+  }
+
+  .foundation-name {
+    font-size: 1.65rem;
+    line-height: 1;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .site-header nav {
+    gap: 18px 12.96px;
+    max-width: 100%;
+    /* Wrap only when zoom or enlarged text cannot fit the normal second row. */
     flex-wrap: wrap;
+  }
+
+  .site-header nav a {
+    flex-shrink: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .site-header nav a:not(.nav-support) {
+    font-size: 1.045rem;
+    min-height: 28px;
+    padding: 1px 0;
+    margin: 0;
+  }
+
+  .site-header nav .nav-support {
+    min-height: 28px;
+    padding: 2px 6px;
+    margin: 0;
+  }
+
+  @media (pointer: coarse) {
+    .site-header nav a:not(.nav-support),
+    .site-header nav .nav-support {
+      min-height: 34px;
+    }
   }
 
   .hero {
@@ -1210,9 +1377,59 @@ button.button {
     position: relative;
     inset: auto;
     width: 100%;
-    aspect-ratio: 1 / 1;
-    -webkit-mask-image: linear-gradient(to bottom, transparent, black 18%, black 88%, transparent);
-    mask-image: linear-gradient(to bottom, transparent, black 18%, black 88%, transparent);
+  }
+}
+
+@media (max-width: 550px) {
+  .site-header {
+    padding-inline: 12px;
+    /* The smaller name's visible capitals also start 3px into its line box. */
+    padding-top: 1px;
+  }
+
+  .foundation-name {
+    font-size: 1.32rem;
+  }
+
+  .site-header nav {
+    gap: 6px;
+  }
+
+  .site-header nav a {
+    font-size: .76rem;
+  }
+
+  .site-header nav a:not(.nav-support) {
+    font-size: .836rem;
+    padding: 2px 0;
+  }
+
+  .site-header nav a:not(.nav-support),
+  .site-header nav .nav-support {
+    min-height: 26px;
+  }
+
+  @media (pointer: coarse) {
+    .site-header nav a:not(.nav-support),
+    .site-header nav .nav-support {
+      min-height: 32px;
+    }
+  }
+}
+
+@media (max-width: 350px) {
+  .site-header {
+    padding-inline: 6px;
+  }
+
+  .site-header nav {
+    gap: 4px;
+  }
+}
+
+@media (max-width: 300px) {
+  .site-header nav {
+    gap: .5px;
   }
 }
 

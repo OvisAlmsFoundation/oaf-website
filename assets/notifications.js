@@ -139,6 +139,7 @@
       link.href = `manage-notifications.html#unsubscribe=${data.unsubscribe_token}`;
       receipt.hidden = false;
       message(note, data.message);
+      submission = null;
       email.value = '';
     } catch (error) {
       message(note, error.message, true);

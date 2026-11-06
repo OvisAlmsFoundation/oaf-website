@@ -9,7 +9,7 @@ import json
 import re
 import secrets
 
-from sqlalchemy import insert, select, text, func
+from sqlalchemy import insert, select, text, func, case, or_, and_
 
 from .notification_delivery import NotificationDeliveryStore, OUTCOMES
 from .notification_delivery_schema import verification, suppressions
@@ -262,6 +262,10 @@ class ConfirmationOutboxStore(NotificationDeliveryStore):
         return statement
 
     def _eligible_confirmation(self, connection, record, now):
+        if record.get("purpose") == "reoptin":
+            from .reoptin import eligible
+            subscriber = eligible(self, connection, record, now)
+            return (subscriber, None) if subscriber is not None else None
         if record.get("purpose", "confirmation") == "management":
             return self._eligible_management(connection, record, now)
         subscriber = self._get(connection, notifications, unsubscribe_digest=record["subscription"])
@@ -272,8 +276,7 @@ class ConfirmationOutboxStore(NotificationDeliveryStore):
                 or current["verified_at"] is not None or now < current["issued_at"]
                 or not record["created_at"] <= now < record["created_at"] + timedelta(hours=24)
                 or (now >= current["expires_at"] if same else record["created_at"] <= current["issued_at"])
-                or self._get(connection, suppressions,
-                             mailbox_digest=self._digest("mailbox", subscriber["email"]))):
+                or self._suppressed(connection, subscriber)):
             return None
         if not hmac.compare_digest(record["token_digest"], self._digest("confirmation", token)):
             raise ValueError("Protected confirmation recovery unavailable.")
@@ -288,7 +291,7 @@ class ConfirmationOutboxStore(NotificationDeliveryStore):
                 or subscriber["preferences_revision"] != record["management_revision"]
                 or verified is None or verified["verified_at"] is None
                 or now < record["created_at"] or now >= record["created_at"] + timedelta(hours=24)
-                or self._get(connection, suppressions, mailbox_digest=self._digest("mailbox", subscriber["email"]))):
+                or self._suppressed(connection, subscriber)):
             return None
         token = self._management_token(record)
         if not hmac.compare_digest(record["token_digest"], self._digest("management-recovery", token)):
@@ -306,12 +309,12 @@ class ConfirmationOutboxStore(NotificationDeliveryStore):
                 and hmac.compare_digest(record["claim_digest"], self._digest("confirmation-claim", claim)))
 
     def candidates(self, limit):
-        # A V2-aware processor is explicitly enabled only after migration 0006.
+        # Current managed processing requires migration 0010 before activation.
         # The old projection stays safe while V2 is OFF, and can process only
         # confirmation-purpose records created before activation.
         item = intents
         if self.management_enabled:
-            from .notification_management_schema import intents as item
+            from .reoptin_schema import intents as item
         with self._transaction() as (connection, now):
             exact = self._resolve_intent_scope(connection, now, item)
             # Bound recovery work too. Final claims/dispatch recheck authority.
@@ -324,6 +327,17 @@ class ConfirmationOutboxStore(NotificationDeliveryStore):
                        "uncertain" if submitting else "failed")
             statement = select(item.c.intent).where(item.c.status.in_(("pending", "failed")),
                 item.c.attempts < 3, item.c.next_attempt_at <= now).order_by(item.c.intent).limit(limit)
+            if self.management_enabled:
+                waiting = select(item.c.subscription).where(item.c.purpose == "reoptin",
+                    item.c.revoked_at.is_(None), item.c.created_at > now - timedelta(hours=24),
+                    or_(item.c.status.in_(("pending", "claimed", "submitting")),
+                        and_(item.c.status == "failed", item.c.next_attempt_at.is_not(None))))
+                statement = statement.where(or_(item.c.purpose != "confirmation",
+                    item.c.created_at <= now - timedelta(hours=24), item.c.subscription.not_in(waiting)))
+                # Waiting confirmation records must not fill a batch ahead of
+                # the unblock work they depend on.
+                statement = statement.order_by(None).order_by(
+                    case((item.c.purpose == "reoptin", 0), else_=1), item.c.intent)
             return [row["intent"] for row in connection.execute(self._scoped(statement, table=item, exact=exact)).mappings()]
 
     def claim_confirmation(self, intent):
@@ -333,6 +347,16 @@ class ConfirmationOutboxStore(NotificationDeliveryStore):
                     or record["next_attempt_at"] is None or record["next_attempt_at"] > now):
                 return None
             self._require_scoped_record(connection, record)
+            if record.get("purpose", "confirmation") == "confirmation":
+                from .reoptin import authorization
+                subscriber = self._get(connection, notifications, unsubscribe_digest=record["subscription"])
+                reoptin = authorization(self, connection, subscriber) if subscriber is not None else None
+                if (reoptin is not None and (reoptin["status"] in {"pending", "claimed", "submitting"}
+                        or reoptin["status"] == "failed" and reoptin["next_attempt_at"] is not None)
+                        and reoptin["revoked_at"] is None
+                        and now < reoptin["created_at"] + timedelta(hours=24)
+                        and now < record["created_at"] + timedelta(hours=24)):
+                    return None  # Wait for the separately acknowledged unblock.
             if self._eligible_confirmation(connection, record, now) is None:
                 finish(self, connection, record, now, "ineligible", "suppressed")
                 return None
@@ -360,7 +384,9 @@ class ConfirmationOutboxStore(NotificationDeliveryStore):
                 return None
             subscriber, token = eligible
             try:
-                if record.get("purpose", "confirmation") == "management":
+                if record.get("purpose") == "reoptin":
+                    message = None
+                elif record.get("purpose", "confirmation") == "management":
                     message = management_message(token, page)
                 else:
                     management_token = None
@@ -388,7 +414,7 @@ class ConfirmationOutboxStore(NotificationDeliveryStore):
                          lease_until=now + timedelta(minutes=5), updated_at=now)
             self._update(connection, confirmation_attempts, dict(intent=intent, attempt=record["attempts"]),
                          submitting_at=now)
-            return subscriber["email"], message
+            return UnblockRecipient(subscriber["email"]) if message is None else (subscriber["email"], message)
 
     def confirmation_outcome(self, intent, claim, outcome, message_id=None):
         if outcome not in OUTCOMES or (message_id is not None and (type(message_id) is not str
@@ -418,12 +444,18 @@ class ConfirmationOutboxStore(NotificationDeliveryStore):
             return True
 
 
+@dataclass(frozen=True, repr=False)
+class UnblockRecipient:
+    email: str
+
+
 class ConfirmationDispatcher:
-    def __init__(self, store, config, confirmation_page, *, transport=None):
+    def __init__(self, store, config, confirmation_page, *, transport=None, unblock_transport=None):
         if type(config) is not BrevoConfig or config.environment != store.environment:
             raise BrevoConfigurationError("Brevo configuration must match the confirmation environment.")
         self.store, self.page = store, secure_confirmation_page(confirmation_page)
-        self.adapter = BrevoAdapter(config, transport=transport, recipient_scope=store.recipient_scope)
+        self.adapter = BrevoAdapter(config, transport=transport, recipient_scope=store.recipient_scope,
+                                    unblock_transport=unblock_transport)
 
     def process(self, *, limit=20):
         if type(limit) is not int or not 1 <= limit <= 20:
@@ -443,10 +475,11 @@ class ConfirmationDispatcher:
                 if prepared is None:
                     continue
                 if self.store.recipient_scope is not None:
-                    self.store.recipient_scope.require(prepared[0])
+                    self.store.recipient_scope.require(prepared.email if isinstance(prepared, UnblockRecipient) else prepared[0])
                 try:
                     operation = "provider_submit"
-                    outcome = self.adapter.submit(*prepared)
+                    outcome = (self.adapter.unblock(prepared.email) if isinstance(prepared, UnblockRecipient)
+                               else self.adapter.submit(*prepared))
                 except Exception as exc:
                     failure = failure or safe_failure("outbox", operation, exc, side_effects="submission_possible")
                     outcome = ProviderOutcome("submission_unknown")

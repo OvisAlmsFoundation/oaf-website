@@ -1742,3 +1742,139 @@ actually being launched, including approved wording, working legal/contact links
 and any required notices or interaction-specific acceptance reviewed separately.
 Development retains the owner-approved date placeholders until publication dates
 are established. Historical governing content and owner notes remain in force.
+
+
+## Update 1 - five post-launch improvements (2026-11-06 UTC)
+
+**BLOCKED overall; four UI source items have focused local PASS evidence.**
+The complete five-item ledger and first exact provider-contract blocker are in
+[WORKFLOW Update 1](WORKFLOW.md#update-1---five-owner-approved-post-launch-improvements-2026-11-06-utc).
+Historical evidence remains intact; accepted production observations are reused.
+
+| Item | Status |
+| --- | --- |
+| 1 - Contact success modal | Source/offline PASS: exact approved text, centered native modal/backdrop after existing server accepted acknowledgement, Close/Escape/tab/focus, no refresh, retained failures/content; SMTP behavior unchanged. |
+| 2 - Secure voluntary re-subscription | BLOCKED: Brevo documents an email-only unconditional unblock DELETE. A current voluntary-reason GET can race a new unsafe restriction before deletion. No documented conditional reason/version/sender guarantee prevents removing it. Existing OAF suppression remains fail closed. |
+| 3 - State Request wording | Source/offline PASS: single Request your state heading, exact approved text, Submit request action; state/cookie/CSRF/count behavior preserved. |
+| 4 - Hero continuity | Source/offline PASS: actual read-only GraManna source geometry (20px maximum inward half-ellipses, 8:3 height/depth, centered, mirrored radii, 3px white edges) layered over unchanged OAF image/gradient/masks/text/layout. Owner visual review pending. |
+| 5 - Green CTA inward tabs | Source/offline PASS as a visual trial: shared 4px paint-only inward half-ellipses, no border across cuts, rectangular hit areas, focus/hover/pressed/disabled/mobile behavior. Owner visual review pending. |
+
+Evidence `.pytest_cache/update1-20261105/`: **416 guarded pytest PASS**, zero
+unexpected external-access attempts, and **12 intercepted Chromium viewport
+scenarios PASS** (Contact 3, State Requests 2, hero/CTA visuals 7); final native
+exits 0. One fresh-context independent review found no material UI issue and
+confirmed the re-opt-in contract blocker. Original harness failures/native 1
+remain logged, corrected by final passing checks. Existing suppression tests do
+not establish new re-opt-in behavior. Its new end-to-end/concurrency/recovery/
+provider-failure checks and migration design remain NOT_RUN pending the blocker.
+No new migration or real database/provider operation was performed. Live browser
+scripts and the full GraManna canonical suite were NOT_RUN.
+
+Next safe checkpoint: a supported provider contract that conditionally removes
+only a proven voluntary restriction while preserving unsafe restrictions, or a
+separately agreed verification architecture satisfying the same rules. Restricted
+Transactional email: All includes both sending and unblocking; the actual key was
+not inspected/tested, and no credentials or Web/Cron secret placement changed.
+No routine manual or bulk unblock, suppression deletion or alternate sender is
+introduced. No accepted historical campaign is reopened.
+
+Preview `http://127.0.0.1:5061/` serves public files only; its explicit
+`/__preview/contact-success` route simulates the modal. All APIs are unavailable,
+so preview actions send no email and touch no database. Final owner visual
+acceptance remains pending. Both repositories' owner work, HEAD and index are
+preserved; the OAF task delta is unstaged. No Git delivery, live production
+request, provider send, secret change, restart, migration, Azure or deployment.
+
+
+## Update 1 Item 2 - voluntary re-subscription policy supersession (2026-11-06 UTC)
+
+The owner-approved policy supersedes the preceding Item 2 provider-contract
+blocker and any mandatory Brevo reason/conditional-delete gate. Fresh explicit
+subscription consent may supersede an earlier unsubscribe, including Gmail/Brevo
+withdrawal and a past spam report. The accepted residual race in Brevo's
+unconditional email-only unblock is documented; no Brevo Support action is needed.
+See the current [Item 2 contract](WORKFLOW.md#update-1-item-2---approved-voluntary-re-subscription-2026-11-06-utc).
+
+The implementation reuses signup consent/CSRF/rates, the existing confirmation
+outbox/attempts/leases, Cron Brevo adapter, confirmation ownership verification,
+notification cutoffs, management and audit history. A returning unverified
+lifecycle receives durable unblock authority only from explicit signup. A
+matching fresh signup can recover a pre-upgrade stalled lifecycle. Lookup and
+recovery cannot authorize unblocking. Provider refusal/uncertainty remains held;
+only acknowledged unblock permits bounded confirmation, and ordinary delivery
+still needs new verification. A later suppression revokes the specific exception.
+No historical evidence is erased, no old launch audience is enlarged, and local
+hard-bounce/owner-policy restrictions retain their existing resolution.
+
+Additive migration source `0010_voluntary_reoptin` extends outbox purpose and adds
+two nullable revocation/restriction timestamps with CHECKs and exact column grants, using the existing manifest
+and migration authority. No real database migration has run. Focused offline
+results and one fresh-context review are recorded in
+`.pytest_cache/update1-resubscription/`; final source closure is recorded below.
+Item 1/3/4/5 source, accepted focused tests/review and pending owner visual
+acceptance are preserved and reused. No unrelated UI tests are repeated.
+
+Production remains a separate owner-authorized checkpoint: approve exact 0010
+artifacts/prerequisites; authorize the established environment-specific migration
+sequence and separate production readiness; apply 0009 -> 0010 before matching
+Web/Cron deployment; verify the existing Cron key's send/unblock permission;
+then authorize a controlled live journey. Source PASS does not activate production
+or prove provider/inbox delivery. No staging, commit, push, Azure, full canonical
+suite, credential change, live provider request or real email occurs here.
+
+
+Item 2 local source/validation closure: **PASS** (2026-11-06 05:25:47 UTC).
+Final evidence: **1,922 guarded focused tests PASS**, native **0**, zero external
+access attempts, including 85 re-opt-in/migration checks. Mock signup receipt
+interaction and JavaScript syntax checks PASS. One fresh-context review found
+three related defects, all resolved in one focused correction batch with passing
+regressions; it was not repeated. Initial harness/fixture/report-decoding failures
+are retained in evidence. Exact files/hashes, native results and review receipt:
+`.pytest_cache/update1-resubscription/report.json`. Item 1/3/4/5 source and accepted
+validation/review are preserved without reruns. Both original document prefixes,
+ten owner/UI files, HEAD/index and revisions 0001-0009 are preserved. No staging,
+commit, push or live operation occurred. Migration execution, production activation
+and live delivery: **NOT_RUN**. The owner-authorized prerequisites above remain;
+the former provider race blocker is superseded by the accepted limitation.
+
+
+## Update 1 - adaptive navigation source closure (2026-11-06 UTC)
+
+**Source implementation / focused validation PASS; owner visual acceptance
+PENDING.** One small shared navigation script is deferred on all ten public pages
+and included in the existing public-file allowlist. Desktop stays 76px at top,
+contracts after >64px scroll and restores at exact top, with hysteresis, passive
+animation-frame updates, stable document flow, pageshow restoration and reduced
+motion. Responsive padding/gaps are reduced; existing navigation, 24px/15.2px
+fonts, 36px/44px targets, focus/active states, colors, gradients and Support stay.
+
+Measured heights (mouse / touch): desktop top and returned **76 / 76px**;
+desktop scrolled **44 / 52px**, reductions **42.1% / 31.6%**. Two-row 900/768/500px:
+**110 -> 70px / 118 -> 78px**, reductions **36.4% / 33.9%**. Three-row 430/390/320px:
+**148 -> 106px / 164 -> 122px**, reductions **28.4% / 25.6%**. At 280px the existing
+foundation-name wrap is retained: **176 -> 134px / 192 -> 150px**, reductions
+**23.9% / 21.9%**. Responsive heights remain the same in each scroll state.
+The preferred desktop remaining-height and three-row reduction percentages are
+not reached: preserving readable type, full targets and non-overlap takes
+priority. This practical limit remains explicit for owner acceptance.
+
+Evidence: `.pytest_cache/adaptive-navigation-20261106/`. **9 guarded focused
+pytest PASS**, native **0**, zero external-access attempts; intercepted Chromium
+**56 viewport/pointer scenarios** (2560-280px, top/scrolled/returned) plus **40
+all-public-page scenarios PASS**, native **0**. Checks cover geometry/text/hit
+areas, unchanged font sizes, colors/gradient/active/hover/pressed/focus, keyboard
+navigation, smooth/reduced motion, threshold stability, reload/back restoration,
+legal/form anchors and no horizontal overflow. Browser errors/unexpected requests:
+zero. Final fresh-context independent review is recorded in
+`independent-review.json`; final preservation and task-only changes are recorded
+alongside it. Historical harness failures remain in the logs; exact details and
+the full measurement table are in WORKFLOW's adaptive-navigation entry.
+
+Local owner preview: **http://127.0.0.1:5062/**, verified HTTP 200 and in Chromium.
+Port 5061 is browser-blocked; this task's preview uses 5062 and leaves existing
+servers untouched. Static public allowlist only; APIs unavailable, no delivery or
+database. Owner visual acceptance is separate from source PASS. Prior accepted
+unrelated Update 1 evidence is reused, without rerunning its campaign. Existing
+owner work, document byte prefixes and Git HEAD/index are preserved; no GraManna
+edits, staging, commits, pushes, deployments, Azure/canonical suite or live
+provider/credential/database/migration operations.

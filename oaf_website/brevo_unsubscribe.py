@@ -239,6 +239,8 @@ def process_unsubscribe(store, event, *, diagnostics=None, receipt=None):
         store._change(connection, now, subscriber, action, action, "brevo",
                       message_id=identity, event_at=event["event_at"])
         store._insert(connection, suppressions, dict(mailbox_digest=mailbox, reason="provider_block", created_at=now))
+        from .reoptin import revoke
+        revoke(store, connection, now, event["email"])
         return "processed"
 
 

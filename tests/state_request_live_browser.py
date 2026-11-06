@@ -50,7 +50,7 @@ def main():
             def visit(page):
                 response = page.goto(origin + "/gramanna.html")
                 assert response.status == 200
-                expect(page.get_by_role("button", name="Submit")).to_be_enabled()
+                expect(page.get_by_role("button", name="Submit request", exact=True)).to_be_enabled()
                 page.get_by_label("Your state", exact=True).select_option("CA")
                 expect(page.locator("#request-total")).to_contain_text("for California.")
 
@@ -73,7 +73,7 @@ def main():
 
             def submit(page, state, accepted, keyboard=False):
                 page.get_by_label("Your state", exact=True).select_option(state)
-                button = page.get_by_role("button", name="Submit")
+                button = page.get_by_role("button", name="Submit request", exact=True)
                 with page.expect_response(lambda r: r.url == origin + "/api/state-requests"
                                           and r.request.method == "POST") as pending:
                     if keyboard:
@@ -117,7 +117,7 @@ def main():
             state = a.get_by_label("Your state", exact=True)
             state.select_option("")
             before = len(post_calls)
-            a.get_by_role("button", name="Submit").click()
+            a.get_by_role("button", name="Submit request", exact=True).click()
             assert not state.evaluate("node => node.checkValidity()")
             assert len(post_calls) == before
             statuses = a.evaluate("""async () => {
@@ -136,18 +136,18 @@ def main():
             state.evaluate("node => node.add(new Option('Invalid state', 'ZZ'))")
             state.select_option("ZZ")
             with a.expect_response(lambda r: r.url == origin + "/api/state-requests") as invalid:
-                a.get_by_role("button", name="Submit").click()
+                a.get_by_role("button", name="Submit request", exact=True).click()
             assert invalid.value.status == 400
             expect(a.locator("#request-note")).to_have_text("Select one of the 50 U.S. states.")
             expect(a.locator("#request-note")).to_have_attribute("role", "alert")
             expect(a.locator("#request-note")).to_have_attribute("aria-atomic", "true")
-            expect(a.get_by_role("button", name="Submit")).to_be_enabled()
+            expect(a.get_by_role("button", name="Submit request", exact=True)).to_be_enabled()
             match_counts(a)
             record("E", rejected_http=statuses + [400], native_empty_sent_no_request=True)
 
             before = len(post_calls)
             assert a.reload().status == 200
-            expect(a.get_by_role("button", name="Submit")).to_be_enabled()
+            expect(a.get_by_role("button", name="Submit request", exact=True)).to_be_enabled()
             a.get_by_label("Your state", exact=True).select_option("CA")
             display(a, "CA")
             assert len(post_calls) == before

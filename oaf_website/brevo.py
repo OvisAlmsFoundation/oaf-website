@@ -6,6 +6,7 @@ import json
 import os
 import re
 import ssl
+from urllib.parse import quote
 
 from .database_config import _validate_environment, _windows_password
 from .integrations import _strict_object, _invalid_constant
@@ -168,6 +169,28 @@ def classify_response(response, api_key):
     return failed_outcome("submission_unknown", "provider_response_status", http_status=response.status)
 
 
+def classify_unblock(response, api_key):
+    """Only an empty 204 or explicit blocklist absence acknowledges this step."""
+    if (type(response) is ProviderResponse and type(response.status) is int
+            and response.status == 204 and response.body == b""):
+        return ProviderOutcome("provider_accepted")
+    # Brevo documents 404 when the email is absent from the blocklist. Require
+    # the structured not-found code; other refusals never permit a send.
+    if type(response) is ProviderResponse and response.status == 404:
+        try:
+            if len(response.body) <= MAX_RESPONSE:
+                data = json.loads(response.body.decode("utf-8"), object_pairs_hook=_strict_object,
+                                  parse_constant=_invalid_constant)
+                if (set(data) == {"code", "message"} and data["code"] == "document_not_found"
+                        and type(data["message"]) is str and 1 <= len(data["message"]) <= 2048):
+                    return ProviderOutcome("provider_accepted")
+        except Exception:
+            pass
+    # A send-style 201 is not an unblock acknowledgement.
+    result = classify_response(response, api_key)
+    return failed_outcome("submission_unknown", "provider_response_contract") if result.outcome == "provider_accepted" else result
+
+
 class BrevoHTTPS:
     """One POST, no redirects/retries/proxy/netrc/cookies or ambient authorization.
 
@@ -176,6 +199,13 @@ class BrevoHTTPS:
     Socket timeouts bound connect and response inactivity; response bytes are capped.
     """
     def __call__(self, api_key, body):
+        return self._request(api_key, "POST", PATH, body, classify_response)
+
+    def unblock(self, api_key, email):
+        return self._request(api_key, "DELETE", "/v3/smtp/blockedContacts/" + quote(email, safe=""),
+                             None, classify_unblock)
+
+    def _request(self, api_key, method, path, body, classifier):
         connection = None
         submitting = False
         outcome = None
@@ -190,7 +220,7 @@ class BrevoHTTPS:
             connection.connect()
             connection.sock.settimeout(RESPONSE_TIMEOUT)
             submitting = True
-            connection.request("POST", PATH, body=body, headers={
+            connection.request(method, path, body=body, headers={
                 "api-key": api_key, "Content-Type": "application/json", "Accept": "application/json",
                 "Accept-Encoding": "identity"})
             response = connection.getresponse()
@@ -198,7 +228,7 @@ class BrevoHTTPS:
             if response.getheader("Content-Encoding", "identity").lower() != "identity":
                 outcome = failed_outcome("submission_unknown", "provider_response_encoding", http_status=response.status)
                 return outcome
-            outcome = classify_response(ProviderResponse(response.status,
+            outcome = classifier(ProviderResponse(response.status,
                 response.getheader("Content-Type", ""), response.read(MAX_RESPONSE + 1)), api_key)
             return outcome
         except Exception as exc:
@@ -216,13 +246,29 @@ class BrevoHTTPS:
 
 
 class BrevoAdapter:
-    def __init__(self, config, *, transport=None, recipient_scope=None):
+    def __init__(self, config, *, transport=None, recipient_scope=None, unblock_transport=None):
         if type(config) is not BrevoConfig:
             raise diagnostic_error(BrevoConfigurationError("Brevo configuration unavailable."), "provider_configuration", "provider_key_format", stage="startup")
         self.config = config
         validate_recipient_scope(recipient_scope, config.environment)
         self.recipient_scope = recipient_scope
         self.transport = BrevoHTTPS() if transport is None else transport
+        self.unblock_transport = BrevoHTTPS().unblock if unblock_transport is None else unblock_transport
+
+    def unblock(self, email):
+        from .notifications import normalize_email
+        if self.recipient_scope is not None:
+            self.recipient_scope.require(email)
+        email = normalize_email(email)
+        try:
+            outcome = self.unblock_transport(self.config.api_key, email)
+            if type(outcome) is ProviderResponse:
+                return classify_unblock(outcome, self.config.api_key)
+            if type(outcome) is ProviderOutcome and outcome.message_id is None:
+                return outcome
+        except Exception as exc:
+            return failed_outcome("submission_unknown", "provider_transport_exception", exc)
+        return failed_outcome("submission_unknown", "provider_transport_result")
 
     def submit(self, email, message):
         from .notifications import normalize_email

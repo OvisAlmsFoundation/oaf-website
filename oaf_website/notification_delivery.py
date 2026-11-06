@@ -150,11 +150,14 @@ class NotificationDeliveryStore:
 
     def _rows(self, connection, item, **keys):
         if self.management_enabled:
-            from .notification_management_schema import notifications as managed, intents
+            from .notification_management_schema import notifications as managed
+            from .reoptin_schema import intents, suppressions as current_suppressions
             if item.name == notifications.name:
                 item = managed
             elif item.name == intents.name:
                 item = intents
+            elif item.name == suppressions.name:
+                item = current_suppressions
         statement = select(item).where(*(item.c[key] == value for key, value in keys.items()))
         # Append-only evidence has SELECT/INSERT grants only. The existing
         # transaction advisory lock serializes its checks/inserts; FOR UPDATE
@@ -199,7 +202,7 @@ class NotificationDeliveryStore:
         with self._transaction() as (connection, now):
             return self._request_confirmation(connection, now, email)
 
-    def _request_confirmation(self, connection, now, email):
+    def _request_confirmation(self, connection, now, email, *, fresh_subscription=None):
         """Share the caller's locked transaction, including a newly inserted signup."""
         if not self._budget(connection, self._digest("budget", "global"), now, 1000, 0):
             retain_failure("confirmation_reservation", "confirmation_global_budget")
@@ -212,12 +215,15 @@ class NotificationDeliveryStore:
         if subscriber is None:
             retain_failure("confirmation_reservation", "confirmation_active_subscriber")
             return None
-        if self._get(connection, suppressions, mailbox_digest=mailbox):
-            retain_failure("confirmation_reservation", "confirmation_not_suppressed")
-            return None
         key = dict(subscription=subscriber["unsubscribe_digest"])
         record = self._get(connection, verification, **key)
         if record and record["verified_at"] is not None:
+            return None
+        from .reoptin import reserve, suppressed
+        authorized = (reserve(self, connection, now, subscriber)
+                      if fresh_subscription == subscriber["unsubscribe_digest"] else None)
+        if suppressed(self, connection, subscriber) and authorized is None:
+            retain_failure("confirmation_reservation", "confirmation_not_suppressed")
             return None
         from .confirmation_outbox import reserve_confirmation
         return reserve_confirmation(self, connection, now, subscriber, record)
@@ -242,7 +248,9 @@ class NotificationDeliveryStore:
             if now < record["issued_at"]:
                 retain_failure("confirmation_authority", "confirmation_not_future")
                 return "unavailable"
-            if self._get(connection, suppressions, mailbox_digest=self._digest("mailbox", subscriber["email"])):
+            from .reoptin import suppressed, authorization, permitted
+            reoptin = authorization(self, connection, subscriber)
+            if suppressed(self, connection, subscriber) or reoptin is not None and not permitted(self, connection, subscriber):
                 retain_failure("confirmation_authority", "confirmation_not_suppressed")
                 return "unavailable"
             # Classify only after the same capability, expiry and lifecycle checks.
@@ -356,8 +364,12 @@ class NotificationDeliveryStore:
         record = self._get(connection, verification, subscription=subscriber["unsubscribe_digest"])
         return (record is not None and record["verified_at"] is not None
                 and record["verified_at"] <= event["audience_cutoff"]
-                and self._get(connection, suppressions,
-                              mailbox_digest=self._digest("mailbox", subscriber["email"])) is None)
+                and not self._suppressed(connection, subscriber))
+
+    def _suppressed(self, connection, subscriber):
+        from .reoptin import suppressed, authorization, permitted
+        record = authorization(self, connection, subscriber)
+        return suppressed(self, connection, subscriber) or record is not None and not permitted(self, connection, subscriber)
 
     def prepare_event(self, event_id):
         with self._transaction() as (connection, now):
@@ -505,7 +517,14 @@ class NotificationDeliveryStore:
         mailbox = self._digest("mailbox", normalize_email(email))
         with self._transaction() as (connection, now):
             self._insert(connection, suppressions, dict(mailbox_digest=mailbox, reason=reason, created_at=now))
-        # Permanent across lifecycle changes; never rewrite original evidence.
+            if self.management_enabled and reason in {"hard_bounce", "owner_policy"}:
+                from .reoptin_schema import suppressions as current_suppressions
+                block = self._get(connection, suppressions, mailbox_digest=mailbox)
+                if block["reoptin_blocked_at"] is None:
+                    self._update(connection, current_suppressions, dict(mailbox_digest=mailbox), reoptin_blocked_at=now)
+            from .reoptin import revoke
+            revoke(self, connection, now, normalize_email(email))
+        # Keep the original suppression evidence, including across lifecycles.
         # Pending/claimed work is stopped by the mandatory dispatch recheck.
 
 from .notification_dispatch import retain_failure, request_transaction_outcome

@@ -3,32 +3,33 @@
   "hash_mode": "sha256-utf8-lf",
   "approval_status": "pending_independent_review",
   "framework": {
-    "oaf_website/production_config.py": "4b95cf1f035e8432f84a7b444e0e8b43b19458a4eda07fe798ae92601fd7e771",
     "alembic.ini": "c72a8cc54828755974765ab8df60c03744cd448b7d16bed81b1157569548f736",
+    "config/production-postgres.example.toml": "1c79cd5dbb68df01c16b89b7f9e869a24b11048985cadea36309cc558d793812",
     "migrations/env.py": "09fcd94121f9ba0287d33d9b779f2b7845be56f23fea23aaafb5ae891fe661d4",
     "migrations/script.py.mako": "ed31327e01d48ec1ba1e91f5dc5b347fed7e9a8c9733b50d49c8085e86815bdc",
     "oaf_website/__init__.py": "ad4cfd8e9137a2e69abe6fdad18114a9918fccf918cbe59e181a9edd78436eb5",
     "oaf_website/confirmation_outbox_schema.py": "82bf813978acdafe87b6e0d802e0b5d4fca4fa71cac910bd14228cdb298fea47",
     "oaf_website/database_config.py": "4e1010defb0469e4f93a9a238c16124e0ab7fae57be6d75e98429539186beb55",
     "oaf_website/migrate.py": "5798d5267f99dd46c66e1f560a20d183a3ae79ba37fb1a6f9d2a0f3411894b4d",
-    "oaf_website/migration_authority.py": "20068408a669f43c1d225a59f93ababb10de2910a629309ff3e2d587d8580652",
+    "oaf_website/migration_authority.py": "c85b15cc6e1600325d40dcfcc66ed29f81a3b228a08c1dcbbed6d6cd31709245",
     "oaf_website/migration_config.py": "be4adfda1348333165a254de68eeefc915432e0f7f2f2d07bc2e2a5249ad0bbe",
-    "oaf_website/migration_validation.py": "d0834cbb1d58fc60cc318a1c84f071fe162e325a4a60e6a458e3022413f59da8",
+    "oaf_website/migration_validation.py": "9e5789056ed56dae371e55907a9b792bee25e6e6974a6a2c2e0fb1c5e08d4eeb",
     "oaf_website/notification_delivery_schema.py": "e9ade89429338037648922a06e96da77418556285a94ac4fb7e12c91b0928c92",
     "oaf_website/notification_delivery_validation.py": "a8374f5635842e047b42e156ea296f0424da2f89c89c427e8a32726ff241f9fe",
     "oaf_website/notification_dispatch.py": "221fb611cc005cbce46a67cf22938b03c14250620be20f4af5fc75b3f711a96b",
     "oaf_website/notification_management_schema.py": "74de2a323ae9575e1d5546a12805578ca6db53f40796ab70660a54dd560d2b9f",
     "oaf_website/notification_schema.py": "8609e44436663db7d7a99ec7964ebaec4658b0491412d366b17f4d7850bd77e4",
     "oaf_website/notification_validation.py": "6ca6bd090801ed18ee62be0c21ccf0c3a1b2a32f9997f833addd85c33342230c",
+    "oaf_website/production_config.py": "4b95cf1f035e8432f84a7b444e0e8b43b19458a4eda07fe798ae92601fd7e771",
     "oaf_website/release_approval_schema.py": "94a2ac546c4f1cd19c368eb6829f72b1166d6af0ab9fb9bf1015e3ef9afae27b",
+    "oaf_website/reoptin_schema.py": "594cc4b5c2667ce40013d5e5e480c6d371cfaa54c72775f688c9998911f134fc",
     "oaf_website/state_availability_schema.py": "e58e88645b20da3787571bbe44e683696b5846e410cbd2cbbd2088491a1cd1aa",
     "oaf_website/state_request_schema.py": "440924c43651c6b7d1e5c8745de705dd0ceeb589eb10422e805131ede51f9647",
     "oaf_website/state_request_validation.py": "99b9eaa8c6da89b06bc105818f0a17c9ab49e6d4169b27c790f9c5b130fd513d",
     "oaf_website/web_launch_schema.py": "e3b9ccfbdf987ff4014c666cdaf0abbf689b52966ffedfd4666a9b2dc27751f2",
+    "ops/local_postgres_bootstrap/07_production_schema.sql": "cd1262528be07c8b1a75c81f7d9485e35b8df115e6dc424f47778a4c9476f780",
     "requirements-migrations.txt": "3154eef6a20748636332276d9a39e13b1d03585df55ab681b706362d294de33e",
-    "requirements.txt": "3f8e4f324231e88e0c7a9e1be05c9a26be0a1d5628a5b9947b2ee7794b96fb9d",
-    "config/production-postgres.example.toml": "1c79cd5dbb68df01c16b89b7f9e869a24b11048985cadea36309cc558d793812",
-    "ops/local_postgres_bootstrap/07_production_schema.sql": "cd1262528be07c8b1a75c81f7d9485e35b8df115e6dc424f47778a4c9476f780"
+    "requirements.txt": "3f8e4f324231e88e0c7a9e1be05c9a26be0a1d5628a5b9947b2ee7794b96fb9d"
   },
   "revisions": [
     {
@@ -553,6 +554,32 @@
       "starting_state": "0008_web_launch",
       "target_state": "0009_state_availability",
       "grants": []
+    },
+    {
+      "id": "0010_voluntary_reoptin",
+      "parent": "0009_state_availability",
+      "file": "migrations/versions/0010_voluntary_reoptin.py",
+      "sha256": "25c841e167f95d9ea70e36a65540437f5d923cd0f34d1d4b77a0ee44a0a07e67",
+      "starting_state": "0009_state_availability",
+      "target_state": "0010_voluntary_reoptin",
+      "grants": [
+        {
+          "object": "oaf_website.notification_confirmation_intents.revoked_at",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        },
+        {
+          "object": "oaf_website.notification_suppressions.reoptin_blocked_at",
+          "role": "matching_runtime",
+          "privileges": [
+            "UPDATE"
+          ],
+          "grant_option": false
+        }
+      ]
     }
   ],
   "states": {
@@ -3948,6 +3975,619 @@
           "name": "notification_release_events_state"
         }
       ]
+    },
+    "0010_voluntary_reoptin": {
+      "revision": "0010_voluntary_reoptin",
+      "managed_objects": [
+        {
+          "kind": "table",
+          "name": "alembic_version"
+        },
+        {
+          "kind": "index",
+          "name": "alembic_version_pkc"
+        },
+        {
+          "kind": "row_type",
+          "name": "alembic_version"
+        },
+        {
+          "kind": "array_type",
+          "name": "_alembic_version"
+        },
+        {
+          "kind": "primary_key",
+          "name": "alembic_version_pkc"
+        },
+        {
+          "kind": "table",
+          "name": "state_requests"
+        },
+        {
+          "kind": "index",
+          "name": "state_requests_pk"
+        },
+        {
+          "kind": "row_type",
+          "name": "state_requests"
+        },
+        {
+          "kind": "array_type",
+          "name": "_state_requests"
+        },
+        {
+          "kind": "primary_key",
+          "name": "state_requests_pk"
+        },
+        {
+          "kind": "check",
+          "name": "state_requests_state_check"
+        },
+        {
+          "kind": "default",
+          "name": "state_requests.created_at"
+        },
+        {
+          "kind": "table",
+          "name": "notifications"
+        },
+        {
+          "kind": "index",
+          "name": "notifications_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notifications_active_email"
+        },
+        {
+          "kind": "row_type",
+          "name": "notifications"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notifications"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notifications_pk"
+        },
+        {
+          "kind": "check",
+          "name": "notifications_token_check"
+        },
+        {
+          "kind": "check",
+          "name": "notifications_email_check"
+        },
+        {
+          "kind": "check",
+          "name": "notifications_preferences_check"
+        },
+        {
+          "kind": "check",
+          "name": "notifications_state_check"
+        },
+        {
+          "kind": "check",
+          "name": "notifications_consent_check"
+        },
+        {
+          "kind": "check",
+          "name": "notifications_lifecycle_check"
+        },
+        {
+          "kind": "default",
+          "name": "notifications.created_at"
+        },
+        {
+          "kind": "table",
+          "name": "notification_verification"
+        },
+        {
+          "kind": "row_type",
+          "name": "notification_verification"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notification_verification"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notification_verification_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notification_verification_pk"
+        },
+        {
+          "kind": "foreign_key",
+          "name": "notification_verification_subscription_fk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_verification_time_check"
+        },
+        {
+          "kind": "unique",
+          "name": "notification_verification_token"
+        },
+        {
+          "kind": "index",
+          "name": "notification_verification_token"
+        },
+        {
+          "kind": "check",
+          "name": "notification_verification_token_check"
+        },
+        {
+          "kind": "table",
+          "name": "notification_confirmation_limits"
+        },
+        {
+          "kind": "row_type",
+          "name": "notification_confirmation_limits"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notification_confirmation_limits"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_limits_bucket_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_limits_count_check"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notification_confirmation_limits_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notification_confirmation_limits_pk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_limits_time_check"
+        },
+        {
+          "kind": "table",
+          "name": "notification_release_events"
+        },
+        {
+          "kind": "row_type",
+          "name": "notification_release_events"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notification_release_events"
+        },
+        {
+          "kind": "check",
+          "name": "notification_release_events_content_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_release_events_digest_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_release_events_environment_check"
+        },
+        {
+          "kind": "index",
+          "name": "notification_release_events_launch"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notification_release_events_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notification_release_events_pk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_release_events_platform_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_release_events_status_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_release_events_time_check"
+        },
+        {
+          "kind": "table",
+          "name": "notification_deliveries"
+        },
+        {
+          "kind": "row_type",
+          "name": "notification_deliveries"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notification_deliveries"
+        },
+        {
+          "kind": "check",
+          "name": "notification_deliveries_accepted_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_deliveries_attempts_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_deliveries_claim_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_deliveries_digest_check"
+        },
+        {
+          "kind": "foreign_key",
+          "name": "notification_deliveries_event_fk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_deliveries_outcome_check"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notification_deliveries_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notification_deliveries_pk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_deliveries_retry_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_deliveries_status_check"
+        },
+        {
+          "kind": "foreign_key",
+          "name": "notification_deliveries_subscription_fk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_deliveries_time_check"
+        },
+        {
+          "kind": "index",
+          "name": "notification_deliveries_lease"
+        },
+        {
+          "kind": "index",
+          "name": "notification_deliveries_retry"
+        },
+        {
+          "kind": "table",
+          "name": "notification_delivery_attempts"
+        },
+        {
+          "kind": "row_type",
+          "name": "notification_delivery_attempts"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notification_delivery_attempts"
+        },
+        {
+          "kind": "check",
+          "name": "notification_delivery_attempts_attempt_check"
+        },
+        {
+          "kind": "foreign_key",
+          "name": "notification_delivery_attempts_delivery_fk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_delivery_attempts_outcome_check"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notification_delivery_attempts_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notification_delivery_attempts_pk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_delivery_attempts_time_check"
+        },
+        {
+          "kind": "table",
+          "name": "notification_suppressions"
+        },
+        {
+          "kind": "row_type",
+          "name": "notification_suppressions"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notification_suppressions"
+        },
+        {
+          "kind": "check",
+          "name": "notification_suppressions_digest_check"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notification_suppressions_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notification_suppressions_pk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_suppressions_reason_check"
+        },
+        {
+          "kind": "table",
+          "name": "notification_confirmation_intents"
+        },
+        {
+          "kind": "row_type",
+          "name": "notification_confirmation_intents"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notification_confirmation_intents"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_intents_accepted_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_intents_attempts_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_intents_claim_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_intents_context_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_intents_digest_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_intents_outcome_check"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notification_confirmation_intents_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notification_confirmation_intents_pk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_intents_retry_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_intents_status_check"
+        },
+        {
+          "kind": "foreign_key",
+          "name": "notification_confirmation_intents_subscription_fk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_intents_time_check"
+        },
+        {
+          "kind": "index",
+          "name": "notification_confirmation_intents_lease"
+        },
+        {
+          "kind": "index",
+          "name": "notification_confirmation_intents_retry"
+        },
+        {
+          "kind": "index",
+          "name": "notification_confirmation_intents_subscription"
+        },
+        {
+          "kind": "table",
+          "name": "notification_confirmation_attempts"
+        },
+        {
+          "kind": "row_type",
+          "name": "notification_confirmation_attempts"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notification_confirmation_attempts"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_attempts_attempt_check"
+        },
+        {
+          "kind": "foreign_key",
+          "name": "notification_confirmation_attempts_intent_fk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_attempts_outcome_check"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notification_confirmation_attempts_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notification_confirmation_attempts_pk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_attempts_time_check"
+        },
+        {
+          "kind": "table",
+          "name": "notification_preference_changes"
+        },
+        {
+          "kind": "row_type",
+          "name": "notification_preference_changes"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notification_preference_changes"
+        },
+        {
+          "kind": "check",
+          "name": "notification_preference_changes_after_state_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_preference_changes_android_launch_time_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_preference_changes_before_state_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_preference_changes_consent_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_preference_changes_digest_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_preference_changes_ios_launch_time_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_preference_changes_outcome_check"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notification_preference_changes_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notification_preference_changes_pk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_preference_changes_provider_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_preference_changes_revision_check"
+        },
+        {
+          "kind": "unique",
+          "name": "notification_preference_changes_revision_key"
+        },
+        {
+          "kind": "index",
+          "name": "notification_preference_changes_revision_key"
+        },
+        {
+          "kind": "check",
+          "name": "notification_preference_changes_state_time_check"
+        },
+        {
+          "kind": "foreign_key",
+          "name": "notification_preference_changes_subscription_fk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_preference_changes_web_launch_time_check"
+        },
+        {
+          "kind": "check",
+          "name": "notifications_revision_check"
+        },
+        {
+          "kind": "default",
+          "name": "notifications.preferences_revision"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_intents_purpose_check"
+        },
+        {
+          "kind": "default",
+          "name": "notification_confirmation_intents.purpose"
+        },
+        {
+          "kind": "table",
+          "name": "notification_release_approvals"
+        },
+        {
+          "kind": "row_type",
+          "name": "notification_release_approvals"
+        },
+        {
+          "kind": "array_type",
+          "name": "_notification_release_approvals"
+        },
+        {
+          "kind": "check",
+          "name": "notification_release_approvals_action"
+        },
+        {
+          "kind": "check",
+          "name": "notification_release_approvals_digest"
+        },
+        {
+          "kind": "foreign_key",
+          "name": "notification_release_approvals_event_fk"
+        },
+        {
+          "kind": "unique",
+          "name": "notification_release_approvals_parent"
+        },
+        {
+          "kind": "index",
+          "name": "notification_release_approvals_parent"
+        },
+        {
+          "kind": "primary_key",
+          "name": "notification_release_approvals_pk"
+        },
+        {
+          "kind": "index",
+          "name": "notification_release_approvals_pk"
+        },
+        {
+          "kind": "check",
+          "name": "notification_release_approvals_time"
+        },
+        {
+          "kind": "index",
+          "name": "notification_release_events_state"
+        },
+        {
+          "kind": "check",
+          "name": "notification_confirmation_intents_revocation_check"
+        },
+        {
+          "kind": "check",
+          "name": "notification_suppressions_reoptin_block_check"
+        }
+      ]
     }
   },
   "security": {
@@ -4394,6 +5034,22 @@
         "privileges": [
           "SELECT",
           "INSERT"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_confirmation_intents.revoked_at",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
+        ],
+        "grant_option": false
+      },
+      {
+        "object": "oaf_website.notification_suppressions.reoptin_blocked_at",
+        "role": "matching_runtime",
+        "privileges": [
+          "UPDATE"
         ],
         "grant_option": false
       }
@@ -7034,7 +7690,79 @@
             "a"
           ]
         ]
-      }
+      },
+      "voluntary_reoptin_edges": [
+        [
+          "delivery_constraint_notification_confirmation_intents_revocation_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          11,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_revocation_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          11,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_revocation_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          14,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_revocation_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          14,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_revocation_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          16,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_confirmation_intents_revocation_check",
+          0,
+          "delivery_table_notification_confirmation_intents",
+          16,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_suppressions_reoptin_block_check",
+          0,
+          "delivery_table_notification_suppressions",
+          3,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_suppressions_reoptin_block_check",
+          0,
+          "delivery_table_notification_suppressions",
+          3,
+          "n"
+        ],
+        [
+          "delivery_constraint_notification_suppressions_reoptin_block_check",
+          0,
+          "delivery_table_notification_suppressions",
+          4,
+          "a"
+        ],
+        [
+          "delivery_constraint_notification_suppressions_reoptin_block_check",
+          0,
+          "delivery_table_notification_suppressions",
+          4,
+          "n"
+        ]
+      ]
     },
     "version_table": "oaf_website.alembic_version",
     "postconditions": [

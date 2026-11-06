@@ -4,9 +4,14 @@
   const message = document.getElementById('contact-text');
   const button = form.querySelector('button[type="submit"]');
   const note = document.getElementById('contact-feedback');
+  const success = document.getElementById('contact-success');
+  const close = success.querySelector('button');
   const uncertain = 'We could not confirm whether your message was accepted. Please wait 15 minutes before trying again.';
   let busy = false;
   let csrf;
+
+  close.addEventListener('click', () => success.close());
+  success.addEventListener('close', () => button.focus());
 
   function feedback(text, error = false) {
     note.setAttribute('role', error ? 'alert' : 'status');
@@ -56,17 +61,20 @@
     const body = { email: email.value, message: message.value };
     controls(true);
     feedback('Sending your message...');
+    let sent = false;
     try {
       if (!csrf) csrf = (await api('/api/contact/session')).csrf_token;
       const data = await api('/api/contact', body);
       if (data.status !== 'accepted' || typeof data.message !== 'string') throw new Error(uncertain);
-      feedback(data.message);
+      feedback('');
       form.reset();
+      sent = true;
     } catch (error) {
       feedback(error.message, true);
     } finally {
       controls(false);
-      note.focus();
+      if (sent) success.showModal();
+      else note.focus();
     }
   });
 

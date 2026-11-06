@@ -503,7 +503,7 @@ def test_candidate_queries_bind_scope_to_selected_projection(monkeypatch, manage
     from sqlalchemy.exc import SAWarning
     from sqlalchemy.sql import FROM_LINTING, visitors
     from oaf_website.brevo import TestingRecipientScope
-    from oaf_website.notification_management_schema import intents as managed_intents
+    from oaf_website.reoptin_schema import intents as managed_intents
 
     model = Model()
     scope = TestingRecipientScope("testing", "subscriber1@example.invalid") if scoped else None
@@ -522,15 +522,18 @@ def test_candidate_queries_bind_scope_to_selected_projection(monkeypatch, manage
         scope_columns = [node for clause in statement._where_criteria
                          for node in visitors.iterate(clause)
                          if isinstance(node, Column) and node.name == "subscription"]
-        assert len(scope_columns) == int(scoped)
+        # The managed queue also excludes subscriptions awaiting unblock via
+        # an uncorrelated subquery before LIMIT.
+        assert len(scope_columns) == int(scoped) + 2 * int(management_enabled and statement is queries[1])
         if scoped:
-            assert scope_columns[0].table is selected_table
+            assert all(column.table is selected_table for column in scope_columns)
         with warnings.catch_warnings():
             warnings.simplefilter("error", SAWarning)
             compiled = statement.compile(dialect=postgresql.dialect(), linting=FROM_LINTING)
         sql = str(compiled)
-        assert sql.count("FROM oaf_website.notification_confirmation_intents") == 1
-        assert len(re.findall(r"\boaf_website\.notification_confirmation_intents\b(?!\.)", sql)) == 1
+        count = 1 + int(management_enabled and statement is queries[1])
+        assert sql.count("FROM oaf_website.notification_confirmation_intents") == count
+        assert len(re.findall(r"\boaf_website\.notification_confirmation_intents\b(?!\.)", sql)) == count
         assert ("notifications.email" in sql) is scoped
         if scoped:
             assert scope.mailbox in compiled.params.values()
@@ -543,7 +546,7 @@ def candidate_record(model, subscription, number, *, status="pending", attempts=
                 status=status, attempts=attempts, claim_digest=None, lease_until=None,
                 next_attempt_at=model.now, outcome=None, provider_message_id=None,
                 created_at=model.now, updated_at=model.now, accepted_at=None,
-                purpose=purpose, management_revision=0 if purpose == "management" else None)
+                purpose=purpose, management_revision=0 if purpose == "management" else None, revoked_at=None)
 
 
 @pytest.mark.parametrize("management_enabled,purpose", [(False, "confirmation"),

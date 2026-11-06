@@ -7,6 +7,7 @@
   <title>GraManna | Ovis Alms Foundation</title>
   <script src="assets/email-confirmation.js"></script>
   <link rel="stylesheet" href="styles.css">
+  <script src="assets/navigation.js" defer></script>
 </head>
 <body class="gramanna-page">
 
@@ -151,9 +152,8 @@
         </div>
 
         <form id="state-request-form" class="interface-card state-request" aria-labelledby="request-title" aria-describedby="request-note">
-          <p class="eyebrow">State Requests</p>
           <h3 id="request-title">Request your state</h3>
-          <p>Tell us where you'd like GraManna to expand next. Requests help us understand interest and do not guarantee availability.</p>
+          <p>Tell us where you'd like GraManna to expand next. Requests help us understand interest but do not guarantee availability.</p>
           <select class="form-control" id="request-state" name="state" autocomplete="off" required aria-label="Your state" aria-describedby="request-note">
             <option value="">Select a state</option>
             <option value="AL">Alabama</option>
@@ -207,7 +207,7 @@
             <option value="WI">Wisconsin</option>
             <option value="WY">Wyoming</option>
           </select>
-          <button class="button" type="submit" disabled>Submit</button>
+          <button class="button" type="submit" disabled>Submit request</button>
           <p id="request-note" class="interface-note" role="status" aria-live="polite" aria-atomic="true">Enable JavaScript and cookies to request a state.</p>
           <p class="interface-note">We use a browser cookie to count each state once for this browser. Clearing cookies or changing browsers may let you submit again.</p>
           <p id="request-total" class="interface-note" role="status" aria-live="polite" aria-atomic="true"></p>
@@ -328,7 +328,7 @@
   </main>
 
   <footer>
-    <div>&copy; 2026 Ovis Alms Foundation. All rights reserved.</div>
+    <div>&copy; 2026 All Rights Reserved | Ovis Alms Foundation</div>
     <div class="footer-links">
       <a href="privacy-policy.html">Privacy Policy</a>
       <a href="terms-of-use.html">Terms of Use</a>

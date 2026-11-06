@@ -13,7 +13,7 @@ import operator
 
 import pytest
 from sqlalchemy.sql import operators
-from sqlalchemy.sql.elements import BindParameter, BooleanClauseList, Null, True_, False_, Grouping
+from sqlalchemy.sql.elements import BindParameter, BooleanClauseList, Null, True_, False_, Grouping, Case
 from sqlalchemy.sql.dml import Insert, Update
 from sqlalchemy.sql.functions import Function
 from sqlalchemy.sql.selectable import Select, ScalarSelect
@@ -67,6 +67,9 @@ class Model:
                 if isinstance(node, True_): return True
                 if isinstance(node, False_): return False
                 if isinstance(node, Grouping): return evaluate(node.element, row)
+                if isinstance(node, Case):
+                    return next((evaluate(value, row) for condition, value in node.whens
+                                 if evaluate(condition, row)), evaluate(node.else_, row))
                 if isinstance(node, BooleanClauseList):
                     values = [evaluate(n, row) for n in node.clauses]
                     return all(values) if node.operator is operators.and_ else any(values)
@@ -78,8 +81,10 @@ class Model:
                     left, right = evaluate(node.left, row), evaluate(node.right, row)
                     if node.operator in {operators.le, operators.lt} and (left is None or right is None):
                         return False
-                    return {operators.eq: operator.eq, operators.le: operator.le, operators.lt: operator.lt,
-                            operators.in_op: lambda a, b: a in b, operators.is_: operator.is_}[node.operator](left, right)
+                    return {operators.eq: operator.eq, operators.ne: operator.ne,
+                            operators.le: operator.le, operators.lt: operator.lt, operators.gt: operator.gt,
+                            operators.in_op: lambda a, b: a in b, operators.not_in_op: lambda a, b: a not in b,
+                            operators.is_: operator.is_, operators.is_not: operator.is_not}[node.operator](left, right)
                 return row[node.name]
 
             class Connection:
@@ -92,7 +97,7 @@ class Model:
                         rows = [deepcopy(r) for r in pending[item.name]
                                 if all(evaluate(c, r) for c in statement._where_criteria)]
                         for column in reversed(tuple(statement._order_by_clauses)):
-                            rows.sort(key=lambda row: row[column.name])
+                            rows.sort(key=lambda row: evaluate(column, row))
                         if statement._limit_clause is not None:
                             rows = rows[:statement._limit_clause.value]
                         names = [column.name for column in statement.selected_columns]
@@ -106,6 +111,9 @@ class Model:
                         if item.name == "notification_confirmation_intents":
                             values.setdefault("purpose", "confirmation")
                             values.setdefault("management_revision", None)
+                            values.setdefault("revoked_at", None)
+                        if item.name == "notification_suppressions":
+                            values.setdefault("reoptin_blocked_at", None)
                         pk = [c.name for c in item.primary_key.columns]
                         duplicate = any(all(r[c] == values[c] for c in pk) for r in pending[item.name])
                         if item.name == "notifications":

@@ -22,12 +22,15 @@ ROOT = Path(__file__).resolve().parents[1]
 SECRET_PATH = ROOT / "config/local/state-request-recognition.dpapi"
 PUBLIC_FILES = (
     "index.html", "about.html", "gramanna.html", "faq.html", "support.html", "contact.html", "styles.css",
-    "assets/state-requests.js", "assets/notifications.js", "assets/contact.js", "assets/images/gramanna-logo.png",
+    "assets/navigation.js", "assets/state-requests.js", "assets/notifications.js", "assets/contact.js", "assets/images/gramanna-logo.png",
     "assets/images/hero-gifts.webp",
     "assets/oaf-homepage-hero-gift-cards.png",
     "assets/images/oaf-homepage-hero-gift-cards3.png",
     "assets/images/oaf-homepage-hero-gift-cards4.png",
     "assets/images/oaf-homepage-hero-gift-cards5.png",
+    "assets/images/oaf-homepage-hero-gift-cards6.png",
+    "assets/images/oaf-homepage-hero-gift-cards7.png",
+    "assets/images/oaf-homepage-hero-gift-cards8.png",
     "confirm-email.html", "assets/email-confirmation.js",
     "manage-notifications.html", "assets/notification-management.js",
     "privacy-policy.html", "terms-of-use.html",

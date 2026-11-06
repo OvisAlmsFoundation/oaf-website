@@ -23,7 +23,14 @@ from oaf_website.state_requests import _build_app, BrowserRecognition
 ORIGIN = 'https://website.example'
 PAGES = ['index.html','about.html','gramanna.html','faq.html','support.html','contact.html']
 NAV = ['Home','About','GraManna','FAQ','Contact','Support']
-SUCCESS = 'Your message has been accepted for sending. Thank you.'
+SUCCESS = 'Message Sent Successfully'
+SUCCESS_BODY = "Thank you for contacting Ovis Alms Foundation. We've received your message and will respond as soon as possible."
+
+
+def expect_background(link, color, *, painted=False):
+    expect(link).to_have_css('background-color', 'rgba(0, 0, 0, 0)' if painted else color)
+    if painted:
+        assert link.evaluate("n => getComputedStyle(n, '::before').backgroundColor") == color
 
 
 def check_navigation_presentation(page, filename, coarse):
@@ -31,9 +38,16 @@ def check_navigation_presentation(page, filename, coarse):
     minimum = 44 if coarse else 36
     assert page.evaluate("matchMedia('(pointer: coarse)').matches") == coarse
     mobile = page.viewport_size['width'] <= 900
+    narrow = page.viewport_size['width'] <= 550
+    if mobile:
+        minimum = (32 if coarse else 26) if narrow else (34 if coarse else 28)
+    width = page.viewport_size['width']
+    gap = ('0.5px' if width <= 300 else '4px' if width <= 350 else '6px') if narrow else '18px' if mobile else '28px'
+    column_gap = gap if narrow else '12.96px' if mobile else '20.16px'
     expect(page.locator('.site-header')).to_have_css('flex-direction', 'column' if mobile else 'row')
-    expect(page.locator('.site-header nav')).to_have_css('column-gap', '18px' if mobile else '28px')
-    expect(page.locator('.site-header nav')).to_have_css('row-gap', '14px' if mobile else '28px')
+    expect(page.locator('.site-header nav')).to_have_css('column-gap', column_gap)
+    expect(page.locator('.site-header nav')).to_have_css('row-gap', gap)
+    expect(page.locator('.site-header nav')).to_have_css('flex-wrap', 'wrap' if mobile else 'nowrap')
     assert links.evaluate_all("nodes => nodes.map(n => n.getAttribute('href'))") == [
         'index.html', 'about.html', 'gramanna.html', 'faq.html', 'contact.html', 'support.html',
     ]
@@ -43,6 +57,10 @@ def check_navigation_presentation(page, filename, coarse):
     boxes = links.evaluate_all('nodes => nodes.map(n => n.getBoundingClientRect().toJSON())')
     for index, box in enumerate(boxes):
         assert abs(box['height'] - minimum) < 0.01
+        assert box['width'] >= 24 and box['height'] >= 24
+        if mobile and index:
+            assert abs(box['top'] - boxes[0]['top']) < .1
+            assert abs(box['left'] - boxes[index - 1]['right'] - float(column_gap[:-2])) < .1
         for other in boxes[index + 1:]:
             assert (box['right'] <= other['left'] or other['right'] <= box['left']
                     or box['bottom'] <= other['top'] or other['bottom'] <= box['top']), (box, other)
@@ -50,19 +68,35 @@ def check_navigation_presentation(page, filename, coarse):
         support = link.get_attribute('class') == 'nav-support'
         active = link.get_attribute('aria-current') == 'page'
         expect(link).to_have_css('min-height', f'{minimum}px')
-        expect(link).to_have_css('padding', '6px 14px' if support else '6px 8px')
+        padding = ('2px 6px' if support else '2px 0px') if mobile else '6px 14px' if support else '6px 8px'
+        if mobile and not narrow and not support:
+            padding = '1px 0px'
+        expect(link).to_have_css('padding', padding)
         expect(link).to_have_css('border-radius', '3px' if support else '6px')
-        expect(link).to_have_css('margin', '-6px 0px' if support else '-6px -8px')
+        expect(link).to_have_css('margin', '0px' if mobile else '-6px 0px' if support else '-6px -8px')
         ratio = link.evaluate('n => parseFloat(getComputedStyle(n).lineHeight) / parseFloat(getComputedStyle(n).fontSize)')
         assert abs(ratio - 1.5) < 0.001
         link.hover()
         background = ('rgba(0, 0, 0, 0)' if active else
                       'rgb(116, 37, 116)' if support else 'rgb(239, 245, 240)')
-        expect(link).to_have_css('background-color', background)
+        expect_background(link, background)
+        if support and not active:
+            # The approved shared CTA paints its gradient on the link itself.
+            gradient = link.evaluate('''n => {
+                const probe = document.createElement('span');
+                probe.style.backgroundImage = 'linear-gradient(to right, color-mix(in srgb, var(--brand-aubergine) 80%, white), var(--brand-aubergine))';
+                n.append(probe);
+                const value = getComputedStyle(probe).backgroundImage;
+                probe.remove();
+                return value;
+            }''')
+            expect(link).to_have_css('background-image', gradient)
         expect(link).to_have_css('color', 'rgb(29, 95, 49)' if active else 'rgb(255, 255, 255)' if support else 'rgb(34, 34, 34)')
         expect(link).to_have_css('font-weight', '700' if active else '400')
         page.mouse.down()
-        expect(link).to_have_css('background-color', 'rgb(18, 59, 30)' if support and not active else background)
+        expect_background(link, 'rgb(18, 59, 30)' if support and not active else background)
+        if support and not active:
+            expect(link).to_have_css('background-image', 'none')
         page.mouse.move(0, 0)
         page.mouse.up()
     links.first.focus()
@@ -153,7 +187,7 @@ def main(navigation_only=False, artifacts=None):
                     support = page.locator('header nav a').last
                     assert support.get_attribute('class') == 'nav-support'
                     support_background = 'rgba(0, 0, 0, 0)' if name == 'support.html' else 'rgb(29, 95, 49)'
-                    assert support.evaluate("el => getComputedStyle(el).backgroundColor") == support_background
+                    expect_background(support, support_background)
                     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), (width,name)
                     check_navigation_presentation(page, name, coarse)
                     if name == 'gramanna.html':
@@ -183,6 +217,35 @@ def main(navigation_only=False, artifacts=None):
                 message = page.get_by_label('Message',exact=True)
                 button = page.get_by_role('button',name='Send Message',exact=True)
                 note = page.locator('#contact-feedback')
+                dialog = page.get_by_role('dialog', name=SUCCESS)
+                close = page.get_by_role('button', name='Close', exact=True)
+                expect(dialog).to_be_hidden()
+                navigation_entries = page.evaluate("performance.getEntriesByType('navigation').length")
+                navigations = []
+                page.on('framenavigated', lambda frame: navigations.append(frame.url) if frame == page.main_frame else None)
+
+                def success_modal(dismiss='Escape'):
+                    expect(dialog).to_be_visible()
+                    expect(dialog).to_contain_text(SUCCESS_BODY)
+                    assert not navigations, navigations
+                    expect(close).to_be_focused()
+                    assert page.evaluate("performance.getEntriesByType('navigation').length") == navigation_entries
+                    assert page.locator('#contact-success').evaluate("n => n.matches(':modal')")
+                    expect(note).to_have_text('')
+                    # The native modal keeps Tab and Shift+Tab inside its one control.
+                    page.keyboard.press('Tab')
+                    page.keyboard.press('Tab')
+                    expect(close).to_be_focused()
+                    page.keyboard.press('Shift+Tab')
+                    page.keyboard.press('Shift+Tab')
+                    expect(close).to_be_focused()
+                    page.screenshot(path=str(screenshot_dir / f'contact-success-{width}.png'))
+                    if dismiss == 'Escape':
+                        page.keyboard.press('Escape')
+                    else:
+                        close.click()
+                    expect(dialog).to_be_hidden()
+                    expect(button).to_be_focused()
                 expect(email).to_have_attribute('type','email')
                 expect(email).to_have_attribute('required','')
                 expect(message).to_have_attribute('required','')
@@ -227,14 +290,14 @@ def main(navigation_only=False, artifacts=None):
                 expect(email).to_be_disabled()
                 expect(message).to_be_disabled()
                 expect(note).to_have_text('Sending your message...')
+                expect(dialog).to_be_hidden()
                 assert sender.call_count == 0
                 page.evaluate("document.querySelector('#contact-form').requestSubmit()")
                 page.wait_for_timeout(100)
                 assert len(posts) == 2 and len(held) == 1
                 respond(held.pop())
                 mode['http'] = 'normal'
-                expect(note).to_have_text(SUCCESS)
-                expect(note).to_be_focused()
+                success_modal()
                 expect(email).to_have_value('')
                 expect(message).to_have_value('')
                 assert note.get_attribute('role') == 'status'
@@ -242,23 +305,25 @@ def main(navigation_only=False, artifacts=None):
 
                 # Reload/repeat uses real browser cookies and backend suppression.
                 page.reload()
+                navigations.clear()
                 email.fill('visitor@example.com')
                 message.fill('A question about the Foundation.')
                 button.click()
-                expect(note).to_have_text(SUCCESS)
+                success_modal('Close')
                 assert sender.call_count == 1
                 mode['mail'] = 'failure'
                 email.fill('visitor@example.com')
                 message.fill('A different question.')
                 button.click()
                 expect(note).to_have_text('We could not send your message. Please try again later.')
+                expect(dialog).to_be_hidden()
                 expect(note).to_be_focused()
                 expect(message).to_have_value('A different question.')
                 assert note.get_attribute('role') == 'alert'
                 assert sender.call_count == 2
                 mode['mail'] = 'success'
                 button.click()
-                expect(note).to_have_text(SUCCESS)
+                success_modal('Close')
                 assert sender.call_count == 3
                 assert direct({'email':'visitor@example.com','message':'Too fast.'})['status'] == 429
                 now[0] += 601
@@ -277,6 +342,7 @@ def main(navigation_only=False, artifacts=None):
                     else:
                         expect(note).to_contain_text('We could not confirm whether your message was accepted.')
                     expect(button).to_be_enabled()
+                    expect(dialog).to_be_hidden()
                     expect(message).to_have_value('Please keep this message after failure.')
                     assert sender.call_count == 3
                     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')

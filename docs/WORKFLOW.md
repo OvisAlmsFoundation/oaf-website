@@ -4941,3 +4941,338 @@ push/reset/cleanup occur. Existing reporting machinery remains unchanged.
 
 **ONE smallest next checkpoint:** independent review of the exact OAF 0009
 migration artifacts and manifest. Stop before execution or activation.
+
+
+## Update 1 - five owner-approved post-launch improvements (2026-11-06 UTC)
+
+**BLOCKED as a five-item update.** Items 1, 3, 4 and 5 have completed source and
+focused offline evidence. Item 2 stopped at the first provider-contract safety
+blocker; no re-opt-in bypass, provider operation or suppression change is added.
+SIMPLE, DIRECT, SUFFICIENT, EFFICIENT, SAFE. This entry supplements historical
+records; it does not rewrite prior evidence or infer current live activation from
+older OFF checkpoints. The owner's production observations (withdrawn and newly
+active lifecycles, persistent OAF suppression, manual Brevo unblock, acknowledged
+signup with no delivered confirmation) are accepted observations, not repeated.
+
+| Item | Current local outcome |
+| --- | --- |
+| 1 - Contact success modal | Source / focused validation PASS. Native named/described dialog, centered over a dimmed backdrop, exact approved title/body, explicit Close, Escape, keyboard confinement and focus return. It opens only after the existing server returns accepted following successful SMTP acknowledgement (including an acknowledged duplicate); there is no refresh. Failed or uncertain submissions retain content and truthful feedback. SMTP, recipient, origin/CSRF, rates and delivery behavior are unchanged. Acceptance does not prove inbox delivery. |
+| 2 - Secure voluntary re-subscription | BLOCKED at the documented provider deletion contract described below. Existing suppression and fail-closed lifecycle behavior remain. No new re-opt-in success is claimed. |
+| 3 - State Request wording | Source / focused validation PASS. Removed redundant eyebrow; retained Request your state, used the exact approved interest/availability text, and renamed the action Submit request. Selector, 50-state registry, cookie/CSRF, totals, duplicate and error behavior remain. Direct browser consumers use the exact new button label. |
+| 4 - Hero continuity | Source / focused validation PASS; owner visual acceptance pending. Read-only reference: GraManna static/home.css lines 36-93 and tests/test_homepage_brand_hero.py. Inward white half-ellipses use depth min(20px, clamp(1.25rem, 3.75vw, 1.5rem) - 1px), height depth * 8/3, top 50%, translateY(-50%), mirrored percentage border radii, no pointer events; white edge accents are 3px full height. Reference decorations have no shadow/filter/breakpoint substitution; its 64rem container breakpoint changes content layout. OAF layers decoration above its unchanged image, gradient, masks/fades, object fit/crop, text and layout. |
+| 5 - Green CTA inward tabs | Source / focused validation PASS as an owner-preview trial. Shared paint-only pseudo-element mask uses 4px depth and the same 8/3 full ellipse height. Both cuts face inward; no border crosses them. Rectangular hit areas, labels, focus outlines, hover/pressed colors, disabled paint and mobile behavior remain. Applies to existing green button styling and non-current navigation Support; current Support stays text-only. GraManna is unchanged. |
+
+### First exact actionable blocker: provider_unblock_preserves_unsafe_restrictions
+
+Required operation: within the existing Cron/provider boundary, unblock only a
+proven voluntary Brevo unsubscribe for one newly consenting lifecycle so one
+same-sender ownership-verification email is reachable, while preserving any hard
+bounce, complaint, owner-policy or ambiguous provider restriction. Ordinary
+announcements must remain suppressed until new ownership verification; historical
+withdrawals, verification, abuse limits, audit and original audience cutoffs must
+remain immutable.
+
+Observed source: authenticated Brevo unsubscribe preserves a correlated audit
+receipt and an append-only `provider_block` suppression. That broad local reason
+alone is insufficient re-opt-in authority. Existing confirmation reservation,
+dispatch and confirmation all reject a suppressed mailbox; ordinary delivery
+also rejects it. Deleting the provider block manually does not remove the local
+suppression, consistent with the owner's observed stalled signup.
+
+The documented GET `/v3/smtp/blockedContacts` lists current blocks/reasons per
+email and sender. DELETE `/v3/smtp/blockedContacts/{urlencoded-email}` documents
+only an email parameter and 204/404 outcomes, with no conditional reason/version,
+sender or If-Match predicate. A voluntary reason lookup can race a new complaint,
+hard bounce or administrator block before the unconditional DELETE. The current
+contract supplies no guarantee that the new unsafe restriction survives deletion.
+An OAF SQL lock, second GET, post-check, audit, retry bound or uncertainty hold
+cannot prevent or reconstruct a remotely erased restriction. This is a source
+contract blocker, independently confirmed; no live API error was requested or
+observed. No undocumented provider behavior is assumed.
+
+**Single next safe checkpoint:** establish a supported provider operation/contract
+that conditionally removes the proven voluntary restriction while preserving new
+unsafe restrictions, or separately agree an alternative ownership-verification
+architecture that satisfies the same safety rules. No credential expansion,
+manual routine unblock, alternate sender or bulk operation is proposed here.
+Brevo's current permission table groups send and unblock under restricted
+**Transactional email: All**; a restricted key label alone is not a blocker.
+Actual live key scope was not read or tested. Web/Cron secret separation remains.
+
+Provider documentation read only:
+[blocked recipient reasons](https://developers.brevo.com/reference/get-transac-blocked-contacts),
+[email-only unblock](https://developers.brevo.com/reference/unblock-or-resubscribe-a-transactional-contact),
+[API permission levels](https://help.brevo.com/hc/en-us/articles/40158277171474-About-API-key-permissions).
+
+### Focused evidence, review and preservation
+
+Evidence: `.pytest_cache/update1-20261105/`. Guarded website pytest: **416 PASS**,
+native exit 0, zero unexpected external-access attempts, selecting Contact,
+State Requests, navigation presentation, connected lifecycle repair and Brevo
+unsubscribe tests. This rechecks existing suppression safety; it does not prove
+new re-opt-in behavior. Chromium with intercepted requests: **12 viewport
+scenarios PASS** (Contact 3, State Requests 2, visuals 7), native exits 0. Visuals
+cover 1440, 901, 900, 768, 390, 320 and 280px, eight public pages, 17 CTA controls
+per viewport, exact hero geometry/white pixels, unchanged interior image pixels
+and computed composition, inward cuts, borders, rectangular hit areas, focus,
+hover/pressed/disabled states and overflow. Contact covers held acknowledgement,
+no navigation, Close/Escape/tab/focus, duplicate, failure/content retention, CSRF,
+cookies and limits. State Requests cover wording, all 50 states, keyboard,
+duplicates, errors, concurrent totals responses and unavailable totals.
+
+One fresh-context independent source/evidence review found no material UI issue
+and independently confirmed Item 2's provider-contract blocker. Initial evidence
+harness failures (guard import order, computed-style serialization, fractional
+screenshot bounds/scroll and stale state asset/session mocks) remain in the
+original logs with native exits 1; corrected final focused runs pass. No product
+failure or unacknowledged provider operation is concealed. Live browser scripts
+received label-only selector corrections and were **NOT_RUN**. The full GraManna
+canonical suite was **NOT_RUN** as requested. New re-opt-in positive/negative,
+concurrency/recovery/provider-failure tests and any additive migration design are
+**NOT_RUN**, dependent on resolving the first safe provider contract; no migration
+was prepared/applied and revisions 0001-0009/manifest remain unchanged.
+
+Local static-only preview: `http://127.0.0.1:5061/`; explicit modal simulation:
+`http://127.0.0.1:5061/__preview/contact-success`. Every API operation returns
+unavailable; no real credentials, database or SMTP/provider are attached. This
+isolated preview leaves existing listeners untouched. Its PID/stop and restart
+instructions are in the evidence report. Owner visual acceptance, including the
+CTA trial, remains pending. Offline screenshots do not certify live delivery.
+
+OAF began clean; task changes remain unstaged. Both repositories' HEAD/index
+identities, GraManna status/tracked hashes and initially hashed owner files are
+preserved; governing document historical bytes are append-only. The initial
+preservation subprocess hit Git's dubious-ownership check for GraManna (native 1);
+process-only exact safe.directory resolved it without changing Git configuration.
+No owner source or Git work was restored/reset/staged/committed/pushed. No live
+production request, provider send/unsubscribe/unblock, real database mutation,
+secret change, service restart, migration, Azure action or deployment occurred.
+The outer Invoke-OAFCodex reporting mechanism remains unchanged; no unobserved
+clipboard/read-back/visual-alert delivery is claimed.
+
+
+## Update 1 Item 2 - approved voluntary re-subscription (2026-11-06 UTC)
+
+This is the current Item 2 policy and supersedes the earlier Update 1 blocker,
+mandatory provider block-reason classification, and permanent-exclusion wording
+where it conflicts with the lifecycle-specific exception below. Earlier evidence
+and the accepted Item 1/3/4/5 results remain historical and unchanged.
+
+The owner approves fresh explicit subscription consent superseding a previous
+unsubscribe, including Gmail/Brevo withdrawal and a past spam complaint. Users
+need not explain their prior withdrawal. There is no Brevo reason lookup,
+conditional-unblock requirement, or Brevo Support dependency. Brevo's email-only
+unconditional DELETE can race a new remote restriction; the owner accepts that
+residual limitation. OAF cannot conditionally preserve a remotely racing block.
+The provider may still refuse unblocking or delivery; such refusals are honored.
+Existing local hard-bounce and owner-policy restrictions retain their resolution.
+
+Only the validated explicit signup action can reserve a `reoptin` intent for an
+unverified returning lifecycle with an earlier withdrawn subscription. A fresh
+matching-preference signup can also authorize a pre-upgrade stalled lifecycle;
+it preserves that lifecycle's original receipt and selected preferences. Lookup,
+confirmation resend and management recovery cannot create unblock authority.
+Existing CSRF/origin, request limits and persistent mailbox/global budgets apply.
+The browser issues a fresh receipt after an acknowledged signup, while an
+uncertain retry retains its original receipt. Same-action retries coalesce work; they neither rotate existing confirmation
+links nor reset provider attempt budgets. A throttled initial reservation can be
+recovered by another explicit signup after its existing budget permits it.
+
+The existing confirmation outbox carries the provider-unblock step and its own
+attempt evidence. Cron uses the same protected Brevo adapter/key boundary; the
+Web Service never loads a key or invokes a provider operation. Committed claims,
+submission leases, at most three safe attempts, backoff, and uncertain-outcome
+holds are reused. Waiting dependencies are excluded before the batch LIMIT; exhausted unblock
+work promptly suppresses its dependency. Ready unblock intents precede
+confirmation work in bounded batches without starving unrelated mailboxes. Only a definite acknowledgement permits confirmation: empty HTTP 204,
+or a structured HTTP 404 `document_not_found` (documented blocklist absence).
+Other definite refusals stop that step. Transport/post-submission uncertainty or
+an unacknowledged outcome is held without blind retry. Database preparation must
+commit successfully before either DELETE or email POST starts. Expired claims
+recover safely; expired submitting work becomes uncertain. A restart cannot
+repeat an acknowledged or uncertain unblock.
+
+An accepted unblock grants only this lifecycle's historical suppression exception.
+The confirmation still expires after 24 hours and uses the existing bounded send
+policy, private token, and ownership-confirmation action. Ordinary notifications
+remain ineligible until new ownership verification. Subscription creation,
+verification and preference-grant cutoffs still exclude all earlier launch events.
+Recovery works normally only after the exception permits it, and never adds
+unblock authority. A later local suppression or newly correlated Brevo withdrawal
+sets `revoked_at` on affected authorizations. That revokes confirmation, recovery
+and ordinary eligibility even when the original append-only suppression already
+exists. Original suppression rows, previous lifecycle consent/withdrawal,
+verification, preference audit, and provider attempt/acceptance evidence remain.
+A duplicate old webhook receipt remains idempotent and cannot withdraw fresh
+consent a second time.
+
+Persistence source: additive `0010_voluntary_reoptin`, parent
+`0009_state_availability`. It extends the existing purpose CHECK and adds two
+nullable timestamps: outbox `revoked_at` and suppression `reoptin_blocked_at`,
+with their CHECKs and exact column UPDATE grants. The latter permanently records
+a later local hard-bounce/owner-policy restriction even when an earlier mailbox
+suppression already exists; fresh lifecycles cannot bypass that restriction. No new table, framework, credential or administrative workflow is added.
+The manifest and exact artifact/catalog/dependency/grant validators include 0010;
+historical revisions/helpers 0001-0009 remain unchanged. This migration has been
+prepared for OFFLINE validation only and has NOT been applied to any database.
+The manifest remains `pending_independent_review`; source review is not a
+migration execution authorization or a live PostgreSQL certification.
+
+Provider contracts (read only):
+[email-only unblock and 204/404](https://developers.brevo.com/reference/unblock-or-resubscribe-a-transactional-contact),
+[transactional email permissions](https://help.brevo.com/hc/en-us/articles/40158277171474-About-API-key-permissions).
+Restricted Transactional email: All supports sending/unblocking. Actual deployed
+key permissions have NOT been inspected or tested; no credential change occurred.
+
+Evidence directory: `.pytest_cache/update1-resubscription/`. Focused synthetic
+validation and one fresh-context independent Item 2 review are recorded there;
+final counts/status will be appended at closure. The accepted 416 guarded tests,
+12 intercepted browser scenarios and independent review for Items 1/3/4/5 are
+reused without rerunning unrelated UI/browser checks. Owner work and initial
+HEAD/index hashes are captured in `preservation-before.json`; governing document
+updates append to their original bytes. No staging, commit, push, Azure, full
+canonical suite, production access/change, real migration, live Brevo operation,
+real email, credential change, or deployment is authorized by this source work.
+
+Before production: independently approve the exact new migration artifacts and
+prerequisites, issue the existing separate environment-specific authorization,
+and validate/apply 0009 -> 0010 through the established migration workflow
+(TESTING before DEVELOPMENT, and separate production authorization/readiness).
+Deploy matching Web and Cron source only after the matching database has 0010;
+retain existing confirmation/management/processing controls and Cron-only key.
+Verify that the existing Cron key permits transactional email sending/unblocking;
+change it only under separate owner authority if required. After deployment,
+perform an explicitly authorized controlled unsubscribe/fresh-consent/confirm
+journey and inspect correlated outcomes before claiming live delivery. No manual
+bulk unblock, suppression deletion or provider reason-classification gate is
+required. Production activation and live delivery remain NOT_RUN.
+
+
+Item 2 source closure: **PASS** (2026-11-06 05:25:47 UTC). Final guarded focused run:
+**1,922 PASS**, native exit **0**, zero unexpected external-access attempts,
+across the exact 15-file inventory in
+`.pytest_cache/update1-resubscription/final-source-inventory.json`. This includes
+85 voluntary re-opt-in/migration checks, all using synthetic database/provider
+responses. Separate mock-DOM/fetch signup receipt interaction and JavaScript
+syntax checks PASS, native 0. No unrelated Item 1/3/4/5 campaign was repeated.
+
+One fresh-context independent review completed with three genuine findings:
+later stronger-suppression collisions, waiting dependency batch starvation, and
+the stale 0009 migration authorization test. One focused correction batch adds
+the durable stronger-restriction marker, filters waiting work before LIMIT,
+finishes exhausted dependencies, and updates the 0010 chain/prerequisite wording.
+Focused regressions pass; no finding remains unresolved. The review was not
+repeated. The browser also clears its receipt only after acknowledged signup so
+another explicit action can start a new lifecycle while uncertain retries retain
+the original receipt. Mock interactions verify both and busy duplicates.
+
+Earlier evidence is retained: initial collection/projection harness failures
+(native 2/1), corrected 434/1,173/68/275 passing runs, and the first combined run's
+1,920 passes/two new-fixture failures (native 1). That fixture verified the old
+lifecycle without completing its synthetic confirmation outbox; random queue
+order exposed leftover work. Completing the simulated delivery fixes the fixture.
+The corrected 85-case run and final 1,922-case run both exit 0. The initial report
+assembly also stopped on UTF-16 PowerShell log decoding (native 1); explicit
+UTF-16 reading corrected it, with the original test log preserved. No product
+failure or provider uncertainty is concealed.
+
+Preservation: ten original non-document owner/UI files are byte-identical; both
+governing documents retain their original bytes as prefixes. HEAD/index are
+unchanged, staging is empty, and original revision entries/hashes 0001-0009 stay
+exact. Accepted UI validation/review remains reused. Machine-readable report,
+exact changed-file list/hashes, review receipt and preservation proof are in
+`.pytest_cache/update1-resubscription/`. No staging, commit, push, Azure, full
+canonical suite, credential change, production change, or live operation occurred.
+Migration execution, production activation and live delivery are **NOT_RUN**.
+The production owner actions listed above remain; the accepted unconditional
+unblock race is not a blocker. Source PASS neither authorizes deployment nor
+establishes live provider/inbox delivery.
+
+
+## Update 1 - adaptive shared navigation refinement (2026-11-06 UTC)
+
+Source implementation and focused validation **PASS**; owner visual acceptance
+is **PENDING**. Local-only OAF 5P: SIMPLE, DIRECT, SUFFICIENT, EFFICIENT, SAFE.
+This supplements the earlier Update 1 evidence; unrelated Contact, notification,
+hero, footer and re-subscription validation/review is retained and reused.
+
+All ten public pages load one deferred `assets/navigation.js`, added to the
+existing public-file allowlist. The sticky shared header keeps its 76px desktop
+top presentation and contracts after scrollY > 64px. It restores only at the
+exact top (scrollY <= 0); the separated thresholds prevent flicker. A passive,
+animation-frame-coalesced listener handles scroll and pageshow restores state.
+Matching height/margin transitions reserve the original document space, so
+page content, scroll position and scroll height do not jump. Reduced motion
+disables header animation. Responsive layouts retain the existing stacked
+navigation: vertical padding 20px -> 6px, brand/nav gap 18px -> 6px and wrapped
+row gap 14px -> 12px. The last gap compensates the existing negative link margins
+without allowing target overlap. Existing fonts (brand 24px, links 15.2px),
+36px mouse / 44px touch targets, order, active treatment, focus, native green /
+aubergine gradients and Support behavior stay intact. Shared scroll padding
+protects anchors; existing form/legal scroll margins remain.
+
+Measured Chromium heights at representative widths, in CSS px:
+
+| Layout / state | Pointer | Before | After | Height reduction |
+| --- | --- | ---: | ---: | ---: |
+| Desktop 1440px, top / returned to top | Both | 76 | 76 | 0% |
+| Desktop 1440px, scrolled | Mouse | 76 | 44 | 42.1% |
+| Desktop 1440px, scrolled | Touch | 76 | 52 | 31.6% |
+| Two rows, 900/768/500px, all states | Mouse | 110 | 70 | 36.4% |
+| Two rows, 900/768/500px, all states | Touch | 118 | 78 | 33.9% |
+| Three rows, 430/390/320px, all states | Mouse | 148 | 106 | 28.4% |
+| Three rows, 430/390/320px, all states | Touch | 164 | 122 | 25.6% |
+| 280px, wrapped foundation name, all states | Mouse | 176 | 134 | 23.9% |
+| 280px, wrapped foundation name, all states | Touch | 192 | 150 | 21.9% |
+
+Percentage preferences are not claimed as exact targets achieved: compact
+desktop occupies 57.9% / 68.4% of the original height. The larger requested
+three-row reduction cannot retain a 28px name row plus two 36px/44px link rows
+with usable spacing. Existing type and targets take priority; owner review must
+accept this practical limit. No new menu, duplicate control or dependency.
+
+Focused evidence: `.pytest_cache/adaptive-navigation-20261106/`. Dedicated website
+Python with -B, disabled pytest plugin autoload, empty options/plugins and early
+`migration_offline`: **9 PASS**, native **0**, zero external-access attempts.
+Selected navigation presentation and mocked production/testing public-file
+allowlist cases only. Chromium: **56 viewport/pointer scenarios** from 2560px to
+280px, including 901/900/899px and the wrapping boundaries, each at top/scrolled/
+returned states; **40 all-public-page scenarios**, mouse/touch targets, exact
+fonts, text bounds, target hit areas, no overlap/overflow, original active/color/
+hover/pressed/focus assertions, gradient checks and keyboard link activation.
+Smooth/reduced-motion frame sampling, threshold stability, reload/back state,
+legal skip links and the existing notification-form anchor pass. Enlarged default
+text at 900px also passes the focused overflow/control check. Browser native
+**0**, zero page errors/unexpected requests. Loopback Chromium preview and JS
+syntax checks also pass, native **0**. One fresh-context independent review and
+its final verdict are retained in `independent-review.json` in this evidence
+directory; the receipt governs review closure. Screenshots/measurements, native
+exits and the task-only diff are retained there.
+
+Initial validation issues remain visible: the website interpreter lacks
+Playwright, so the established shared browser interpreter is used read-only
+with -B; the first fixed-delay browser assertion was replaced by animation/frame
+state waits. A pre-existing Support assertion expected a pseudo-element although
+the owner's current baseline paints the gradient on the link itself. Only its
+navigation appearance expectations were corrected, with explicit native gradient
+checks added; CTA source paint did not change. The second failed run also exposed
+the ignored runner's console encoding, corrected to UTF-8. These failed native
+exits were 1; final browser/pytest exits are 0. Chromium rejected old port 5061
+as unsafe; only this task's preview process was replaced on 5062.
+
+Owner preview: **http://127.0.0.1:5062/** (public allowlist only, APIs unavailable;
+no email/database/provider attached). PID is recorded in `preview-5062-pid.txt`.
+If needed, start from the website root with
+`.venv/Scripts/python.exe -u -B .pytest_cache/adaptive-navigation-20261106/preview.py`.
+Existing servers were not stopped or restarted. The preview remains running for
+owner visual acceptance; no owner acceptance is inferred from source PASS.
+
+Preservation is compared to this task's already-dirty starting tree, not HEAD:
+all original unrelated tracked/untracked owner files are byte-identical; each
+HTML page has only the deferred script addition; existing document bytes remain
+prefixes. HEAD/index remain unchanged and no staging occurs. Exact initial/final
+hashes and task-specific differences are in `before.json`, `preservation.json`
+and `task-only.diff`. No GraManna file is edited; its existing Python/Playwright
+installation is read only with bytecode writes disabled. No production, live
+provider, credentials, database, migration, Azure, canonical suite, staging,
+commit, push or deployment action occurred.

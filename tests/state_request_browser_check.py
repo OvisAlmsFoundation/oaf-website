@@ -21,6 +21,7 @@ def main():
         '/styles.css': ('text/css', (ROOT/'styles.css').read_bytes()),
         '/assets/state-requests.js': ('application/javascript', (ROOT/'assets/state-requests.js').read_bytes()),
         '/assets/notifications.js': ('application/javascript', (ROOT/'assets/notifications.js').read_bytes()),
+        '/assets/email-confirmation.js': ('application/javascript', (ROOT/'assets/email-confirmation.js').read_bytes()),
         '/assets/images/gramanna-logo.png': ('image/png', (ROOT/'assets/images/gramanna-logo.png').read_bytes()),
     }
     errors, unexpected = [], []
@@ -40,7 +41,7 @@ def main():
                     if path in files:
                         content_type, body = files[path]
                         route.fulfill(status=200, content_type=content_type, body=body)
-                    elif path == '/api/state-requests/session':
+                    elif path in {'/api/state-requests/session', '/api/notifications/session'}:
                         route.fulfill(status=200, content_type='application/json',
                                       headers={'Set-Cookie': '__Host-oaf-state-browser=offline-mock; Path=/; Secure; HttpOnly; SameSite=Lax'},
                                       body=json.dumps({'csrf_token': '0'*64}))
@@ -83,7 +84,10 @@ def main():
                 page.on('pageerror', lambda error: errors.append(str(error)))
                 page.goto(ORIGIN + '/gramanna.html')
                 state = page.get_by_label('Your state', exact=True)
-                button = page.get_by_role('button', name='Submit')
+                button = page.get_by_role('button', name='Submit request', exact=True)
+                expect(page.locator('#state-request-form .eyebrow')).to_have_count(0)
+                expect(page.locator('#request-title')).to_have_text('Request your state')
+                expect(page.locator('#request-title + p')).to_have_text("Tell us where you'd like GraManna to expand next. Requests help us understand interest but do not guarantee availability.")
                 note = page.locator('#request-note')
                 expect(button).to_be_enabled()
                 assert state.locator('option').count() == 51

@@ -24,6 +24,7 @@ from test_notification_delivery import Model, SECRET, subscribe
 from test_notifications import choices, post
 from test_state_requests import ORIGIN
 from test_brevo import CONFIG, PAGE, response
+from oaf_website.brevo import ProviderResponse
 from test_brevo_unsubscribe import BEARER
 from test_notification_management import PREFERENCES, SESSION_COOKIE
 
@@ -52,8 +53,15 @@ def send_confirmation(c):
     def transport(key, body):
         c.sent.append(json.loads(body))
         return response(body=json.dumps({"messageId": f"<repair-{len(c.sent)}@provider.invalid>"}).encode())
-    result = outbox.ConfirmationDispatcher(c.processor, CONFIG, PAGE, transport=transport).process()
-    assert result.status == "processed" and result.processed == 1
+    dispatcher = outbox.ConfirmationDispatcher(c.processor, CONFIG, PAGE, transport=transport,
+        unblock_transport=lambda *args: ProviderResponse(204, "", b""))
+    sent_before = len(c.sent)
+    for _ in range(2):
+        result = dispatcher.process()
+        assert result.status == "processed"
+        if len(c.sent) > sent_before:
+            break
+    assert len(c.sent) == sent_before + 1
     body = c.sent[-1]
     token = re.search(r"#confirm-email=([0-9a-f]{64})", body["textContent"]).group(1)
     manage = re.search(r"#manage=(m2\.[^\s]+)", body["textContent"]).group(1)
@@ -115,11 +123,10 @@ def test_signup_confirmation_preferences_withdrawal_audit_suppression_fresh_cons
     assert len([r for r in c.model.rows(notifications) if r["email"] == old["email"]]) == 2
     assert next(r for r in c.model.rows(notifications) if r["unsubscribe_digest"] == old["unsubscribe_digest"]) == old
     assert c.delivery.confirm(token) == "unavailable"
-    if withdrawal == "website":
-        fresh, _ = send_confirmation(c)
-        assert fresh != token and c.delivery.confirm(fresh) == "verified"
-    else:
-        assert len(c.model.rows(intents)) == 1
+    fresh, _ = send_confirmation(c)
+    assert fresh != token and c.delivery.confirm(fresh) == "verified"
+    if withdrawal == "brevo":
+        assert len(c.model.rows(intents)) == 3
         assert c.model.rows(suppressions)[0]["reason"] == "provider_block"
         assert c.processor.candidates(20) == []
     assert next(r for r in c.model.rows(notifications) if r["unsubscribe_digest"] == primary) == primary_before

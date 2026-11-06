@@ -101,9 +101,25 @@ class SubscriptionStore:
             with delivery._transaction() as (connection, now):
                 created = connection.execute(statement.returning(notifications.c.unsubscribe_digest)).scalar_one_or_none()
                 if created is not None:
-                    # Only a genuinely new receipt/lifecycle may reserve work.
-                    # A repeat after a lost COMMIT response cannot rotate it.
-                    delivery._request_confirmation(connection, now, values["email"])
+                    # Consent and outbox work commit with the new lifecycle.
+                    delivery._request_confirmation(connection, now, values["email"], fresh_subscription=created)
+                else:
+                    # Explicit consent may recover a throttled or pre-upgrade
+                    # unverified lifecycle with the same selected preferences.
+                    # No existing preference, verification or receipt is rotated.
+                    subscriber = delivery._get(connection, notifications,
+                        email=values["email"], unsubscribed_at=None)
+                    from .notification_delivery_schema import verification
+                    from .reoptin import needs_authorization
+                    record = (delivery._get(connection, verification, subscription=subscriber["unsubscribe_digest"])
+                              if subscriber is not None else None)
+                    if (subscriber is not None
+                            and all(subscriber[name] == values[name] for name in
+                                    ("web_launch", "android_launch", "ios_launch", "state", "consent_version"))
+                            and (record is None or record["verified_at"] is None
+                                 and needs_authorization(delivery, connection, subscriber))):
+                        delivery._request_confirmation(connection, now, values["email"],
+                                                       fresh_subscription=subscriber["unsubscribe_digest"])
             return
         with diagnostic_transaction(self.engine) as connection:
             connection.execute(statement)

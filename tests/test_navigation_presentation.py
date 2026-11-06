@@ -30,7 +30,7 @@ def test_navigation_approved_dimensions_and_spacing_compensation():
 def test_navigation_coarse_pointer_minimum():
     css = (ROOT / "styles.css").read_text(encoding="utf-8")
     assert re.search(
-        r"@media\s*\(pointer:\s*coarse\)\s*\{\s*\.site-header nav a\s*\{\s*min-height:\s*44px;\s*\}\s*\}",
+        r"@media\s*\(pointer:\s*coarse\)\s*\{\s*\.site-header\s*\{\s*--header-compact-height:\s*52px;\s*\}\s*\.site-header nav a\s*\{\s*min-height:\s*44px;\s*\}\s*\}",
         css,
     )
 
@@ -42,3 +42,13 @@ def test_support_cta_retains_distinctive_dimensions_and_colors():
         "background": "var(--brand-green)", "color": "#fff",
     }.items():
         assert rule[name] == value
+
+
+def test_shared_navigation_script_is_deferred_on_every_public_page():
+    from oaf_website.local_testing import PUBLIC_FILES
+
+    assert "assets/navigation.js" in PUBLIC_FILES
+    for name in PUBLIC_FILES:
+        if name.endswith(".html"):
+            html = (ROOT / name).read_text(encoding="utf-8")
+            assert html.count('<script src="assets/navigation.js" defer></script>') == 1, name

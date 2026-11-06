@@ -407,7 +407,7 @@ class NotificationManagementStore(NotificationDeliveryStore):
             if subscriber is None:
                 retain_failure("management_recovery", "recovery_active_subscriber")
                 return
-            if self._get(connection, suppressions, mailbox_digest=mailbox):
+            if self._suppressed(connection, subscriber):
                 retain_failure("management_recovery", "recovery_not_suppressed")
                 return
             record = self._get(connection, verification, subscription=subscriber["unsubscribe_digest"])
