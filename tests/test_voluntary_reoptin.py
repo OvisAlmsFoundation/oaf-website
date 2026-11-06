@@ -374,6 +374,11 @@ def test_later_stronger_restriction_survives_future_fresh_lifecycles(original, n
     block = deepcopy(model.rows(suppressions)[0])
     assert block["reason"] == original and block["created_at"] == history[suppressions.name][0]["created_at"]
     assert block["reoptin_blocked_at"] == model.now
+    authority = deepcopy(rows_for(model, current, "reoptin"))
+    model.elapse(seconds=1)
+    store.suppress(EMAIL, new_reason)
+    assert model.rows(suppressions)[0] == block
+    assert rows_for(model, current, "reoptin") == authority
     model.elapse(seconds=61)
     SubscriptionStore(model).unsubscribe(current)
     latest = signup(model, store, 3)

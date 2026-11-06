@@ -100,6 +100,9 @@ def test_fabricated_registry_entry_rejected(change):
     i = c.IDENTITIES["testing"]
     with pytest.raises(c.MigrationError):
         c.MigrationConfig(replace(i, **change), URL.create("postgresql+psycopg"))
+    with pytest.raises(c.MigrationError) as caught:
+        c.catalog_identities(replace(i, **change))
+    assert caught.value.classification == c.Failure.WRONG_IDENTITY
 
 
 @pytest.mark.parametrize("value", [None, "", 123, b"synthetic"])
