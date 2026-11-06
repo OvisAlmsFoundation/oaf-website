@@ -544,6 +544,35 @@ h2 {
   border-radius: 3px;
 }
 
+/* Match Support's padding while keeping ordinary action labels centered. */
+.button:where(:not(.legal-skip-link)) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 6px 14px;
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .button:where(:not(.legal-skip-link)) {
+    min-height: 28px;
+    padding: 2px 6px;
+  }
+}
+
+@media (max-width: 550px) {
+  .button:where(:not(.legal-skip-link)) {
+    min-height: 26px;
+  }
+}
+
+@media (pointer: coarse) {
+  .button:where(:not(.legal-skip-link)) {
+    min-height: 44px;
+  }
+}
+
 .button:hover {
   background-color: var(--brand-aubergine);
   transform: translateY(-2px);
@@ -631,6 +660,7 @@ footer {
   display: flex;
   justify-content: space-between;
   gap: 25px;
+  font-size: 0.95rem;
 }
 
 .footer-links {
@@ -1378,6 +1408,11 @@ button.button {
     inset: auto;
     width: 100%;
   }
+
+  footer,
+  .footer-links a {
+    font-size: 1.045rem;
+  }
 }
 
 @media (max-width: 550px) {
@@ -1414,6 +1449,11 @@ button.button {
     .site-header nav .nav-support {
       min-height: 32px;
     }
+  }
+
+  footer,
+  .footer-links a {
+    font-size: .836rem;
   }
 }
 

@@ -212,7 +212,7 @@ def test_confirmation_scope_preserves_final_backend_eligibility(change):
     from oaf_website.notification_delivery_schema import suppressions
     model,manager,store,target=confirmation_scoped_setup()
     claim=store.claim_confirmation(target['intent'])
-    if change=='suppressed':model.rows(suppressions).append(dict(mailbox_digest=store._digest('mailbox',MAILBOX), reason='unsubscribe', created_at=model.now))
+    if change=='suppressed':model.rows(suppressions).append(dict(mailbox_digest=store._digest('mailbox',MAILBOX), reason='unsubscribe', created_at=model.now, reoptin_blocked_at=None))
     if change=='verified':model.rows(verification)[0]['verified_at']=model.now
     if change=='superseded':
         # Recovery now coalesces pending work; model an actual superseded token.
