@@ -51,8 +51,8 @@ def main():
                 response = page.goto(origin + "/gramanna.html")
                 assert response.status == 200
                 expect(page.get_by_role("button", name="Submit request", exact=True)).to_be_enabled()
-                page.get_by_label("Your state", exact=True).select_option("CA")
-                expect(page.locator("#request-total")).to_contain_text("for California.")
+                page.get_by_label("Your state", exact=True).select_option("CO")
+                expect(page.locator("#request-total")).to_contain_text("for Colorado.")
 
             def totals(page):
                 result = page.evaluate("""async () => {
@@ -66,7 +66,7 @@ def main():
                 assert totals(page) == expected, "Actual API totals differ from submission deltas."
 
             def display(page, state):
-                name = "California" if state == "CA" else "Texas"
+                name = "Colorado" if state == "CO" else "Texas"
                 number = expected[state]
                 text = f"{number} counted request{'s' if number != 1 else ''} for {name}."
                 expect(page.locator("#request-total")).to_have_text(text)
@@ -99,17 +99,17 @@ def main():
                 return response.status
 
             visit(a)
-            assert a.get_by_label("Your state", exact=True).locator("option").count() == 51
+            assert a.get_by_label("Your state", exact=True).locator("option").count() == 40
             match_counts(a)
-            record("A", http=submit(a, "CA", True, keyboard=True), california=expected["CA"])
+            record("A", http=submit(a, "CO", True, keyboard=True), colorado=expected["CO"])
             cookie_a = contexts[0].cookies()[0]
             assert cookie_a["name"] == "oaf-state-browser"
             assert cookie_a["httpOnly"] and cookie_a["sameSite"] == "Lax"
             assert not cookie_a["secure"] and cookie_a["path"] == "/" and cookie_a["expires"] > 0
             assert a.evaluate("document.cookie") == ""
-            record("B", http=submit(a, "CA", False), california=expected["CA"])
+            record("B", http=submit(a, "CO", False), colorado=expected["CO"])
             visit(b)
-            record("C", http=submit(b, "CA", True), california=expected["CA"])
+            record("C", http=submit(b, "CO", True), colorado=expected["CO"])
             assert contexts[1].cookies()[0]["value"] != cookie_a["value"]
             record("D", http=submit(a, "TX", True), texas=expected["TX"])
 
@@ -123,7 +123,7 @@ def main():
             statuses = a.evaluate("""async () => {
                 const s = await (await fetch('/api/state-requests/session')).json();
                 const results = [];
-                for (const value of ['', 'ZZ', 'California', null]) {
+                for (const value of ['', 'ZZ', 'Colorado', null]) {
                     const r = await fetch('/api/state-requests', {method: 'POST',
                         headers: {'Content-Type': 'application/json', 'X-CSRF-Token': s.csrf_token},
                         body: JSON.stringify({state: value})});
@@ -138,7 +138,7 @@ def main():
             with a.expect_response(lambda r: r.url == origin + "/api/state-requests") as invalid:
                 a.get_by_role("button", name="Submit request", exact=True).click()
             assert invalid.value.status == 400
-            expect(a.locator("#request-note")).to_have_text("Select one of the 50 U.S. states.")
+            expect(a.locator("#request-note")).to_have_text("Select a state outside the initial pilot states.")
             expect(a.locator("#request-note")).to_have_attribute("role", "alert")
             expect(a.locator("#request-note")).to_have_attribute("aria-atomic", "true")
             expect(a.get_by_role("button", name="Submit request", exact=True)).to_be_enabled()
@@ -148,15 +148,15 @@ def main():
             before = len(post_calls)
             assert a.reload().status == 200
             expect(a.get_by_role("button", name="Submit request", exact=True)).to_be_enabled()
-            a.get_by_label("Your state", exact=True).select_option("CA")
-            display(a, "CA")
+            a.get_by_label("Your state", exact=True).select_option("CO")
+            display(a, "CO")
             assert len(post_calls) == before
             assert contexts[0].cookies()[0]["value"] == cookie_a["value"]
             match_counts(a)
             record("F", refresh_mutations=0)
             a.goto(origin + "/about.html")
             visit(a)
-            submit(a, "CA", False)
+            submit(a, "CO", False)
             assert contexts[0].cookies()[0]["value"] == cookie_a["value"]
             record("G", normal_visit_recognition="unchanged")
 
@@ -174,7 +174,7 @@ def main():
             restarted = json.loads(sys.stdin.readline())
             assert restarted["event"] == "restarted"
             visit(a)
-            submit(a, "CA", False)
+            submit(a, "CO", False)
             submit(a, "TX", False)
             match_counts(a)
             assert contexts[0].cookies()[0]["value"] == cookie_a["value"]
@@ -187,17 +187,17 @@ def main():
                 return await Promise.all(Array.from({length: 8}, async () => {
                     const r = await fetch('/api/state-requests', {method: 'POST',
                         headers: {'Content-Type': 'application/json', 'X-CSRF-Token': s.csrf_token},
-                        body: JSON.stringify({state: 'CA'})});
+                        body: JSON.stringify({state: 'CO'})});
                     return {code: r.status, status: (await r.json()).status};
                 }));
             }""")
             assert sum(r == {"code": 201, "status": "accepted"} for r in responses) == 1
             assert sum(r == {"code": 200, "status": "duplicate"} for r in responses) == 7
-            expected["CA"] += 1
+            expected["CO"] += 1
             match_counts(c)
             # Deliberate UI repeat also updates the displayed committed count.
-            submit(c, "CA", False)
-            record("I", submissions=8, accepted=1, duplicates=7, california=expected["CA"])
+            submit(c, "CO", False)
+            record("I", submissions=8, accepted=1, duplicates=7, colorado=expected["CO"])
 
             expect(c.locator("#request-total")).to_have_attribute("role", "status")
             expect(c.locator("#request-total")).to_have_attribute("aria-live", "polite")

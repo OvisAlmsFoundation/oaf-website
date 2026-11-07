@@ -298,12 +298,12 @@ def run(browser_python):
         cookie_token = recognition.read(complete["state_cookie"])
         require(cookie_token is not None, "State Request browser recognition invalid.")
         key = str(recognition.browser_key(cookie_token))
-        require(set(final_states) - set(initial_states) == {("CA", key), ("TX", key)},
+        require(set(final_states) - set(initial_states) == {("CO", key), ("TX", key)},
                 "Focused State Request regression persisted unexpected rows.")
         final_counts = counts(connection)
         require(final_counts == complete["state_counts"], "Independent State Request counts differ from browser/API.")
         require({s: final_counts[s] - initial_counts[s] for s in final_counts
-                 if final_counts[s] != initial_counts[s]} == {"CA": 1, "TX": 1},
+                 if final_counts[s] != initial_counts[s]} == {"CO": 1, "TX": 1},
                 "State Request regression deltas differ.")
         report["constraint_probes"] = database_probes(connection)
         require(notification_rows(connection) == final_notifications and rows(connection) == final_states,
@@ -313,14 +313,14 @@ def run(browser_python):
             "Duplicate active subscriptions exist.")
         report.update(postgresql_verification="PASS", final_notifications=summary(final_notifications),
             notification_delta=dict(total=8, active=6, withdrawn=2),
-            final_state_requests=len(final_states), state_request_delta=dict(CA=1, TX=1),
+            final_state_requests=len(final_states), state_request_delta=dict(CO=1, TX=1),
             initial_records_unchanged=True, rollback_probes_retained_rows=0,
             persisted_lifecycles=[dict(label=item["label"], web_launch=item["web_launch"],
                 android_launch=item["android_launch"], ios_launch=item["ios_launch"],
                 state=item["state"], consent_version=CONSENT_VERSION, active=item["active"])
                 for item in complete["lifecycles"]], material_defects=[])
         print("PostgreSQL PASS: eight retained notification lifecycles (+6 active/+2 withdrawn); "
-              "State Requests CA +1/TX +1; constraint and rollback probes retained zero rows.", flush=True)
+              "State Requests CO +1/TX +1; constraint and rollback probes retained zero rows.", flush=True)
     except Exception as error:
         safe = str(error) if type(error) is RuntimeError else type(error).__name__
         report["errors"].append(dict(phase=phase, reason=safe))

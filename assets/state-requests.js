@@ -56,7 +56,7 @@
     event.preventDefault();
     if (busy) return;
     if (!state.value) {
-      message('Select one of the 50 U.S. states.', true);
+      message('Select a state outside the initial pilot states.', true);
       state.focus();
       return;
     }

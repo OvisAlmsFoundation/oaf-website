@@ -409,8 +409,8 @@ def main():
                 expect(desktop.locator("#request-note")).to_contain_text("counted. Thank you." if accepted else "already requested")
                 expect(desktop.locator("#request-total")).to_contain_text(str(expected_counts[state]) + " counted request")
                 feedback(desktop, "#request-note")
-            state_submit("CA", True)
-            state_submit("CA", False)
+            state_submit("CO", True)
+            state_submit("CO", False)
             state_submit("TX", True)
             statuses = desktop.evaluate("""async () => {
                 const s = await (await fetch('/api/state-requests/session')).json();
@@ -423,7 +423,7 @@ def main():
                 const repeated = await Promise.all(Array.from({length:8}, async () => {
                     const r = await fetch('/api/state-requests', {method:'POST',
                         headers:{'Content-Type':'application/json','X-CSRF-Token':s.csrf_token},
-                        body:JSON.stringify({state:'CA'})}); return r.status;
+                        body:JSON.stringify({state:'CO'})}); return r.status;
                 }));
                 return {invalid:results,repeated,
                     counts:(await (await fetch('/api/state-requests/totals')).json()).totals};
@@ -434,7 +434,7 @@ def main():
             expect(desktop.get_by_role("button", name="Submit request", exact=True)).to_be_enabled()
             state_submit("TX", False)
             record("N", state_requests_accepted=2, duplicate_and_refresh_safe=True,
-                   concurrent_duplicates=8, malformed_rejections=3, count_deltas=dict(CA=1, TX=1))
+                   concurrent_duplicates=8, malformed_rejections=3, count_deltas=dict(CO=1, TX=1))
 
             PHASE = "O responsive accessibility and privacy"
             for page, width in [(desktop, 1280), (mobile, 390)]:

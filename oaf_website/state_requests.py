@@ -20,6 +20,9 @@ from .database_config import (
 from .state_request_schema import STATE_CODES, state_requests
 
 COOKIE_AGE = 60 * 60 * 24 * 365
+# Public expansion requests exclude the planned initial pilots. Keep the shared
+# 50-state registry for existing totals, notifications and service integrations.
+INITIAL_PILOT_STATE_CODES = frozenset("CA DE ID IN IA MT NE SD UT VT WY".split())
 
 
 def valid_state(value):
@@ -235,8 +238,9 @@ def _build_app(store, recognition, public_origin, *, allow_insecure_localhost=Fa
         except BadRequest:
             return error("Choose one state and try again.", 400, operation="submit", predicate="request_json_decode")
         if (type(data) is not dict or set(data) != {"state"}
-                or not valid_state(data["state"])):
-            return error("Select one of the 50 U.S. states.", 400, operation="submit", predicate="request_state")
+                or not valid_state(data["state"])
+                or data["state"] in INITIAL_PILOT_STATE_CODES):
+            return error("Select a state outside the initial pilot states.", 400, operation="submit", predicate="request_state")
         try:
             accepted = store.submit(data["state"], recognition.browser_key(token))
         except Exception as exc:

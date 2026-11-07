@@ -482,8 +482,8 @@ def test_concurrent_model_duplicates_are_atomic(setup):
 def populate(setup):
     public = setup.app.test_client()
     csrf = recognize(public)
-    public_request(public, csrf, "CA")
-    service(setup.client)
+    assert public_request(public, csrf, "CO").status_code == 201
+    service(setup.client, data=dict(state="CO", visitor_token="a" * 64))
     service(setup.client, data=dict(state="NY", visitor_token="a" * 64))
     public_subscribe(public, csrf, choices(email="all@example.com", android_launch=True, ios_launch=True, state="CA"))
     public_subscribe(public, csrf, choices(email="state@example.com", token="d" * 64, web_launch=False, state="TX"))
@@ -499,7 +499,7 @@ def test_aggregate_counts_combined_sources_with_overlap_and_withdrawals(setup):
     result = response.json
     assert result["environment"] == "testing" and result["reported_at_utc"] == "2026-10-12T19:00:00.000000Z"
     assert result["state_requests"]["accepted_total"] == 3
-    assert result["state_requests"]["by_state"]["CA"] == 2
+    assert result["state_requests"]["by_state"]["CO"] == 2
     assert result["state_requests"]["by_state"]["NY"] == 1
     active = result["notifications"]
     assert active["active_total"] == 3

@@ -22,6 +22,7 @@ def main():
         '/assets/state-requests.js': ('application/javascript', (ROOT/'assets/state-requests.js').read_bytes()),
         '/assets/notifications.js': ('application/javascript', (ROOT/'assets/notifications.js').read_bytes()),
         '/assets/email-confirmation.js': ('application/javascript', (ROOT/'assets/email-confirmation.js').read_bytes()),
+        '/assets/navigation.js': ('application/javascript', (ROOT/'assets/navigation.js').read_bytes()),
         '/assets/images/gramanna-logo.png': ('image/png', (ROOT/'assets/images/gramanna-logo.png').read_bytes()),
     }
     errors, unexpected = [], []
@@ -90,29 +91,43 @@ def main():
                 expect(page.locator('#request-title + p')).to_have_text("Tell us where you'd like GraManna to expand next. Requests help us understand interest but do not guarantee availability.")
                 note = page.locator('#request-note')
                 expect(button).to_be_enabled()
-                assert state.locator('option').count() == 51
+                assert state.locator('option').count() == 40
+                expect(state).to_have_value('')
+                expect(state.locator('option').first).to_have_text('Select a state')
+                names = state.locator('option').all_text_contents()[1:]
+                assert names == sorted(set(names)) and len(names) == 39
+                pilots = page.locator('.pilot-state-list h3').all_text_contents()
+                assert len(pilots) == 11 and not set(names).intersection(pilots)
+                # Availability subscriptions retain the full canonical catalog.
+                assert page.locator('#notification-state option').count() == 51
                 # Native required-state validation makes no request.
                 button.click()
                 assert not calls
-                state.select_option('CA')
+                page.locator('#state-request-form').dispatch_event('submit')
+                expect(note).to_have_text('Select a state outside the initial pilot states.')
+                expect(note).to_have_attribute('role', 'alert')
+                expect(state).to_be_focused()
+                assert not calls
+                state.select_option('CO')
                 state.focus()
                 page.keyboard.press('Tab')
                 expect(button).to_be_focused()
                 page.keyboard.press('Enter')
                 expect(note).to_have_text('Your state request has been counted. Thank you.')
-                expect(page.locator('#request-total')).to_have_text('1 counted request for California.')
+                expect(state).to_have_value('CO')
+                expect(page.locator('#request-total')).to_have_text('1 counted request for Colorado.')
                 # A late response from the initial zero-count fetch must not
                 # replace the newer committed-total response after submission.
                 with page.expect_request_finished(lambda req: urlsplit(req.url).path == '/api/state-requests/totals'):
-                    held['initial_totals'].fulfill(status=200, content_type='application/json', body=json.dumps({'totals': {'CA': 0}}))
+                    held['initial_totals'].fulfill(status=200, content_type='application/json', body=json.dumps({'totals': {'CO': 0}}))
                 page.evaluate('() => new Promise(resolve => requestAnimationFrame(resolve))')
-                expect(page.locator('#request-total')).to_have_text('1 counted request for California.')
+                expect(page.locator('#request-total')).to_have_text('1 counted request for Colorado.')
                 button.click()
                 expect(note).to_contain_text('already requested')
                 state.select_option('NY')
                 button.click()
                 expect(note).to_contain_text('counted. Thank you.')
-                assert records == {'CA', 'NY'}
+                assert records == {'CO', 'NY'}
                 mode['submission'] = 'failure'
                 state.select_option('TX')
                 button.click()
@@ -143,7 +158,7 @@ def main():
                 assert page.locator('html').evaluate('(node) => node.scrollWidth <= window.innerWidth')
                 expect(page.get_by_role('button', name='Subscribe', exact=True)).to_be_enabled()
                 context.close()
-                print(f'PASS: {width}px card, 50 states, keyboard, acceptance, duplicate, multiple states, errors and totals failure')
+                print(f'PASS: {width}px card, 39 non-pilot states, keyboard, acceptance, duplicate, multiple states, errors and totals failure')
         finally:
             browser.close()
     assert not errors, errors

@@ -319,10 +319,10 @@ def test_activated_http_routes_keep_permission_separation_and_public_security(ru
     session = public.get("/api/state-requests/session", base_url=development.ORIGIN)
     assert "HttpOnly" in session.headers["Set-Cookie"] and "SameSite=Lax" in session.headers["Set-Cookie"]
     csrf = session.json["csrf_token"]
-    assert public.post("/api/state-requests", json={"state": "CA"}, base_url=development.ORIGIN).status_code == 403
-    assert public.post("/api/state-requests", json={"state": "CA"}, base_url=development.ORIGIN,
+    assert public.post("/api/state-requests", json={"state": "CO"}, base_url=development.ORIGIN).status_code == 403
+    assert public.post("/api/state-requests", json={"state": "CO"}, base_url=development.ORIGIN,
         headers={"Origin": "https://other.example", "X-CSRF-Token": csrf}).status_code == 403
-    responses.append(public.post("/api/state-requests", json={"state": "CA"}, base_url=development.ORIGIN,
+    responses.append(public.post("/api/state-requests", json={"state": "CO"}, base_url=development.ORIGIN,
                                 headers={"Origin": development.ORIGIN, "X-CSRF-Token": csrf}))
     assert responses[-1].status_code == 201
     for path in ["/", "/gramanna.html", "/assets/notifications.js", "/api/notifications/session",

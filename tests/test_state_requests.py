@@ -106,7 +106,7 @@ def recognize(client):
     return response.json['csrf_token']
 
 
-def submit(client, csrf, state="CA", **kwargs):
+def submit(client, csrf, state="CO", **kwargs):
     headers = kwargs.pop('headers', {"Origin": ORIGIN, "X-CSRF-Token": csrf,
                                      "Sec-Fetch-Site": "same-origin"})
     return client.post('/api/state-requests', json={"state": state}, base_url=kwargs.pop('base_url', ORIGIN),
@@ -126,7 +126,7 @@ def test_first_submission_committed_timestamp_and_no_public_identifier(setup):
     assert len(engine.records) == 1
     assert next(iter(engine.records.values())).tzinfo is timezone.utc
     response = totals(client)
-    assert response.json['totals']['CA'] == 1
+    assert response.json['totals']['CO'] == 1
     assert len(response.json['totals']) == 50
     assert sum(response.json['totals'].values()) == 1
     assert 'browser' not in response.text
@@ -141,7 +141,7 @@ def test_duplicate_does_not_replace_timestamp(setup):
     response = submit(client, csrf)
     assert response.status_code == 200 and response.json['status'] == 'duplicate'
     assert engine.records == original
-    assert totals(client).json['totals']['CA'] == 1
+    assert totals(client).json['totals']['CO'] == 1
 
 
 def test_different_browsers_and_multiple_states(setup):
@@ -149,11 +149,11 @@ def test_different_browsers_and_multiple_states(setup):
     second = app.test_client()
     first_csrf, second_csrf = recognize(first), recognize(second)
     assert first_csrf != second_csrf
-    assert submit(first, first_csrf, 'CA').status_code == 201
+    assert submit(first, first_csrf, 'CO').status_code == 201
     assert submit(first, first_csrf, 'NY').status_code == 201
-    assert submit(second, second_csrf, 'CA').status_code == 201
+    assert submit(second, second_csrf, 'CO').status_code == 201
     counts = totals(first).json['totals']
-    assert counts['CA'] == 2 and counts['NY'] == 1 and sum(counts.values()) == 3
+    assert counts['CO'] == 2 and counts['NY'] == 1 and sum(counts.values()) == 3
 
 
 @pytest.mark.parametrize('state', ["", " ", "ca", " CA", "DC", "PR", "California", "ZZ", None, 42, True, [], {}])
@@ -163,21 +163,45 @@ def test_invalid_and_empty_states_rejected_without_insert(setup, state):
     assert not engine.records and not engine.statements
 
 
-def test_all_fifty_states_are_eligible_and_only_once(setup):
+def test_all_thirty_nine_nonpilot_states_are_eligible_and_only_once(setup):
     engine, app, client = setup
     csrf = recognize(client)
-    for state in STATE_CODES:
+    eligible = [state for state in STATE_CODES if state not in api.INITIAL_PILOT_STATE_CODES]
+    assert len(eligible) == 39
+    for state in eligible:
         assert submit(client, csrf, state).status_code == 201
         assert submit(client, csrf, state).json['status'] == 'duplicate'
-    assert set(totals(client).json['totals'].values()) == {1}
+    counts = totals(client).json['totals']
+    assert counts == {state: int(state in eligible) for state in STATE_CODES}
+
+
+@pytest.mark.parametrize('state', 'CA DE ID IN IA MT NE SD UT VT WY'.split())
+def test_initial_pilot_states_rejected_before_persistence(setup, state):
+    engine, app, client = setup
+    # Preserve canonical state validity for the separate service integration.
+    assert api.valid_state(state)
+    response = submit(client, recognize(client), state)
+    assert response.status_code == 400 and response.json['status'] == 'error'
+    assert response.json['message'] == 'Select a state outside the initial pilot states.'
+    assert not engine.records and not engine.statements
+
+
+def test_existing_pilot_records_and_totals_survive_rejected_request(setup):
+    engine, app, client = setup
+    recognition = api.BrowserRecognition(SECRET)
+    engine.records[('CA', recognition.browser_key('a' * 64))] = datetime.now(timezone.utc)
+    before = dict(engine.records)
+    assert submit(client, recognize(client), 'CA').status_code == 400
+    assert engine.records == before and not engine.statements
+    assert totals(client).json['totals']['CA'] == 1
 
 
 @pytest.mark.parametrize('data,content_type,expected', [
     ('{}', 'application/json', 400), ('null', 'application/json', 400),
     ('[]', 'application/json', 400), ('{', 'application/json', 400),
-    ('{"state":"CA","email":"ignored@example.org"}', 'application/json', 400),
+    ('{"state":"CO","email":"ignored@example.org"}', 'application/json', 400),
     ('state=CA', 'application/x-www-form-urlencoded', 415),
-    ('{"state":"CA"}', 'text/plain', 415),
+    ('{"state":"CO"}', 'text/plain', 415),
     ('{"state":"' + 'A'*1100 + '"}', 'application/json', 413),
 ])
 def test_request_shape_and_body_limits(setup, data, content_type, expected):
@@ -257,7 +281,7 @@ def test_persistence_and_recognition_across_worker_restart(setup):
     second.set_cookie(COOKIE, first.get_cookie(COOKIE, domain='website.example').value, domain='website.example')
     assert recognize(second) == csrf
     assert submit(second, csrf).json['status'] == 'duplicate'
-    assert totals(second).json['totals']['CA'] == 1
+    assert totals(second).json['totals']['CO'] == 1
 
 
 @pytest.mark.parametrize('failure', ['connect', 'insert', 'commit'])
@@ -282,7 +306,7 @@ def test_unconfirmed_commit_deliberate_repeat_converges_without_double_count(set
     assert len(engine.statements) == 1  # No automatic retry.
     engine.failure = None
     assert submit(client, csrf).json['status'] == 'duplicate'
-    assert totals(client).json['totals']['CA'] == 1
+    assert totals(client).json['totals']['CO'] == 1
 
 
 def test_totals_failure_does_not_fabricate_zero_or_reverse_acceptance(setup):
@@ -292,7 +316,7 @@ def test_totals_failure_does_not_fabricate_zero_or_reverse_acceptance(setup):
     response = totals(client)
     assert response.status_code == 503 and 'totals' not in response.json
     engine.failure = None
-    assert totals(client).json['totals']['CA'] == 1
+    assert totals(client).json['totals']['CO'] == 1
 
 
 def test_concurrent_same_browser_duplicates_are_atomic(setup):
@@ -308,7 +332,7 @@ def test_concurrent_same_browser_duplicates_are_atomic(setup):
     with ThreadPoolExecutor(max_workers=12) as pool:
         responses = list(pool.map(attempt, range(12)))
     assert responses.count('accepted') == 1 and responses.count('duplicate') == 11
-    assert len(engine.records) == 1 and totals(client).json['totals']['CA'] == 1
+    assert len(engine.records) == 1 and totals(client).json['totals']['CO'] == 1
 
 
 @pytest.mark.parametrize('origin,local', [('http://website.example', False), ('http://localhost:8000', False),
@@ -369,26 +393,68 @@ def test_preserved_card_state_registry_and_accessible_activation():
     class Card(HTMLParser):
         def __init__(self):
             super().__init__()
-            self.active = False
-            self.codes = []
+            self.active = None
+            self.options = {}
+            self.option = None
+            self.select = None
+            self.pilot_list = False
+            self.pilot_heading = False
+            self.pilots = []
             self.form = None
             self.note = None
         def handle_starttag(self, tag, attrs):
             attrs = dict(attrs)
             if tag == 'form' and attrs.get('id') == 'state-request-form':
                 self.form = attrs
-            if tag == 'select' and attrs.get('id') == 'request-state':
-                self.active = True
-            if tag == 'option' and self.active and attrs.get('value'):
-                self.codes.append(attrs['value'])
+            if tag == 'select':
+                self.active = attrs.get('id')
+                self.options[self.active] = []
+                if self.active == 'request-state':
+                    self.select = attrs
+            if tag == 'option' and self.active:
+                self.option = [attrs['value'], '']
+            if tag == 'ul' and attrs.get('class') == 'pilot-state-list':
+                self.pilot_list = True
+            if tag == 'h3' and self.pilot_list:
+                self.pilot_heading = True
             if attrs.get('id') == 'request-note':
                 self.note = attrs
         def handle_endtag(self, tag):
+            if tag == 'option' and self.option is not None:
+                self.options[self.active].append(tuple(self.option))
+                self.option = None
             if tag == 'select':
-                self.active = False
+                self.active = None
+            if tag == 'ul':
+                self.pilot_list = False
+            if tag == 'h3':
+                self.pilot_heading = False
+        def handle_data(self, data):
+            if self.option is not None:
+                self.option[1] += data
+            if self.pilot_heading:
+                self.pilots.append(data.strip())
     card = Card()
     card.feed((ROOT/'gramanna.html').read_text(encoding='utf-8'))
-    assert card.codes == list(STATE_CODES) and len(set(card.codes)) == 50
+    requests = card.options['request-state']
+    notifications = card.options['notification-state']
+    placeholder = ('', 'Select a state')
+    assert requests[0] == notifications[0] == placeholder
+    assert [code for code, _name in notifications[1:]] == list(STATE_CODES)
+    assert requests[1:] == [(code, name) for code, name in notifications[1:]
+                            if code not in api.INITIAL_PILOT_STATE_CODES]
+    assert len(requests[1:]) == len(set(requests[1:])) == 39
+    assert len({code for code, _name in requests[1:]}) == 39
+    names = [name for _code, name in requests[1:]]
+    assert names == sorted(set(names))
+    assert card.pilots == ['California', 'Delaware', 'Idaho', 'Indiana', 'Iowa',
+                           'Montana', 'Nebraska', 'South Dakota', 'Utah', 'Vermont', 'Wyoming']
+    assert card.pilots == [name for code, name in notifications[1:]
+                           if code in api.INITIAL_PILOT_STATE_CODES]
+    assert card.select['class'] == 'form-control' and 'required' in card.select
+    assert card.select['autocomplete'] == 'off'
+    assert card.select['aria-label'] == 'Your state'
+    assert card.select['aria-describedby'] == 'request-note'
     assert card.form['class'] == 'interface-card state-request'
     assert card.note['role'] == 'status' and card.note['aria-live'] == 'polite'
     assert card.note['aria-atomic'] == 'true'

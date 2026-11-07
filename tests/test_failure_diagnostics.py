@@ -396,7 +396,7 @@ def test_http_store_transaction_certainty_and_public_privacy(sink, phase, operat
     model=ModelEngine(); model.failure=phase
     app=web._build_app(web.RequestStore(model),web.BrowserRecognition(SECRET),ORIGIN)
     client=app.test_client(); csrf=client.get('/api/state-requests/session',base_url=ORIGIN).json['csrf_token']
-    response=client.post('/api/state-requests',base_url=ORIGIN,json={'state':'CA'},headers={'Origin':ORIGIN,'X-CSRF-Token':csrf})
+    response=client.post('/api/state-requests',base_url=ORIGIN,json={'state':'CO'},headers={'Origin':ORIGIN,'X-CSRF-Token':csrf})
     assert response.status_code==503
     first=records(sink)[0]['first_failure']
     assert first['operation']==operation and first['side_effects']==effects
@@ -406,7 +406,7 @@ def test_http_store_transaction_certainty_and_public_privacy(sink, phase, operat
 
 def test_csrf_rejected_at_predicate_before_persistence(sink):
     store=Mock();app=web._build_app(store,web.BrowserRecognition(SECRET),ORIGIN)
-    response=app.test_client().post('/api/state-requests',base_url=ORIGIN,json={'state':'CA'},headers={'Origin':ORIGIN})
+    response=app.test_client().post('/api/state-requests',base_url=ORIGIN,json={'state':'CO'},headers={'Origin':ORIGIN})
     assert response.status_code==403;store.submit.assert_not_called()
     first=records(sink)[0]['first_failure']
     assert first['predicate']=='csrf_browser_missing'

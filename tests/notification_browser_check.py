@@ -15,6 +15,7 @@ def main():
         ('gramanna.html','text/html'),('styles.css','text/css'),
         ('assets/state-requests.js','application/javascript'),('assets/notifications.js','application/javascript'),
         ('assets/email-confirmation.js','application/javascript'),
+        ('assets/navigation.js','application/javascript'),
         ('manage-notifications.html','text/html'),('assets/notification-management.js','application/javascript'),
         ('assets/images/gramanna-logo.png','image/png')] }
     errors,unexpected = [],[]
@@ -138,7 +139,7 @@ def main():
                 assert withdrawals[-1]=={'token':private_token}
                 mode['withdraw']='normal'
                 withdraw_button.click()
-                expect(withdraw_note).to_contain_text('unsubscribed from all notifications')
+                expect(withdraw_note).to_have_text('Any active subscription created with this private link has been unsubscribed.')
                 assert len(withdrawals)==2
                 page.goto(ORIGIN+'/gramanna.html#unsubscribe=broken')
                 expect(page.locator('#management-withdrawal')).to_be_hidden()

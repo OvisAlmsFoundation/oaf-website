@@ -233,15 +233,15 @@ def run(browser_python):
         require(len(set(keys.values())) == 3, "Independent contexts share a recognition identity.")
         final_counts = counts(connection)
         final_rows = rows(connection)
-        expected_new = {("CA", str(keys["A"])), ("TX", str(keys["A"])),
-                        ("CA", str(keys["B"])), ("CA", str(keys["C"]))}
+        expected_new = {("CO", str(keys["A"])), ("TX", str(keys["A"])),
+                        ("CO", str(keys["B"])), ("CO", str(keys["C"]))}
         require(all(final_rows.get(key) == value for key, value in initial_rows.items()),
                 "A pre-existing record changed.")
         require(set(final_rows) - set(initial_rows) == expected_new,
                 "Persisted new records differ from the four browser submissions.")
         require(final_counts == completed["counts"], "Browser/API and independent DB counts differ.")
         delta = {state: final_counts[state] - initial_counts[state] for state in STATE_CODES}
-        require({s: n for s, n in delta.items() if n} == {"CA": 3, "TX": 1},
+        require({s: n for s, n in delta.items() if n} == {"CO": 3, "TX": 1},
                 "Unexpected count changes.")
         require(not connection.execute("SELECT state, browser_key FROM oaf_website.state_requests "
             "GROUP BY state, browser_key HAVING count(*) > 1").fetchall(), "Duplicate persisted keys exist.")
@@ -250,7 +250,7 @@ def run(browser_python):
         try:
             with connection.transaction():
                 connection.execute("INSERT INTO oaf_website.state_requests(state,browser_key) VALUES (%s,%s)",
-                                   ("CA", keys["A"]))
+                                   ("CO", keys["A"]))
                 require(False, "Database accepted a duplicate key; probe rolled back.")
         except psycopg.errors.UniqueViolation as error:
             require(error.sqlstate == "23505" and error.diag.constraint_name == "state_requests_pk",
@@ -295,10 +295,10 @@ def run(browser_python):
                       new_records=[{"browser": name, "state": state, "browser_key": str(key),
                                     "created_at": final_rows[(state, str(key))]}
                                    for name, key in keys.items()
-                                   for state in (("CA", "TX") if name == "A" else ("CA",))],
+                                   for state in (("CO", "TX") if name == "A" else ("CO",))],
                       rollback_probe="PASS; inserted within transaction then rolled back; no retained probe row",
                       constraints_preserved=True, initial_records_unchanged=True)
-        print("PostgreSQL persistence/counting PASS: CA +3, TX +1; four retained browser records.", flush=True)
+        print("PostgreSQL persistence/counting PASS: CO +3, TX +1; four retained browser records.", flush=True)
     except Exception as error:
         # Do not serialize raw exceptions, credentials, connection URLs, or SQL parameters.
         safe = str(error) if type(error) is RuntimeError else type(error).__name__
