@@ -1433,7 +1433,7 @@ button.button {
   .site-header {
     padding-inline: 12px;
     /* Balance the visible name-top gap with the space below the link text. */
-    padding-top: 8.5px;
+    padding-top: 10px;
   }
 
   .foundation-name {
