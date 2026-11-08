@@ -1423,6 +1423,10 @@ button.button {
     padding-top: 12px;
   }
 
+  .site-header > * {
+    transform: translateY(1px);
+  }
+
   .foundation-name {
     font-size: 1.32rem;
   }
@@ -1477,12 +1481,36 @@ button.button {
   }
 
   footer {
-    min-height: calc(1.32rem + 31px);
+    /* Match the name line, 12px top inset and full navigation row. */
+    min-height: calc(1.32rem + 45.66px);
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    /* Match painted text edges, accounting for the smaller footer font. */
+    row-gap: 8.5px;
+  }
+
+  .footer-links {
+    flex-wrap: wrap;
   }
 
   @media (pointer: coarse) {
     footer {
-      min-height: calc(1.32rem + 37px);
+      min-height: calc(1.32rem + 52.5px);
+      row-gap: 11.5px;
+    }
+  }
+}
+
+@media (max-width: 354px) {
+  footer {
+    /* The wrapped copyright ends without the first line's descenders. */
+    row-gap: 6px;
+  }
+
+  @media (pointer: coarse) {
+    footer {
+      row-gap: 9px;
     }
   }
 }
@@ -1521,17 +1549,6 @@ button.button {
 
   .two-column {
     grid-template-columns: 1fr;
-  }
-
-  footer {
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: center;
-    row-gap: 2px;
-  }
-
-  .footer-links {
-    flex-wrap: wrap;
   }
 }
 

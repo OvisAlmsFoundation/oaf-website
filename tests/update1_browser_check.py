@@ -66,6 +66,14 @@ def contrast(rgb):
 
 
 def assert_controls_preserved(current, previous, width, filename):
+    # The approved responsive footer can move its links vertically. Its medium
+    # single flex row also changes their boxes when the labels wrap.
+    previous = [dict(c, box=dict(c['box'])) for c in previous]
+    for actual, prior in zip(current, previous):
+        if width <= 900 and actual['href'] in {'privacy-policy.html', 'terms-of-use.html'}:
+            dimensions = ['y'] + (['x', 'width', 'height'] if 550 < width <= 750 else [])
+            for dimension in dimensions:
+                prior['box'][dimension] = actual['box'][dimension]
     if filename == 'index.html':
         # Content below the resized hero moves vertically; control sizes,
         # styling, semantics and horizontal positions must remain unchanged.
@@ -73,6 +81,18 @@ def assert_controls_preserved(current, previous, width, filename):
             return [dict(c, box={k: v for k, v in c['box'].items() if k != 'y'}) for c in controls]
         current, previous = without_y(current), without_y(previous)
     assert current == previous, (width, filename, 'control geometry/semantics changed')
+
+
+def assert_footer_preserved(current, previous, width, filename, coarse):
+    expected = [dict(style) for style in previous]
+    if width <= 550:
+        gap = (9 if coarse else 6) if width <= 354 else (11.5 if coarse else 8.5)
+        expected[0]['gap'] = f'{gap:g}px 25px'
+    elif width <= 750:
+        expected[0].update(flexDirection='row', alignItems='center',
+                           justifyContent='space-between', gap='25px')
+        expected[2]['flexWrap'] = 'nowrap'
+    assert current == expected, (width, filename, 'footer styling changed')
 
 
 def assert_full_frame(page, hero, painted):
@@ -245,7 +265,8 @@ def main(artifacts, baseline=None, widths=(1440, 901, 900, 768, 390, 320, 280), 
                         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), (width, filename, 'overflow')
                         assert page.locator('footer').evaluate('n => {const r=n.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth;}')
                         if baseline:
-                            assert page.evaluate(FOOTER_SNAPSHOT) == prior_footers[filename], (width, filename, 'footer styling changed')
+                            assert_footer_preserved(page.evaluate(FOOTER_SNAPSHOT), prior_footers[filename],
+                                                    width, filename, width <= 390)
                             current = page.locator(CONTROLS).evaluate_all(CONTROL_SNAPSHOT)
                             assert_controls_preserved(current, prior_controls[filename], width, filename)
                     measurements.append({'width': width, 'hero': box, 'decoration': decoration, 'composition': composition, 'footers': len(PAGES)})
