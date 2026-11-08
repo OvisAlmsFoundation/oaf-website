@@ -43,7 +43,7 @@ def check_navigation_presentation(page, filename, coarse):
         minimum = (32 if coarse else 26) if narrow else (34 if coarse else 28)
     width = page.viewport_size['width']
     gap = ('0.5px' if width <= 300 else '4px' if width <= 350 else '6px') if narrow else '18px' if mobile else '28px'
-    column_gap = gap if narrow else '12.96px' if mobile else '20.16px'
+    column_gap = ('0.5px' if width <= 300 else '6.25px' if width <= 350 else '8.625px') if narrow else '12.96px' if mobile else '20.16px'
     expect(page.locator('.site-header')).to_have_css('flex-direction', 'column' if mobile else 'row')
     expect(page.locator('.site-header nav')).to_have_css('column-gap', column_gap)
     expect(page.locator('.site-header nav')).to_have_css('row-gap', gap)
@@ -57,10 +57,13 @@ def check_navigation_presentation(page, filename, coarse):
     boxes = links.evaluate_all('nodes => nodes.map(n => n.getBoundingClientRect().toJSON())')
     for index, box in enumerate(boxes):
         assert abs(box['height'] - minimum) < 0.01
-        assert box['width'] >= 24 and box['height'] >= 24
+        assert box['width'] >= 24
+        assert box['height'] >= 24
         if mobile and index:
-            assert abs(box['top'] - boxes[0]['top']) < .1
-            assert abs(box['left'] - boxes[index - 1]['right'] - float(column_gap[:-2])) < .1
+            assert abs(box['top'] + box['height'] / 2 - boxes[0]['top'] - boxes[0]['height'] / 2) < .1
+            # All six mobile regions meet, including Contact and Support.
+            expected_gap = 0 if narrow else float(column_gap[:-2])
+            assert abs(box['left'] - boxes[index - 1]['right'] - expected_gap) < .01
         for other in boxes[index + 1:]:
             assert (box['right'] <= other['left'] or other['right'] <= box['left']
                     or box['bottom'] <= other['top'] or other['bottom'] <= box['top']), (box, other)
@@ -69,11 +72,17 @@ def check_navigation_presentation(page, filename, coarse):
         active = link.get_attribute('aria-current') == 'page'
         expect(link).to_have_css('min-height', f'{minimum}px')
         padding = ('2px 6px' if support else '2px 0px') if mobile else '6px 14px' if support else '6px 8px'
+        if narrow:
+            inset = float(column_gap[:-2]) / 2
+            padding = f'{1 if support else 2}px {inset:g}px'
         if mobile and not narrow and not support:
             padding = '1px 0px'
         expect(link).to_have_css('padding', padding)
         expect(link).to_have_css('border-radius', '3px' if support else '6px')
-        expect(link).to_have_css('margin', '0px' if mobile else '-6px 0px' if support else '-6px -8px')
+        margin = '0px' if mobile else '-6px 0px' if support else '-6px -8px'
+        if narrow:
+            margin = f'0px {-inset:g}px {3.21 if coarse else 2.61}px' if support else f'0px {-inset:g}px'
+        expect(link).to_have_css('margin', margin)
         ratio = link.evaluate('n => parseFloat(getComputedStyle(n).lineHeight) / parseFloat(getComputedStyle(n).fontSize)')
         assert abs(ratio - 1.5) < 0.001
         link.hover()

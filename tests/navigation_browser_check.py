@@ -86,12 +86,16 @@ def geometry(page, coarse, validate=True):
                for actual, expected in zip(state['fonts'], expected_fonts)), state
     if mobile:
         assert state['rows'] == [0] * 6 and state['layout'] == '2-row', state
-        assert abs(state['outerVisibleTop'] - 4) < .1, state
-        assert abs(state['outerBottom'] - 4) < .1, state
+        assert abs(state['outerVisibleTop'] - (15 if narrow else 4)) < .1, state
+        if narrow:
+            expect(page.locator('.site-header')).to_have_css('padding-top', '12px')
+        support_inset = (3.2 if coarse else 2.6) if narrow else 0
+        assert abs(state['outerBottom'] - 4 - support_inset) < .1, state
         assert 0 <= state['visibleNameToLinks'] <= 16, state
-        assert state['height'] <= (68 if coarse else 62), state
+        assert state['height'] <= ((74 if coarse else 67) if narrow else (68 if coarse else 62)), state
         for before, after in zip(state['links'], state['links'][1:]):
-            assert abs(after['left'] - before['right'] - state['navGap']) < .1, state
+            expected_gap = 0 if narrow else state['navGap']
+            assert abs(after['left'] - before['right'] - expected_gap) < .01, state
     header_bottom = state['height']
     boxes = [state['brand'], *state['links']]
     for i, box in enumerate(boxes):
@@ -100,7 +104,8 @@ def geometry(page, coarse, validate=True):
         if i:
             minimum = ((32 if coarse else 26) if narrow else (34 if coarse else 28)) if mobile else (44 if coarse else 36)
             assert abs(box['height'] - minimum) < .1, state
-            assert box['width'] >= 24 and box['height'] >= 24, state
+            assert box['width'] >= 24, state
+            assert box['height'] >= 24, state
         for other in boxes[i + 1:]:
             assert (box['right'] <= other['left'] + .1 or other['right'] <= box['left'] + .1
                     or box['bottom'] <= other['top'] + .1 or other['bottom'] <= box['top'] + .1), (box, other)

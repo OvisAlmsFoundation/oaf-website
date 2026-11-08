@@ -554,19 +554,6 @@ h2 {
   text-align: center;
 }
 
-@media (max-width: 900px) {
-  .button:where(:not(.legal-skip-link)) {
-    min-height: 28px;
-    padding: 2px 6px;
-  }
-}
-
-@media (max-width: 550px) {
-  .button:where(:not(.legal-skip-link)) {
-    min-height: 26px;
-  }
-}
-
 @media (pointer: coarse) {
   .button:where(:not(.legal-skip-link)) {
     min-height: 44px;
@@ -1433,7 +1420,7 @@ button.button {
   .site-header {
     padding-inline: 12px;
     /* Balance the visible name-top gap with the space below the link text. */
-    padding-top: 10px;
+    padding-top: 12px;
   }
 
   .foundation-name {
@@ -1441,7 +1428,13 @@ button.button {
   }
 
   .site-header nav {
-    gap: 6px;
+    /* Equalize five label gaps at about 120% of their previous average.
+       Exact half-gap padding keeps neighboring regions edge-to-edge. */
+    --nav-gap: 8.625px;
+    gap: 6px var(--nav-gap);
+    /* Retain the link row's position while Support grows downward. */
+    align-items: flex-start;
+    padding-top: 1.05px;
   }
 
   .site-header nav a {
@@ -1450,18 +1443,31 @@ button.button {
 
   .site-header nav a:not(.nav-support) {
     font-size: .836rem;
-    padding: 2px 0;
-  }
-
-  .site-header nav a:not(.nav-support),
-  .site-header nav .nav-support {
+    padding: 2px calc(var(--nav-gap) / 2);
+    margin-inline: calc(var(--nav-gap) / -2);
     min-height: 26px;
   }
 
+  .site-header nav .nav-support {
+    min-height: 26px;
+    padding-inline: calc(var(--nav-gap) / 2);
+    margin-inline: calc(var(--nav-gap) / -2);
+    padding-block: 1px;
+    margin-block: 0 2.61px;
+  }
+
   @media (pointer: coarse) {
-    .site-header nav a:not(.nav-support),
+    .site-header nav {
+      padding-top: 1.29px;
+    }
+
+    .site-header nav a:not(.nav-support) {
+      min-height: 32px;
+    }
+
     .site-header nav .nav-support {
       min-height: 32px;
+      margin-block: 0 3.21px;
     }
   }
 
@@ -1487,13 +1493,15 @@ button.button {
   }
 
   .site-header nav {
-    gap: 4px;
+    --nav-gap: 6.25px;
+    row-gap: 4px;
   }
 }
 
 @media (max-width: 300px) {
   .site-header nav {
-    gap: .5px;
+    --nav-gap: .5px;
+    row-gap: .5px;
   }
 }
 
