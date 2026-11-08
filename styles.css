@@ -1432,8 +1432,8 @@ button.button {
 @media (max-width: 550px) {
   .site-header {
     padding-inline: 12px;
-    /* The smaller name's visible capitals also start 3px into its line box. */
-    padding-top: 1px;
+    /* Balance the visible name-top gap with the space below the link text. */
+    padding-top: 8.5px;
   }
 
   .foundation-name {
