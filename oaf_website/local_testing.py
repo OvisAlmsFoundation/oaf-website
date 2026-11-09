@@ -24,6 +24,7 @@ PUBLIC_FILES = (
     "index.html", "about.html", "gramanna.html", "faq.html", "support.html", "contact.html", "styles.css",
     "assets/navigation.js", "assets/state-requests.js", "assets/notifications.js", "assets/contact.js", "assets/images/gramanna-logo.png",
     "assets/images/hero-gifts.webp",
+    "assets/images/google-play-badge.svg", "assets/images/app-store-badge.svg",
     "assets/oaf-homepage-hero-gift-cards.png",
     "assets/images/oaf-homepage-hero-gift-cards3.png",
     "assets/images/oaf-homepage-hero-gift-cards4.png",

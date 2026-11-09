@@ -544,13 +544,14 @@ h2 {
   border-radius: 3px;
 }
 
-/* Match Support's padding while keeping ordinary action labels centered. */
+/* Match Support's height and padding without inheriting paragraph line heights. */
 .button:where(:not(.legal-skip-link)) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-height: 36px;
   padding: 6px 14px;
+  line-height: 1.35;
   text-align: center;
 }
 
@@ -1145,6 +1146,40 @@ button.button {
   color: #233f36;
 }
 
+/* Keep the existing action slots and card sizes. Official artwork needs 40px,
+   centered over the 36px fine-pointer slot (2px above and below). */
+.store-badge-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  flex-shrink: 0;
+  height: 36px;
+  margin-top: auto;
+}
+
+.gramanna-access-grid .store-badge {
+  width: 100%;
+  min-height: 40px;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0;
+  background: #000;
+}
+
+.store-badge img {
+  display: block;
+  width: auto;
+  height: 40px;
+  object-fit: contain;
+}
+
+@media (pointer: coarse) {
+  .store-badge-slot {
+    height: 44px;
+  }
+}
+
 .pilot-state-list {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1201,6 +1236,12 @@ button.button {
   background: white;
   color: #202020;
   font: inherit;
+}
+
+input.form-control,
+select.form-control {
+  min-height: 36px;
+  padding-block: 6px;
 }
 
 .form-control:disabled {
